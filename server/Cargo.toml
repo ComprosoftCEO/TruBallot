@@ -9,8 +9,12 @@ default-run = "evoting-server"
 actix-web = { version = "3", features = ["openssl"] }
 diesel = { version = "1.4.8", features = ["postgres", "extras"] }
 dotenv = "0.15.0"
+futures = "0.3.17"
 log = "0.4.14"
 num = "0.4.0"
 openssl = "0.10.36"
 serde = "1.0.130"
+serde_repr = "0.1.7"
 simple_logger = "1.13.0"
+uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }
+validator = "0.14.0"
