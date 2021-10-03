@@ -21,6 +21,7 @@ pub type CollectorToken = JWTToken<audience::CollectorOnly, JWTUserData>;
 
 /// JSON Web Token used for user authentication
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct JWTToken<A: Audience, T> {
   // Reserved Claims
   iss: String, // Issuer
@@ -38,6 +39,7 @@ pub struct JWTToken<A: Audience, T> {
 
 /// Internal data used by the JSON Web Token
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct JWTUserData {
   permissions: HashSet<Permission>,
 }

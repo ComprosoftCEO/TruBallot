@@ -4,6 +4,7 @@ use std::fmt;
 
 use crate::errors::GlobalErrorCode;
 
+/// JSON response returned to the frontend on an error
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorResponse {

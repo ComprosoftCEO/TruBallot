@@ -1,3 +1,6 @@
+//
+// All code related to error handling for the API server
+//
 mod error_response;
 mod global_error_codes;
 mod named_resource_type;

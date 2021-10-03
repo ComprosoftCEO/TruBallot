@@ -16,6 +16,7 @@ use crate::models::User;
 
 /// Special JWT token that is designed to refresh an existing token
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RefreshToken {
   iss: String, // Issuer
   sub: Uuid,   // Subject (whom token refers to)

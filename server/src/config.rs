@@ -40,8 +40,12 @@ pub fn get_database_url() -> Option<String> {
 }
 
 //
-// JSON Web Token
+// Authentication System Secrets
 //
 pub fn get_jwt_secret() -> String {
   std::env::var("JWT_SECRET").unwrap_or_else(|_| DEFAULT_JWT_SECRET.to_string())
+}
+
+pub fn get_recaptcha_secret_key() -> Option<String> {
+  return std::env::var("RECAPTCHA_SECRET_KEY").ok();
 }

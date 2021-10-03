@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Actions that can be taken in the database
 #[derive(Debug)]
 pub enum ResourceAction {
   Create,

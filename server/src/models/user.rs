@@ -5,6 +5,7 @@ use uuid_b64::UuidB64 as Uuid;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::schema::users;
+use crate::utils::new_safe_uuid_v4;
 
 #[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +19,27 @@ pub struct User {
 
 impl User {
   model_base!();
+
+  /// Create a new user that is ready to be inserted into the database
+  ///
+  /// Always converts the email to lowercase first
+  /// Does NOT attempt to verify the password complexity first
+  /// DOES hash the password for the user (Which is why it returns a result)
+  pub fn new(
+    email: impl Into<String>,
+    password: impl AsRef<[u8]>,
+    name: impl Into<String>,
+  ) -> Result<Self, ServiceError> {
+    let hashed_password = bcrypt::hash(password, bcrypt::DEFAULT_COST)?;
+
+    Ok(Self {
+      id: new_safe_uuid_v4(),
+      email: email.into().to_lowercase(),
+      hashed_password,
+      name: name.into(),
+      refresh_secret: new_safe_uuid_v4().to_string(),
+    })
+  }
 
   ///
   /// Search for a user given their email address (which is unique)
@@ -45,5 +67,10 @@ impl User {
         .get_result::<Self>(conn.get())
         .optional()?,
     )
+  }
+
+  /// Verify that the hashed password matches the input password
+  pub fn verify_password(&self, password: impl AsRef<[u8]>) -> Result<bool, ServiceError> {
+    Ok(bcrypt::verify(password, &self.hashed_password)?)
   }
 }
