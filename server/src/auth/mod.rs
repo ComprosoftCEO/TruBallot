@@ -16,5 +16,5 @@ pub use constants::*;
 pub use jwt_secret::JWTSecret;
 pub use jwt_token::*;
 pub use password_complexity::validate_password_complexity;
-pub use permission::Permission;
+pub use permission::{Permission, DEFAULT_PERMISSIONS};
 pub use refresh_token::RefreshToken;
