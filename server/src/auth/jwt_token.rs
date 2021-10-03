@@ -33,7 +33,7 @@ pub struct JWTToken<A: Audience, T> {
   email: String,
   name: String,
   user_data: T,
-  audience: PhantomData<A>,
+  _aud: PhantomData<A>,
 }
 
 /// Internal data used by the JSON Web Token
@@ -86,7 +86,7 @@ where
       user_data: JWTUserData {
         permissions: HashSet::from_iter(permissions.into_iter().cloned()),
       },
-      audience: PhantomData,
+      _aud: PhantomData,
     }
   }
 

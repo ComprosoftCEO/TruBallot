@@ -4,6 +4,7 @@ use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
 use diesel::r2d2::PoolError;
 use jsonwebtoken::errors::Error as JWTError;
 use std::{error, fmt};
+use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
 use crate::errors::{ErrorResponse, GlobalErrorCode};
@@ -17,6 +18,7 @@ pub enum ServiceError {
   InvalidEmailPassword,
   JWTError(JWTError),
   JWTExtractorError(AuthenticationError<Bearer>),
+  JWTNoSuchUser(Uuid),
 }
 
 impl ServiceError {
@@ -69,6 +71,13 @@ impl ServiceError {
         "Invalid JWT Token".into(),
         GlobalErrorCode::InvalidJWTToken,
         format!("{}", error),
+      ),
+
+      ServiceError::JWTNoSuchUser(user_id) => ErrorResponse::new(
+        StatusCode::UNAUTHORIZED,
+        "Invalid JWT Token".into(),
+        GlobalErrorCode::InvalidJWTToken,
+        format!("No Such User: {}", user_id),
       ),
     }
   }

@@ -4,5 +4,6 @@ table! {
         email -> Varchar,
         hashed_password -> Varchar,
         name -> Varchar,
+        refresh_secret -> Varchar,
     }
 }

@@ -13,6 +13,7 @@ pub struct User {
   pub email: String,
   pub hashed_password: String,
   pub name: String,
+  pub refresh_secret: String,
 }
 
 impl User {
