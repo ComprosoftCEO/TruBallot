@@ -7,9 +7,12 @@ default-run = "evoting-server"
 
 [dependencies]
 actix-web = { version = "3", features = ["openssl"] }
+actix-web-httpauth = "0.5.1"
+chrono = "0.4.19"
 diesel = { version = "1.4.8", features = ["postgres", "extras"] }
 dotenv = "0.15.0"
 futures = "0.3.17"
+jsonwebtoken = "7.2.0"
 log = "0.4.14"
 num = "0.4.0"
 openssl = "0.10.36"

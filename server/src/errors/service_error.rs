@@ -1,10 +1,12 @@
-use actix_web::{http::header::ToStrError, http::StatusCode, HttpResponse, ResponseError};
+use actix_web::{http::StatusCode, HttpResponse, ResponseError};
+use actix_web_httpauth::extractors::AuthenticationError;
+use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
 use diesel::r2d2::PoolError;
+use jsonwebtoken::errors::Error as JWTError;
 use std::{error, fmt};
-use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
-use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
+use crate::errors::{ErrorResponse, GlobalErrorCode};
 
 #[derive(Debug)]
 pub enum ServiceError {
@@ -12,6 +14,9 @@ pub enum ServiceError {
   DatabaseError(diesel::result::Error),
   DatabasePoolError(PoolError),
   StructValidationError(ValidationErrors),
+  InvalidEmailPassword,
+  JWTError(JWTError),
+  JWTExtractorError(AuthenticationError<Bearer>),
 }
 
 impl ServiceError {
@@ -42,6 +47,27 @@ impl ServiceError {
         StatusCode::BAD_REQUEST,
         "Invalid JSON Object".into(),
         GlobalErrorCode::StructValidationError,
+        format!("{}", error),
+      ),
+
+      ServiceError::InvalidEmailPassword => ErrorResponse::new(
+        StatusCode::UNAUTHORIZED,
+        "Invalid email or password".into(),
+        GlobalErrorCode::InvalidEmailPassword,
+        "".into(),
+      ),
+
+      ServiceError::JWTError(error) => ErrorResponse::new(
+        StatusCode::UNAUTHORIZED,
+        "Invalid JWT Token".into(),
+        GlobalErrorCode::InvalidJWTToken,
+        format!("{}", error),
+      ),
+
+      ServiceError::JWTExtractorError(error) => ErrorResponse::new(
+        StatusCode::UNAUTHORIZED,
+        "Invalid JWT Token".into(),
+        GlobalErrorCode::InvalidJWTToken,
         format!("{}", error),
       ),
     }
@@ -85,5 +111,17 @@ impl From<PoolError> for ServiceError {
 impl From<ValidationErrors> for ServiceError {
   fn from(error: ValidationErrors) -> Self {
     ServiceError::StructValidationError(error)
+  }
+}
+
+impl From<JWTError> for ServiceError {
+  fn from(error: JWTError) -> Self {
+    ServiceError::JWTError(error)
+  }
+}
+
+impl From<AuthenticationError<Bearer>> for ServiceError {
+  fn from(error: AuthenticationError<Bearer>) -> Self {
+    ServiceError::JWTExtractorError(error)
   }
 }

@@ -4,6 +4,7 @@ use log::LevelFilter;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use simple_logger::SimpleLogger;
 
+use evoting_server::auth;
 use evoting_server::config;
 use evoting_server::db;
 
@@ -27,7 +28,10 @@ async fn main() -> std::io::Result<()> {
 
   let mut server = HttpServer::new(|| {
     App::new()
+      // Connect to database
       .data(db::establish_new_connection_pool())
+      // Encryption secret for JSON Web Token
+      .data(auth::JWTSecret::new(config::get_jwt_secret()))
       // Enable logger
       .wrap(middleware::Logger::default())
       // Limit amount of data the server will accept

@@ -8,4 +8,6 @@ pub enum GlobalErrorCode {
   DatabaseError,
   DatabaseConnectionError,
   StructValidationError,
+  InvalidEmailPassword,
+  InvalidJWTToken,
 }
