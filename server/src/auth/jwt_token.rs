@@ -18,6 +18,7 @@ use crate::models::User;
 pub type ClientToken = JWTToken<audience::ClientOnly, JWTUserData>;
 pub type ServerToken = JWTToken<audience::ServerOnly, JWTUserData>;
 pub type CollectorToken = JWTToken<audience::CollectorOnly, JWTUserData>;
+pub type AnyToken = JWTToken<audience::All, JWTUserData>;
 
 /// JSON Web Token used for user authentication
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,6 +35,8 @@ pub struct JWTToken<A: Audience, T> {
   email: String,
   name: String,
   user_data: T,
+
+  #[serde(skip)]
   _aud: PhantomData<A>,
 }
 

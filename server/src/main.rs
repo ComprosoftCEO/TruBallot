@@ -7,6 +7,7 @@ use simple_logger::SimpleLogger;
 use evoting_server::auth;
 use evoting_server::config;
 use evoting_server::db;
+use evoting_server::handlers;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -37,7 +38,15 @@ async fn main() -> std::io::Result<()> {
       // Limit amount of data the server will accept
       .data(web::JsonConfig::default().limit(4096))
       // Load all routes
-      .route("/", web::get().to(|| HttpResponse::Forbidden().finish()))
+      .service(
+        web::scope("/api/v1").service(
+          web::scope("/auth")
+            .route("", web::get().to(handlers::auth::get_me))
+            .route("/login", web::post().to(handlers::auth::login))
+            .route("/refresh", web::post().to(handlers::auth::refresh)),
+        ),
+      )
+      .default_service(web::route().to(|| HttpResponse::NotFound()))
   });
 
   // Possibly enable SSL
