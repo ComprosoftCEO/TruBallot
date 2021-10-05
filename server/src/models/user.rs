@@ -20,6 +20,10 @@ pub struct User {
 impl User {
   model_base!();
 
+  has_many!(Election);
+  has_many!(Registration);
+  has_many!(Commitment);
+
   /// Create a new user that is ready to be inserted into the database
   ///
   /// Always converts the email to lowercase first

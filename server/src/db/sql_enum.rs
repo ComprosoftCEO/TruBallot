@@ -4,7 +4,7 @@ macro_rules! sql_enum {
     #[repr(i32)]
     #[derive(
       Debug, Copy, Clone, Eq, PartialEq, Hash,
-      Serialize_repr, Deserialize_repr, EnumIter,
+      serde_repr::Serialize_repr, serde_repr::Deserialize_repr,
       FromSqlRow, FromPrimitive, AsExpression,
     )]
     #[sql_type = "Integer"]

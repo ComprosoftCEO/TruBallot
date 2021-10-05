@@ -1,5 +1,8 @@
+// Macros from external libraries
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate num_derive;
 
 // All internal code modules
 pub mod auth;

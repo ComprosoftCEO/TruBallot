@@ -1,3 +1,15 @@
+mod candidate;
+mod commitment;
+mod election;
+mod election_status;
+mod question;
+mod registration;
 mod user;
 
+pub use candidate::Candidate;
+pub use commitment::Commitment;
+pub use election::Election;
+pub use election_status::ElectionStatus;
+pub use question::Question;
+pub use registration::Registration;
 pub use user::User;
