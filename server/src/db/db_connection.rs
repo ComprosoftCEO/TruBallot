@@ -70,7 +70,7 @@ impl FromRequest for DbConnection {
 pub fn get_connection_from_request(req: &HttpRequest) -> Result<DbConnection, ServiceError> {
   let pool = req
     .app_data::<web::Data<PgPool>>()
-    .ok_or(ServiceError::MissingDatabasePool)?;
+    .ok_or(ServiceError::MissingAppData("PgPool".into()))?;
 
   let conn = pool.get()?;
   Ok(DbConnection::new_pooled(conn))

@@ -54,9 +54,6 @@ async fn main() -> anyhow::Result<()> {
     log::set_max_level(LevelFilter::Info);
   }
 
-  // Server URL
-  let ip_port = format!("{}:{}", host, port);
-
   // Database connection
   let connection_pool = db::establish_new_connection_pool(opt.collector)?;
 
@@ -78,6 +75,7 @@ async fn main() -> anyhow::Result<()> {
   });
 
   // Possibly enable SSL
+  let ip_port = format!("{}:{}", host, port);
   server = if config::use_https() {
     server.bind_openssl(ip_port, get_ssl_configuration()?)?
   } else {

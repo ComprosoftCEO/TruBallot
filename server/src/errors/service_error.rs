@@ -13,9 +13,12 @@ use crate::errors::{ErrorResponse, GlobalErrorCode};
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
 pub enum ServiceError {
-  MissingDatabasePool,
-  DatabaseError(diesel::result::Error),
+  MissingDatabaseConnectionUrl,
+  DatabaseConnectionError(diesel::ConnectionError),
   DatabasePoolError(PoolError),
+  DatabaseError(diesel::result::Error),
+  SSLConfigurationError(String),
+  MissingAppData(String),
   StructValidationError(ValidationErrors),
   InvalidEmailPassword,
   JWTError(JWTError),
@@ -31,17 +34,17 @@ pub enum ServiceError {
 impl ServiceError {
   pub fn get_error_response(&self) -> ErrorResponse {
     match self {
-      ServiceError::MissingDatabasePool => ErrorResponse::new(
+      ServiceError::MissingDatabaseConnectionUrl => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        "App data is not configured, to configure use App::data()".into(),
-        GlobalErrorCode::MissingDatabasePool,
-        "Database connection pool 'PgPool' not configured using App::data()".into(),
+        "Database Connection Error".into(),
+        GlobalErrorCode::DatabaseConnectionError,
+        "DATABASE_URL environment variable not set".into(),
       ),
 
-      ServiceError::DatabaseError(error) => ErrorResponse::new(
+      ServiceError::DatabaseConnectionError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        "Database Query Error".into(),
-        GlobalErrorCode::DatabaseError,
+        "Database Connection Error".into(),
+        GlobalErrorCode::DatabaseConnectionError,
         format!("{}", error),
       ),
 
@@ -50,6 +53,27 @@ impl ServiceError {
         "Database Connection Error".into(),
         GlobalErrorCode::DatabaseConnectionError,
         format!("{}", error),
+      ),
+
+      ServiceError::DatabaseError(error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Database Query Error".into(),
+        GlobalErrorCode::DatabaseQueryError,
+        format!("{}", error),
+      ),
+
+      ServiceError::SSLConfigurationError(error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "SSL Configuration Error".into(),
+        GlobalErrorCode::SSLConfigurationError,
+        error.clone(),
+      ),
+
+      ServiceError::MissingAppData(data) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Server Misconfiguration".into(),
+        GlobalErrorCode::MissingAppData,
+        format!("'{}' not configured using App::data()", data),
       ),
 
       ServiceError::StructValidationError(error) => ErrorResponse::new(
@@ -147,15 +171,21 @@ impl error::Error for ServiceError {}
 //
 // Implicit conversion functions
 //
-impl From<diesel::result::Error> for ServiceError {
-  fn from(error: diesel::result::Error) -> Self {
-    ServiceError::DatabaseError(error)
+impl From<diesel::ConnectionError> for ServiceError {
+  fn from(error: diesel::ConnectionError) -> Self {
+    ServiceError::DatabaseConnectionError(error)
   }
 }
 
 impl From<PoolError> for ServiceError {
   fn from(error: PoolError) -> Self {
     ServiceError::DatabasePoolError(error)
+  }
+}
+
+impl From<diesel::result::Error> for ServiceError {
+  fn from(error: diesel::result::Error) -> Self {
+    ServiceError::DatabaseError(error)
   }
 }
 

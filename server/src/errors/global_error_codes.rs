@@ -5,9 +5,10 @@ use serde_repr::Serialize_repr;
 #[repr(u32)]
 pub enum GlobalErrorCode {
   UnknownError,
-  MissingDatabasePool,
-  DatabaseError,
   DatabaseConnectionError,
+  DatabaseQueryError,
+  SSLConfigurationError,
+  MissingAppData,
   StructValidationError,
   InvalidEmailPassword,
   InvalidJWTToken,
