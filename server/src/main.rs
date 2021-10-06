@@ -1,5 +1,4 @@
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
-use dotenv::dotenv;
 use log::LevelFilter;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use simple_logger::SimpleLogger;
@@ -11,36 +10,11 @@ use evoting_server::db;
 use evoting_server::errors::ServiceError;
 use evoting_server::handlers;
 
-/// Electronic voting Rest API server
-#[derive(Clone, StructOpt)]
-struct Opt {
-  /// Host to run the server (Default: 127.0.0.1)
-  #[structopt(short, long)]
-  host: Option<String>,
-
-  /// Port to use for the server (Default: 3000)
-  #[structopt(short, long)]
-  port: Option<u16>,
-}
-
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
-  // Load our ".env" configuration files
-  dotenv().ok();
-  if cfg!(debug_assertions) {
-    dotenv::from_filename(".env.development").ok();
-  } else {
-    dotenv::from_filename(".env.production").ok();
-  }
-
-  // Parse command-line arguments
-  let opt = Opt::from_args();
-
-  // Host and port from command-line override environment variables
-  let host = opt.host.clone().unwrap_or_else(|| config::get_host());
-  let port = opt.port.unwrap_or_else(|| config::get_port());
-  std::env::set_var("HOST", &host);
-  std::env::set_var("PORT", port.to_string());
+  // Parse ".env" configuration files and command-line arguments
+  config::load_environment_from_env_files();
+  config::Opt::from_args().update_environment();
 
   // Configure the logger system
   SimpleLogger::new().init().unwrap();

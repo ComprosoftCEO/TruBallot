@@ -32,8 +32,7 @@ Be sure to compile the code using at least `Rust 1.55`. The code can be compiled
 If you are compiling for a production build, you should compile the code using `cargo build --release` instead.
 
 Once the code is built, you can run the server using `cargo run` (development server) or `cargo run --release` (production server).
-You can also optionally specify the port and/or host using `--port` (or `-p`) and `--host` (or `-h`) command-line arguments.
-These values override any environment values specified in the `.env` files.
+You can also optionally specify command-line arguments (Like `--port` or `--host`), which override any environment values specified in the `.env` files.
 Use the `--help` flag to list all command-line options
 
 <br/>
@@ -152,12 +151,15 @@ This can be done using the following files:
 - `.env.development` - Environment variables only on development system
 - `.env.production` - Environment variables only on production system
 
-|   Variable   |      Required       | Default Value | Description                                                                                                                                                                                                          |
-| :----------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|     HOST     |         No          |   127.0.0.1   | IP address to use for running the API server. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.          |
-|     PORT     |         No          |     3000      | Port number for the API server.                                                                                                                                                                                      |
-|  USE_HTTPS   |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
-|   KEY_FILE   | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
-|  CERT_FILE   | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
-| DATABASE_URL |       **Yes**       |               | [PostgreSQL Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for accessing the database. _See above for more details._                                                   |
-|  JWT_SECRET  |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
+|       Variable       |      Required       | Default Value | Description                                                                                                                                                                                                          |
+| :------------------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|         HOST         |         No          |   127.0.0.1   | IP address to use for running the API server. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.          |
+|         PORT         |         No          |     3000      | Port number for the API server.                                                                                                                                                                                      |
+|      USE_HTTPS       |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
+|       KEY_FILE       | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
+|      CERT_FILE       | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
+|     DATABASE_URL     |       **Yes**       |               | [PostgreSQL Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for accessing the database. _See above for more details._                                                   |
+|      JWT_SECRET      |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
+| RECAPTCHA_SECRET_KEY |       **Yes**       |               | Secret key used by [Google reCAPTCHA](https://www.google.com/recaptcha/about/) for server-side validation.                                                                                                           |
+
+Alternatively, these values can be passed in using command-line parameters.
