@@ -11,22 +11,22 @@ Each collector should run in its own separate database instance.
 In the `.env` file, you will need to manually specify the `DATABASE_URL` for each collector when running migrations.
 
 When running the code, you will need to specify either `1` or `2` as a parameter to indicate which collector to run.
+You can also optionally specify the port and/or host using `--port` (or `-p`) and `--host` (or `-h`) command-line arguments.
+These values override any environment values specified in the `.env` files.
+Use the `--help` flag to list all command-line options.
 
 ```bash
-# Start Collector 1
-cargo run -- 1
+# Start Collector 1 on port 3024
+cargo run -- 1 -p 3024
 
-# Start Collector 2
-cargo run -- 2
+# Start Collector 2 on a custom host with port 3456
+cargo run -- 2 -h 192.168.1.234 --port 3456
 ```
 
 Be sure to specify the `--release` flag for the production server:
 
 ```bash
-# Start Collector 1 for production
 cargo run --release -- 1
-
-# Start Collector 2 for production
 cargo run --release -- 2
 ```
 

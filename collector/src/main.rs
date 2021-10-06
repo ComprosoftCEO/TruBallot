@@ -3,7 +3,6 @@ use dotenv::dotenv;
 use log::LevelFilter;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use simple_logger::SimpleLogger;
-use std::error::Error;
 use structopt::StructOpt;
 
 use evoting_collector::auth;
@@ -18,6 +17,14 @@ use evoting_collector::Collector;
 struct Opt {
   /// Index of the collector ("1" or "2")
   collector: Collector,
+
+  /// Host to run the collector (Default: 127.0.0.1)
+  #[structopt(short, long)]
+  host: Option<String>,
+
+  /// Port to use for the collector (Default: C1 = 3001, C2 = 3002)
+  #[structopt(short, long)]
+  port: Option<u16>,
 }
 
 #[actix_web::main]
@@ -33,6 +40,12 @@ async fn main() -> anyhow::Result<()> {
   // Parse command-line arguments
   let opt = Opt::from_args();
 
+  // Host and port from command-line override environment variables
+  let host = opt.host.clone().unwrap_or_else(|| config::get_host(opt.collector));
+  let port = opt.port.unwrap_or_else(|| config::get_port(opt.collector));
+  std::env::set_var(&format!("C{}_HOST", opt.collector.to_number()), &host);
+  std::env::set_var(&format!("C{}_PORT", opt.collector.to_number()), port.to_string());
+
   // Configure the logger system
   SimpleLogger::new().init()?;
   if cfg!(debug_assertions) {
@@ -42,11 +55,7 @@ async fn main() -> anyhow::Result<()> {
   }
 
   // Server URL
-  let ip_port = format!(
-    "{}:{}",
-    config::get_host(opt.collector),
-    config::get_port(opt.collector)
-  );
+  let ip_port = format!("{}:{}", host, port);
 
   // Database connection
   let connection_pool = db::establish_new_connection_pool(opt.collector)?;
