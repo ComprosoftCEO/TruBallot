@@ -1,5 +1,4 @@
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
-use dotenv::dotenv;
 use log::LevelFilter;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use simple_logger::SimpleLogger;
@@ -29,22 +28,12 @@ struct Opt {
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
-  // Load our ".env" configuration files
-  dotenv().ok();
-  if cfg!(debug_assertions) {
-    dotenv::from_filename(".env.development").ok();
-  } else {
-    dotenv::from_filename(".env.production").ok();
-  }
+  // Parse ".env" configuration files and command-line arguments
+  config::load_environment_from_env_files();
 
-  // Parse command-line arguments
-  let opt = Opt::from_args();
-
-  // Host and port from command-line override environment variables
-  let host = opt.host.clone().unwrap_or_else(|| config::get_host(opt.collector));
-  let port = opt.port.unwrap_or_else(|| config::get_port(opt.collector));
-  std::env::set_var(&format!("C{}_HOST", opt.collector.to_number()), &host);
-  std::env::set_var(&format!("C{}_PORT", opt.collector.to_number()), port.to_string());
+  let opt = config::Opt::from_args();
+  let collector = opt.get_collector();
+  opt.update_environment();
 
   // Configure the logger system
   SimpleLogger::new().init()?;
@@ -54,9 +43,8 @@ async fn main() -> anyhow::Result<()> {
     log::set_max_level(LevelFilter::Info);
   }
 
-  // Database connection
-  let connection_pool = db::establish_new_connection_pool(opt.collector)?;
-
+  // Database connection pool and web server
+  let connection_pool = db::establish_new_connection_pool()?;
   let mut server = HttpServer::new(move || {
     App::new()
       // Connect to database
@@ -64,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
       // Encryption secret for JSON Web Token
       .data(auth::JWTSecret::new(config::get_jwt_secret()))
       // Store the collector
-      .data(opt.collector)
+      .data(collector)
       // Enable logger
       .wrap(middleware::Logger::default())
       // Limit amount of data the server will accept
@@ -75,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
   });
 
   // Possibly enable SSL
-  let ip_port = format!("{}:{}", host, port);
+  let ip_port = format!("{}:{}", config::get_host(), config::get_port());
   server = if config::use_https() {
     server.bind_openssl(ip_port, get_ssl_configuration()?)?
   } else {

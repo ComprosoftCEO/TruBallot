@@ -24,9 +24,8 @@ async fn main() -> anyhow::Result<()> {
     log::set_max_level(LevelFilter::Info);
   }
 
-  // Database connection
+  // Database connection pool and web server
   let connection_pool = db::establish_new_connection_pool()?;
-
   let mut server = HttpServer::new(move || {
     App::new()
       // Connect to database

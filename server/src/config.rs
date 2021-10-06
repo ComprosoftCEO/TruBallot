@@ -11,7 +11,7 @@ const DEFAULT_PORT: u16 = 3000;
 const DEFAULT_JWT_SECRET: &str = "JWT_SECRET_VALUE_LOL";
 
 /// Electronic voting Rest API server
-#[derive(Clone, StructOpt)]
+#[derive(StructOpt)]
 pub struct Opt {
   /// Host to run the server
   #[structopt(short, long, env, default_value = DEFAULT_HOST)]
@@ -44,6 +44,14 @@ pub struct Opt {
   /// Secret key to verify Google reCAPTCHA
   #[structopt(short = "r", long, env, hide_env_values = true)]
   recaptcha_secret_key: String,
+
+  /// Base URL that can be used to access collector 1
+  #[structopt(long, env)]
+  c1_url: String,
+
+  /// Base URL that can be used to access collector 2
+  #[structopt(long, env)]
+  c2_url: String,
 }
 
 impl Opt {
@@ -65,6 +73,8 @@ impl Opt {
     env::set_var("DATABASE_URL", &self.database_url);
     env::set_var("JWT_SECRET", &self.jwt_secret);
     env::set_var("RECAPTCHA_SECRET_KEY", &self.recaptcha_secret_key);
+    env::set_var("C1_URL", &self.c1_url);
+    env::set_var("C2_URL", &self.c2_url);
   }
 }
 
@@ -126,4 +136,15 @@ pub fn get_jwt_secret() -> String {
 
 pub fn get_recaptcha_secret_key() -> Option<String> {
   return env::var("RECAPTCHA_SECRET_KEY").ok();
+}
+
+//
+// Collectors
+//
+pub fn get_c1_url() -> Option<String> {
+  return env::var("C1_URL").ok();
+}
+
+pub fn get_c2_url() -> Option<String> {
+  return env::var("C2_URL").ok();
 }

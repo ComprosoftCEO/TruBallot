@@ -23,6 +23,11 @@ impl Collector {
       Collector::Two => Collector::One,
     }
   }
+
+  /// Get the prefix to use when loading collector-specific environment variables
+  pub fn env_prefix(&self, env: &str) -> String {
+    format!("C{}_{}", self.to_number(), env)
+  }
 }
 
 impl fmt::Display for Collector {
