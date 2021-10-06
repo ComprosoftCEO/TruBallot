@@ -31,6 +31,8 @@ All of the additional frameworks listed will be installed automatically when you
 Be sure to compile the code using at least `Rust 1.55`. The code can be compiled using the `stable` channel.
 If you are compiling for a production build, you should compile the code using `cargo build --release` instead.
 
+Once the code is built, you can run the server using `cargo run` (development server) or `cargo run --release` (production server).
+
 <br/>
 
 ## Database

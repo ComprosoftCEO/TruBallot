@@ -1,0 +1,31 @@
+[package]
+name = "evoting-collector"
+version = "0.1.0"
+authors = ["Bryan McClain <bryamccl@iu.edu>"]
+edition = "2018"
+default-run = "evoting-collector"
+
+[dependencies]
+actix-web = { version = "3", features = ["openssl"] }
+actix-web-httpauth = "0.5.1"
+anyhow = "1.0.44"
+bigdecimal = { version = "0.1.2", features = ["serde"] }
+chrono = "0.4.19"
+diesel = { version = "1.4.8", features = ["postgres", "extras"] }
+dotenv = "0.15.0"
+futures = "0.3.17"
+jsonwebtoken = "7.2.0"
+lazy_static = "1.4.0"
+log = "0.4.14"
+num = "0.4.0"
+num-derive = "0.3.3"
+num-traits = "0.2.14"
+openssl = "0.10.36"
+paste = "1.0.5"
+rand = "0.8.4"
+serde = "1.0.130"
+serde_repr = "0.1.7"
+simple_logger = "1.13.0"
+structopt = "0.3.23"
+uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }
+validator = { version = "0.14.0", features = ["derive"] }

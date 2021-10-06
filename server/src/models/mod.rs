@@ -1,3 +1,6 @@
+//
+// Database tables (ORM models)
+//
 mod candidate;
 mod commitment;
 mod election;
