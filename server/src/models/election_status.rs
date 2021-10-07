@@ -10,8 +10,8 @@
 // Note: Public elections are not visible until the [Registration] state.
 sql_enum!(
   pub ElectionStatus {
-    Draft,
-    Registration = 1,
+    Draft = 0,
+    Registration,
     Voting,
     Finished
   }

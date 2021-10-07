@@ -53,6 +53,7 @@ async fn main() -> anyhow::Result<()> {
               .route("", web::post().to(handlers::election::create_election))
               .service(
                 web::scope("/{election_id}")
+                  .route("", web::get().to(handlers::election::get_election))
                   .route("", web::patch().to(handlers::election::update_election))
                   .route("", web::delete().to(handlers::election::delete_election))
                   .service(
