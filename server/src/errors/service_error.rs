@@ -47,6 +47,7 @@ pub enum ServiceError {
     election_id: Uuid,
     action: ResourceAction,
   },
+  AccessCodeNotFound(String),
   AlreadyRegistered {
     user_id: Uuid,
     election_id: Uuid,
@@ -235,6 +236,13 @@ impl ServiceError {
         ),
         GlobalErrorCode::ElectionNotDraft,
         format!("Election ID: {}", election_id),
+      ),
+
+      ServiceError::AccessCodeNotFound(code) => ErrorResponse::new(
+        StatusCode::NOT_FOUND,
+        "Invalid access code or code expired".into(),
+        GlobalErrorCode::AccessCodeNotFound,
+        format!("Access Code: {}", code),
       ),
 
       ServiceError::AlreadyRegistered { user_id, election_id } => ErrorResponse::new(

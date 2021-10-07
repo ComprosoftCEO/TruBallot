@@ -19,8 +19,7 @@ pub async fn register_for_election(
 
   // Make sure user isn't already registered
   let user_id = token.get_user_id();
-  let existing_registration = Registration::find_optional((&user_id, &election.id), &conn)?;
-  if existing_registration.is_some() {
+  if election.is_user_registered(&user_id, &conn)? {
     return Err(ServiceError::AlreadyRegistered {
       user_id,
       election_id: election.id,

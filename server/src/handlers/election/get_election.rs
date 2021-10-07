@@ -3,7 +3,7 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::auth::ClientToken;
 use crate::db::DbConnection;
-use crate::errors::{ResourceAction, ServiceError};
+use crate::errors::{NamedResourceType, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus};
 use crate::views::election::{CreatedByDetails, PublicElectionDetails, PublicElectionQuestion};
 
@@ -26,6 +26,15 @@ pub async fn get_election(
       owner_id: election.created_by,
       action: ResourceAction::ReadPrivate,
     });
+  }
+
+  // Otherwise, if the election is private, then can only be read if:
+  //   1. Election is in registration phase, or
+  //   2. The user is registered for the election
+  if !election.is_public {
+    if !(election.status == ElectionStatus::Registration || election.is_user_registered(&current_user_id, &conn)?) {
+      return Err(NamedResourceType::election(election.id).into_error());
+    }
   }
 
   // Nested details

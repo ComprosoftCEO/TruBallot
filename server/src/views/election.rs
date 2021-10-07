@@ -9,6 +9,8 @@ pub struct NewElectionResult {
   pub id: Uuid,
 }
 
+pub type GetElectionByAccessCode = NewElectionResult;
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicElectionDetails {

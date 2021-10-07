@@ -22,6 +22,7 @@ pub enum GlobalErrorCode {
   NoSuchResource,
   ElectionNotOwnedByUser,
   ElectionNotDraft,
+  AccessCodeNotFound,
   AlreadyRegistered,
   RegistrationClosed,
 }

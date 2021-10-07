@@ -7,11 +7,11 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError};
-use crate::models::{ElectionStatus, User};
+use crate::models::{ElectionStatus, Registration, User};
 use crate::schema::elections;
 use crate::utils::new_safe_uuid_v4;
 
-const ACCESS_CODE_LENGTH: usize = 6;
+pub const ACCESS_CODE_LENGTH: usize = 6;
 
 #[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
 #[belongs_to(User, foreign_key = "created_by")]
@@ -66,6 +66,11 @@ impl Election {
         .get_result::<Self>(conn.get())
         .optional()?,
     )
+  }
+
+  /// Test if a user is currently registered for an election
+  pub fn is_user_registered(&self, user_id: &Uuid, conn: &DbConnection) -> Result<bool, ServiceError> {
+    Ok(Registration::find_optional((&self.id, user_id), conn)?.is_some())
   }
 
   /// Generate an access code, making sure the code doesn't alreay exist in the database
