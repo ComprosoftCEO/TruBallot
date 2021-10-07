@@ -8,7 +8,7 @@ use std::{error, fmt};
 use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
-use crate::errors::{ErrorResponse, GlobalErrorCode};
+use crate::errors::{ErrorResponse, GlobalErrorCode, ResourceAction, ResourceType};
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -29,6 +29,7 @@ pub enum ServiceError {
   PasswordComplexityError(zxcvbn::Entropy),
   MissingRecaptchaSecret,
   RecaptchaFailed(recaptcha::Error),
+  ForbiddenResourceAction(ResourceType, ResourceAction),
 }
 
 impl ServiceError {
@@ -144,6 +145,13 @@ impl ServiceError {
         "reCAPTCHA Failed to Validate".into(),
         GlobalErrorCode::RecaptchaError,
         format!("{}", error),
+      ),
+
+      ServiceError::ForbiddenResourceAction(resource, action) => ErrorResponse::new(
+        StatusCode::FORBIDDEN,
+        format!("Forbidden Action: {} {}", action, resource),
+        GlobalErrorCode::ForbiddenResourceAction,
+        format!("{} {}", action, resource),
       ),
     }
   }

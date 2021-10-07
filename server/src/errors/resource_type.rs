@@ -4,12 +4,14 @@ use std::fmt;
 #[derive(Debug)]
 pub enum ResourceType {
   User,
+  Election,
 }
 
 impl ResourceType {
   pub fn get_name(&self) -> &'static str {
     match self {
       ResourceType::User => "User",
+      ResourceType::Election => "Election",
     }
   }
 }

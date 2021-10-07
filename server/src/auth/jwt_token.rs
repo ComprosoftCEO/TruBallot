@@ -11,7 +11,8 @@ use std::marker::PhantomData;
 use uuid_b64::UuidB64 as Uuid;
 
 use crate::auth::{audience, Audience, JWTSecret, Permission, JWT_EXPIRATION_MIN, JWT_ISSUER};
-use crate::errors::ServiceError;
+use crate::db::DbConnection;
+use crate::errors::{ResourceAction, ResourceType, ServiceError};
 use crate::models::User;
 
 // Type aliases for the different JWT tokens
@@ -61,6 +62,11 @@ where
     self.sub
   }
 
+  /// Make sure the user ID is acutally in the database
+  pub fn validate_user_id(&self, conn: &DbConnection) -> Result<User, ServiceError> {
+    User::find_optional(&self.sub, conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser(self.sub))
+  }
+
   pub fn get_name(&self) -> &String {
     &self.name
   }
@@ -98,6 +104,20 @@ where
   /// Test if the user has permission to do something
   pub fn has_permission(&self, p: Permission) -> bool {
     self.user_data.permissions.contains(&p)
+  }
+
+  //
+  // Methods to test user permissions
+  //
+  pub fn test_can_create_election(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CreateElection) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::Create,
+      ))
+    }
   }
 }
 

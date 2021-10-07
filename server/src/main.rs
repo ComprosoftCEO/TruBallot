@@ -38,12 +38,14 @@ async fn main() -> anyhow::Result<()> {
       .data(web::JsonConfig::default().limit(4096))
       // Load all routes
       .service(
-        web::scope("/api/v1").service(
-          web::scope("/auth")
-            .route("", web::get().to(handlers::auth::get_me))
-            .route("/login", web::post().to(handlers::auth::login))
-            .route("/refresh", web::post().to(handlers::auth::refresh)),
-        ),
+        web::scope("/api/v1")
+          .service(
+            web::scope("/auth")
+              .route("", web::get().to(handlers::auth::get_me))
+              .route("/login", web::post().to(handlers::auth::login))
+              .route("/refresh", web::post().to(handlers::auth::refresh)),
+          )
+          .service(web::scope("/elections").route("", web::post().to(handlers::election::create_election))),
       )
       .default_service(web::route().to(|| HttpResponse::NotFound()))
   });

@@ -14,4 +14,5 @@ pub enum GlobalErrorCode {
   InvalidJWTToken,
   PasswordComplexityError,
   RecaptchaError,
+  ForbiddenResourceAction,
 }
