@@ -17,6 +17,20 @@ macro_rules! model_base(
     }
   };
 
+  (order by $order:expr) => {
+    model_base!();
+    paste::item! {
+      model_base!(@ order by crate::schema::$order);
+    }
+  };
+
+  (no update, order by $order:expr) => {
+    model_base!(no update);
+    paste::item! {
+      model_base!(@ order by crate::schema::$order);
+    }
+  };
+
   (no update) => {
     // Get all
     pub fn all(
@@ -219,6 +233,19 @@ macro_rules! model_base(
       )
       .get_result::<Self>(conn.get())
       .optional()
+    }
+  };
+
+  (@ order by $order:expr) => {
+
+    // Get all ordered by
+    pub fn all_ordered(
+      conn: &crate::db::DbConnection,
+    ) -> diesel::prelude::QueryResult<Vec<Self>> {
+        use diesel::prelude::*;
+
+        <Self as diesel::associations::HasTable>::table().order_by($order)
+          .get_results::<Self>(conn.get())
     }
   };
 );

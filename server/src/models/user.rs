@@ -18,9 +18,9 @@ pub struct User {
 }
 
 impl User {
-  model_base!();
+  model_base!(order by users::name.asc());
 
-  has_many!(Election);
+  has_many!(Election, order by elections::name.asc());
   has_many!(Registration);
   has_many!(Commitment);
 

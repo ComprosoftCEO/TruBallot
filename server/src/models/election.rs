@@ -18,10 +18,10 @@ pub struct Election {
 }
 
 impl Election {
-  model_base!();
+  model_base!(order by elections::name.asc());
 
   belongs_to!(User);
-  has_many!(Question);
+  has_many!(Question, order by questions::question_number.asc());
   has_many!(Registration);
   has_many!(Commitment);
 

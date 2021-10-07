@@ -28,6 +28,7 @@ impl Question {
 
   belongs_to!(Election);
   has_many!(Commitment);
+  has_many!(Candidate, order by candidates::candidate_number.asc());
 
   pub fn new(election_id: Uuid, question: impl Into<String>, question_number: i64) -> Self {
     Self {
