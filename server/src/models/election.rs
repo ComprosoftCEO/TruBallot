@@ -1,5 +1,8 @@
+use diesel::prelude::*;
+use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use serde::Serialize;
+use std::iter;
 use uuid_b64::UuidB64 as Uuid;
 
 use crate::db::DbConnection;
@@ -7,6 +10,8 @@ use crate::errors::{NamedResourceType, ServiceError};
 use crate::models::{ElectionStatus, User};
 use crate::schema::elections;
 use crate::utils::new_safe_uuid_v4;
+
+const ACCESS_CODE_LENGTH: usize = 6;
 
 #[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
 #[belongs_to(User, foreign_key = "created_by")]
@@ -49,5 +54,44 @@ impl Election {
   /// Search for election in the database, and return a ServiceError (not a Diesel error)
   pub fn find_resource(id: &Uuid, conn: &DbConnection) -> Result<Self, ServiceError> {
     Self::find_optional(id, conn)?.ok_or_else(|| NamedResourceType::election(*id).into_error())
+  }
+
+  /// Search for election in the database by access code (which should be unique)
+  pub fn find_access_code(code: &str, conn: &DbConnection) -> Result<Option<Self>, ServiceError> {
+    use crate::schema::elections::dsl::{access_code, elections};
+
+    Ok(
+      elections
+        .filter(access_code.eq(code))
+        .get_result::<Self>(conn.get())
+        .optional()?,
+    )
+  }
+
+  /// Generate an access code, making sure the code doesn't alreay exist in the database
+  pub fn generate_unique_access_code(&mut self, conn: &DbConnection) -> Result<(), ServiceError> {
+    // Keep generating codes until we find a unique one
+    //
+    // With 36 characters (A-Z and 0-9), this gives us 2_176_782_336 or 2.1 billion codes
+    // Since codes are cleared after the registration period ends, we only run into problems
+    // if hundreds of millions of elections are open for registration simultaneously
+    //
+    // For our purposes, this should not be a problem realistically
+    let mut rng = rand::thread_rng();
+    let code = loop {
+      // Generate a random access code (A-Z and 0-9)
+      let code: String = iter::repeat(())
+        .map(|_| char::from(rng.sample(Alphanumeric)).to_ascii_uppercase())
+        .take(ACCESS_CODE_LENGTH)
+        .collect();
+
+      // Make sure no-one is currently using the code
+      if Election::find_access_code(&code, &conn)?.is_none() {
+        break code;
+      }
+    };
+
+    self.access_code = Some(code);
+    Ok(())
   }
 }
