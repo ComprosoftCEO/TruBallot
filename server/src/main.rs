@@ -34,12 +34,11 @@ async fn main() -> anyhow::Result<()> {
       .data(auth::JWTSecret::new(config::get_jwt_secret()))
       // Enable logger
       .wrap(middleware::Logger::default())
-      // Configure how JSON data will be handled
-      .app_data(
-        web::JsonConfig::default()
-          .limit(4096)
-          .error_handler(|err, _req| ServiceError::from(err).into()),
-      )
+      // Configure error handlers
+      .app_data(web::JsonConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
+      .app_data(web::FormConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
+      .app_data(web::PathConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
+      .app_data(web::QueryConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
       // Load all routes
       .service(
         web::scope("/api/v1")

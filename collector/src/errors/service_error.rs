@@ -1,4 +1,4 @@
-use actix_web::error::JsonPayloadError;
+use actix_web::error::{JsonPayloadError, PathError, QueryPayloadError, UrlencodedError};
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
@@ -20,6 +20,9 @@ pub enum ServiceError {
   SSLConfigurationError(String),
   MissingAppData(String),
   JSONPayloadError(JsonPayloadError),
+  FormPayloadError(UrlencodedError),
+  URLPathError(PathError),
+  QueryStringError(QueryPayloadError),
   StructValidationError(ValidationErrors),
   InvalidEmailPassword,
   JWTError(JWTError),
@@ -75,6 +78,27 @@ impl ServiceError {
         StatusCode::BAD_REQUEST,
         "Invalid JSON Object".into(),
         GlobalErrorCode::JSONPayloadError,
+        format!("{}", error),
+      ),
+
+      ServiceError::FormPayloadError(error) => ErrorResponse::new(
+        StatusCode::BAD_REQUEST,
+        "Invalid Form Data".into(),
+        GlobalErrorCode::FormPayloadError,
+        format!("{}", error),
+      ),
+
+      ServiceError::URLPathError(error) => ErrorResponse::new(
+        StatusCode::BAD_REQUEST,
+        "Invalid URL Path".into(),
+        GlobalErrorCode::URLPathError,
+        format!("{}", error),
+      ),
+
+      ServiceError::QueryStringError(error) => ErrorResponse::new(
+        StatusCode::BAD_REQUEST,
+        "Invalid Query String".into(),
+        GlobalErrorCode::QueryStringError,
         format!("{}", error),
       ),
 
@@ -152,6 +176,24 @@ impl From<diesel::result::Error> for ServiceError {
 impl From<JsonPayloadError> for ServiceError {
   fn from(error: JsonPayloadError) -> Self {
     ServiceError::JSONPayloadError(error)
+  }
+}
+
+impl From<UrlencodedError> for ServiceError {
+  fn from(error: UrlencodedError) -> Self {
+    ServiceError::FormPayloadError(error)
+  }
+}
+
+impl From<PathError> for ServiceError {
+  fn from(error: PathError) -> Self {
+    ServiceError::URLPathError(error)
+  }
+}
+
+impl From<QueryPayloadError> for ServiceError {
+  fn from(error: QueryPayloadError) -> Self {
+    ServiceError::QueryStringError(error)
   }
 }
 
