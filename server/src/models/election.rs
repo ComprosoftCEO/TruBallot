@@ -33,6 +33,7 @@ impl Election {
   model_base!(order by elections::name.asc());
 
   belongs_to!(User);
+  has_many!(User through Registration, order by users::name.asc(), registered_users);
   has_many!(Question, order by questions::question_number.asc());
   has_many!(Registration);
   has_many!(Commitment);
@@ -69,9 +70,18 @@ impl Election {
     )
   }
 
+  /// Get a user registration for an election
+  pub fn get_user_registration(
+    &self,
+    user_id: &Uuid,
+    conn: &DbConnection,
+  ) -> Result<Option<Registration>, ServiceError> {
+    Ok(Registration::find_optional((&self.id, user_id), conn)?)
+  }
+
   /// Test if a user is currently registered for an election
   pub fn is_user_registered(&self, user_id: &Uuid, conn: &DbConnection) -> Result<bool, ServiceError> {
-    Ok(Registration::find_optional((&self.id, user_id), conn)?.is_some())
+    Ok(self.get_user_registration(user_id, conn)?.is_some())
   }
 
   /// Generate an access code, making sure the code doesn't alreay exist in the database

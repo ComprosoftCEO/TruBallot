@@ -109,8 +109,19 @@ where
   //
   // Methods to test user permissions
   //
+  pub fn test_can_view_elections(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::ReadPrivate,
+      ))
+    }
+  }
+
   pub fn test_can_create_election(&self) -> Result<(), ServiceError> {
-    if self.has_permission(Permission::CreateElection) {
+    if self.has_permission(Permission::CanLogin) && self.has_permission(Permission::CreateElection) {
       Ok(())
     } else {
       Err(ServiceError::ForbiddenResourceAction(
@@ -121,7 +132,7 @@ where
   }
 
   pub fn test_can_register_for_election(&self) -> Result<(), ServiceError> {
-    if self.has_permission(Permission::Register) {
+    if self.has_permission(Permission::CanLogin) && self.has_permission(Permission::Register) {
       Ok(())
     } else {
       Err(ServiceError::ForbiddenResourceAction(

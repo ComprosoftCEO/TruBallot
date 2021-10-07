@@ -1,6 +1,7 @@
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
+use crate::db::ManyToManyConstructor;
 use crate::models::{Election, User};
 use crate::schema::registrations;
 
@@ -14,6 +15,7 @@ pub struct Registration {
   pub user_id: Uuid,
   pub election_id: Uuid,
   pub encrypted_location: Vec<u8>,
+  pub has_voted: bool,
 }
 
 impl Registration {
@@ -30,6 +32,19 @@ impl Registration {
       user_id,
       election_id,
       encrypted_location: Vec::new(),
+      has_voted: false,
     }
+  }
+}
+
+impl ManyToManyConstructor<User, Election> for Registration {
+  fn new(user_id: &Uuid, election_id: &Uuid) -> Self {
+    Self::new(*user_id, *election_id)
+  }
+}
+
+impl ManyToManyConstructor<Election, User> for Registration {
+  fn new(election_id: &Uuid, user_id: &Uuid) -> Self {
+    Self::new(*user_id, *election_id)
   }
 }

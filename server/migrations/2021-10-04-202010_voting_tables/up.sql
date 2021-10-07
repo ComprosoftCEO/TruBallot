@@ -54,7 +54,10 @@ CREATE TABLE registrations (
 
   -- User voting location
   -- Encrypted using AES keys from the server, collector 1, and collector 2
-  encrypted_location BYTEA NOT NULL
+  encrypted_location BYTEA NOT NULL,
+
+  -- Cached value that is updated once all user votes have been cast
+  has_voted BOOLEAN NOT NULL DEFAULT false
 );
 
 

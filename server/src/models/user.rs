@@ -22,6 +22,7 @@ impl User {
   model_base!(order by users::name.asc());
 
   has_many!(Election, order by elections::name.asc());
+  has_many!(Election through Registration, order by elections::name.asc(), registered_elections);
   has_many!(Registration);
   has_many!(Commitment);
 

@@ -18,7 +18,7 @@ pub async fn get_election_by_access_code(
   query: web::Query<GetElectionData>,
   conn: DbConnection,
 ) -> Result<HttpResponse, ServiceError> {
-  token.test_can_create_election()?;
+  token.test_can_view_elections()?;
   token.validate_user_id(&conn)?;
 
   // Make sure the code length is correct

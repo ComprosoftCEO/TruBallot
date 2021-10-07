@@ -50,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
           )
           .service(
             web::scope("/elections")
+              .route("", web::get().to(handlers::election::all_elections))
               .route("", web::post().to(handlers::election::create_election))
               .route(
                 "/access-code",

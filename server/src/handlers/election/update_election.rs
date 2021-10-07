@@ -28,7 +28,7 @@ pub struct ElectionQuestion {
   #[validate(length(min = 1, max = 255))]
   pub name: String,
 
-  #[validate(length(min = 1), custom = "validate_candidates")]
+  #[validate(length(min = 2), custom = "validate_candidates")]
   pub candidates: Vec<String>,
 }
 

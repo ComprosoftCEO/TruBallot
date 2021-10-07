@@ -54,6 +54,7 @@ table! {
         user_id -> Uuid,
         election_id -> Uuid,
         encrypted_location -> Bytea,
+        has_voted -> Bool,
     }
 }
 

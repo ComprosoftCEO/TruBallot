@@ -12,7 +12,7 @@ pub async fn get_election(
   path: web::Path<Uuid>,
   conn: DbConnection,
 ) -> Result<HttpResponse, ServiceError> {
-  token.test_can_create_election()?;
+  token.test_can_view_elections()?;
   token.validate_user_id(&conn)?;
 
   // Make sure the election exists
@@ -41,6 +41,10 @@ pub async fn get_election(
   let created_by_details = CreatedByDetails::new(election.get_user(&conn)?);
   let num_registered = election.count_registrations(&conn)?;
 
+  let registration = election.get_user_registration(&current_user_id, &conn)?;
+  let is_registered = registration.is_some();
+  let has_voted = registration.map(|r| r.has_voted).unwrap_or(false);
+
   // Get all of the questions and candidates
   let mut questions: Vec<PublicElectionQuestion> = Vec::new();
   for question in election.get_questions(&conn)? {
@@ -51,6 +55,13 @@ pub async fn get_election(
   }
 
   // Build the final result
-  let result = PublicElectionDetails::new(election, created_by_details, num_registered, questions);
+  let result = PublicElectionDetails::new(
+    election,
+    created_by_details,
+    is_registered,
+    has_voted,
+    num_registered,
+    questions,
+  );
   Ok(HttpResponse::Ok().json(result))
 }
