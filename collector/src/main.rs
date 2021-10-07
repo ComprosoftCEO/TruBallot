@@ -55,8 +55,12 @@ async fn main() -> anyhow::Result<()> {
       .data(collector)
       // Enable logger
       .wrap(middleware::Logger::default())
-      // Limit amount of data the server will accept
-      .data(web::JsonConfig::default().limit(4096))
+      // Configure how JSON data will be handled
+      .app_data(
+        web::JsonConfig::default()
+          .limit(4096)
+          .error_handler(|err, _req| ServiceError::from(err).into()),
+      )
       // Load all routes
       .service(web::scope("/api/v1").service(web::scope("/auth").route("", web::get().to(handlers::auth::get_me))))
       .default_service(web::route().to(|| HttpResponse::NotFound()))

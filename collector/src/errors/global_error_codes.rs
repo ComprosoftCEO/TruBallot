@@ -9,6 +9,7 @@ pub enum GlobalErrorCode {
   DatabaseQueryError,
   SSLConfigurationError,
   MissingAppData,
+  JSONPayloadError,
   StructValidationError,
   InvalidEmailPassword,
   InvalidJWTToken,

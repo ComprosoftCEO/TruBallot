@@ -1,3 +1,4 @@
+use actix_web::error::JsonPayloadError;
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
@@ -19,6 +20,7 @@ pub enum ServiceError {
   DatabaseError(diesel::result::Error),
   SSLConfigurationError(String),
   MissingAppData(String),
+  JSONPayloadError(JsonPayloadError),
   StructValidationError(ValidationErrors),
   InvalidEmailPassword,
   JWTError(JWTError),
@@ -75,6 +77,13 @@ impl ServiceError {
         "Server Misconfiguration".into(),
         GlobalErrorCode::MissingAppData,
         format!("'{}' not configured using App::data()", data),
+      ),
+
+      ServiceError::JSONPayloadError(error) => ErrorResponse::new(
+        StatusCode::BAD_REQUEST,
+        "Invalid JSON Object".into(),
+        GlobalErrorCode::JSONPayloadError,
+        format!("{}", error),
       ),
 
       ServiceError::StructValidationError(error) => ErrorResponse::new(
@@ -194,6 +203,12 @@ impl From<PoolError> for ServiceError {
 impl From<diesel::result::Error> for ServiceError {
   fn from(error: diesel::result::Error) -> Self {
     ServiceError::DatabaseError(error)
+  }
+}
+
+impl From<JsonPayloadError> for ServiceError {
+  fn from(error: JsonPayloadError) -> Self {
+    ServiceError::JSONPayloadError(error)
   }
 }
 
