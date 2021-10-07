@@ -28,7 +28,9 @@ pub enum ServiceError {
   InvalidEmailPassword,
   JWTError(JWTError),
   JWTExtractorError(AuthenticationError<Bearer>),
-  JWTNoSuchUser { user_id: Uuid },
+  JWTNoSuchUser {
+    user_id: Uuid,
+  },
   HashPasswordError(BcryptError),
   ZxcvbnError(zxcvbn::ZxcvbnError),
   PasswordComplexityError(zxcvbn::Entropy),
@@ -36,10 +38,22 @@ pub enum ServiceError {
   RecaptchaFailed(recaptcha::Error),
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
-  ElectionNotOwnedByUser { current_user_id: Uuid, owner_id: Uuid },
-  ElectionNotDraft { election_id: Uuid },
-  AlreadyRegistered { user_id: Uuid, election_id: Uuid },
-  RegistrationClosed { election_id: Uuid },
+  ElectionNotOwnedByUser {
+    current_user_id: Uuid,
+    owner_id: Uuid,
+    action: ResourceAction,
+  },
+  ElectionNotDraft {
+    election_id: Uuid,
+    action: ResourceAction,
+  },
+  AlreadyRegistered {
+    user_id: Uuid,
+    election_id: Uuid,
+  },
+  RegistrationClosed {
+    election_id: Uuid,
+  },
 }
 
 impl ServiceError {
@@ -202,16 +216,23 @@ impl ServiceError {
       ServiceError::ElectionNotOwnedByUser {
         current_user_id,
         owner_id,
+        action,
       } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Cannot update election: not owned by current user".into(),
+        format!(
+          "Cannot {} election: not owned by current user",
+          action.get_name().to_lowercase()
+        ),
         GlobalErrorCode::ElectionNotOwnedByUser,
         format!("Current User ID: {}, Owner ID: {}", current_user_id, owner_id),
       ),
 
-      ServiceError::ElectionNotDraft { election_id } => ErrorResponse::new(
+      ServiceError::ElectionNotDraft { election_id, action } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Cannot update election after it has left the draft status".into(),
+        format!(
+          "Cannot {} election after it has left the draft status",
+          action.get_name().to_lowercase()
+        ),
         GlobalErrorCode::ElectionNotDraft,
         format!("Election ID: {}", election_id),
       ),

@@ -7,7 +7,7 @@ use validator::Validate;
 use super::helpers::validate_candidates;
 use crate::auth::ClientToken;
 use crate::db::DbConnection;
-use crate::errors::ServiceError;
+use crate::errors::{ResourceAction, ServiceError};
 use crate::models::{Candidate, Election, ElectionStatus, Question};
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -57,6 +57,7 @@ pub async fn update_election(
     return Err(ServiceError::ElectionNotOwnedByUser {
       current_user_id,
       owner_id: election.created_by,
+      action: ResourceAction::Update,
     });
   }
 
@@ -64,6 +65,7 @@ pub async fn update_election(
   if election.status != ElectionStatus::Draft {
     return Err(ServiceError::ElectionNotDraft {
       election_id: election.id,
+      action: ResourceAction::Update,
     });
   }
 
