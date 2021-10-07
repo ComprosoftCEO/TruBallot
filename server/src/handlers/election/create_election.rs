@@ -62,11 +62,11 @@ pub async fn create_election(
   let new_id = conn.get().transaction::<Uuid, ServiceError, _>(|| {
     let election = Election::new(name, token.get_user_id()).insert(&conn)?;
 
-    for ElectionQuestion { name, candidates } in questions {
-      let question = Question::new(election.id, name).insert(&conn)?;
+    for (question_number, ElectionQuestion { name, candidates }) in questions.into_iter().enumerate() {
+      let question = Question::new(election.id, name, question_number as i64).insert(&conn)?;
 
-      for candidate in candidates {
-        Candidate::new(question.id, candidate).insert(&conn)?;
+      for (candidate_number, candidate) in candidates.into_iter().enumerate() {
+        Candidate::new(question.id, candidate, candidate_number as i64).insert(&conn)?;
       }
     }
 

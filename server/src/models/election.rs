@@ -1,4 +1,3 @@
-use bigdecimal::BigDecimal;
 use rand::{thread_rng, Rng};
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
@@ -15,8 +14,6 @@ pub struct Election {
   pub name: String,
   pub created_by: Uuid,
   pub status: ElectionStatus,
-  pub prime: BigDecimal,
-  pub generator: BigDecimal,
   pub encryption_key: Vec<u8>,
 }
 
@@ -37,8 +34,6 @@ impl Election {
       name: name.into(),
       created_by,
       status: ElectionStatus::Registration,
-      prime: BigDecimal::default(),
-      generator: BigDecimal::default(),
       encryption_key,
     }
   }

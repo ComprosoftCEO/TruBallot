@@ -5,11 +5,6 @@ CREATE TABLE elections (
   created_by UUID NOT NULL REFERENCES users (id),
   status INTEGER NOT NULL,
 
-  -- g^x (mod p) is a cyclic group of order p-1
-  --   These values are not generated until the election is closed
-  prime NUMERIC NOT NULL,
-  generator NUMERIC NOT NULL,
-
   -- Used as part of the encryption for the location
   encryption_key BYTEA NOT NULL
 );
@@ -20,6 +15,13 @@ CREATE TABLE questions (
   id UUID NOT NULL PRIMARY KEY,
   election_id UUID NOT NULL REFERENCES elections (id),
   question VARCHAR(255) NOT NULL,
+  question_number BIGINT NOT NULL CHECK (question_number >= 0),
+  UNIQUE (election_id, question_number),
+
+  -- g^x (mod p) is a cyclic group of order p-1
+  --   These values are not generated until the election is closed
+  prime NUMERIC NOT NULL,
+  generator NUMERIC NOT NULL,
 
   -- Cached values after electiton has ended
   final_forward_ballot NUMERIC NULL DEFAULT NULL,
@@ -33,6 +35,8 @@ CREATE TABLE candidates (
   id UUID NOT NULL PRIMARY KEY,
   question_id UUID NOT NULL REFERENCES questions (id),
   candidate VARCHAR(255) NOT NULL,
+  candidate_number BIGINT NOT NULL CHECK (candidate_number >= 0),
+  UNIQUE (question_id, candidate_number),
 
   -- Cached values after election has ended
   num_votes BIGINT NULL DEFAULT NULL

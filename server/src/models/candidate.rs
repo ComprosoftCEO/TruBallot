@@ -12,6 +12,7 @@ pub struct Candidate {
   pub id: Uuid,
   pub question_id: Uuid,
   pub candidate: String,
+  pub candidate_number: i64,
   pub num_votes: Option<i64>,
 }
 
@@ -20,11 +21,12 @@ impl Candidate {
 
   belongs_to!(Question);
 
-  pub fn new(question_id: Uuid, candidate: impl Into<String>) -> Self {
+  pub fn new(question_id: Uuid, candidate: impl Into<String>, candidate_number: i64) -> Self {
     Self {
       id: new_safe_uuid_v4(),
       question_id,
       candidate: candidate.into(),
+      candidate_number,
       num_votes: None,
     }
   }

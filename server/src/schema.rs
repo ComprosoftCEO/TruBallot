@@ -3,6 +3,7 @@ table! {
         id -> Uuid,
         question_id -> Uuid,
         candidate -> Varchar,
+        candidate_number -> Int8,
         num_votes -> Nullable<Int8>,
     }
 }
@@ -28,8 +29,6 @@ table! {
         name -> Varchar,
         created_by -> Uuid,
         status -> Int4,
-        prime -> Numeric,
-        generator -> Numeric,
         encryption_key -> Bytea,
     }
 }
@@ -39,6 +38,9 @@ table! {
         id -> Uuid,
         election_id -> Uuid,
         question -> Varchar,
+        question_number -> Int8,
+        prime -> Numeric,
+        generator -> Numeric,
         final_forward_ballot -> Nullable<Numeric>,
         final_reverse_ballot -> Nullable<Numeric>,
         ballot_valid -> Bool,
