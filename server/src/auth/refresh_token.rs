@@ -69,7 +69,7 @@ impl FromRequest for RefreshToken {
 
       // Secret key is based on the user ID (Stored in the users table)
       let conn = get_connection_from_request(req)?;
-      let user: User = User::find_optional(&user_id, &conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser(user_id))?;
+      let user: User = User::find_optional(&user_id, &conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser { user_id })?;
       let decoding_key = DecodingKey::from_secret(user.refresh_secret.as_bytes());
 
       // Validation parameters,

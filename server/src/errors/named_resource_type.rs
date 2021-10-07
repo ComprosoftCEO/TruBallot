@@ -1,7 +1,7 @@
 use std::fmt;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::errors::ResourceType;
+use crate::errors::{ResourceType, ServiceError};
 
 /// Resource that can be accessed in the database, with an identifier
 #[derive(Debug)]
@@ -20,6 +20,10 @@ impl NamedResourceType {
 
   pub fn get_name(&self) -> &'static str {
     self.get_resource_type().get_name()
+  }
+
+  pub fn into_error(self) -> ServiceError {
+    ServiceError::NoSuchResource(self)
   }
 
   pub fn user(id: Uuid) -> Self {

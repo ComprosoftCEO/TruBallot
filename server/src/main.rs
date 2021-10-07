@@ -48,7 +48,13 @@ async fn main() -> anyhow::Result<()> {
               .route("/login", web::post().to(handlers::auth::login))
               .route("/refresh", web::post().to(handlers::auth::refresh)),
           )
-          .service(web::scope("/elections").route("", web::post().to(handlers::election::create_election))),
+          .service(
+            web::scope("/elections")
+              .route("", web::post().to(handlers::election::create_election))
+              .service(web::scope("/{}").service(
+                web::scope("/registration").route("", web::post().to(handlers::election::register_for_election)),
+              )),
+          ),
       )
       .default_service(web::route().to(|| HttpResponse::NotFound()))
   });

@@ -7,6 +7,7 @@ pub enum ResourceAction {
   ReadPrivate,
   Update,
   Delete,
+  Register,
 }
 
 impl ResourceAction {
@@ -16,6 +17,7 @@ impl ResourceAction {
       ResourceAction::ReadPrivate => "Read",
       ResourceAction::Update => "Update",
       ResourceAction::Delete => "Delete",
+      ResourceAction::Register => "Register for",
     }
   }
 }

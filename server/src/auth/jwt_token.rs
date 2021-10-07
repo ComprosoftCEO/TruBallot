@@ -64,7 +64,7 @@ where
 
   /// Make sure the user ID is acutally in the database
   pub fn validate_user_id(&self, conn: &DbConnection) -> Result<User, ServiceError> {
-    User::find_optional(&self.sub, conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser(self.sub))
+    User::find_optional(&self.sub, conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser { user_id: self.sub })
   }
 
   pub fn get_name(&self) -> &String {
@@ -116,6 +116,17 @@ where
       Err(ServiceError::ForbiddenResourceAction(
         ResourceType::Election,
         ResourceAction::Create,
+      ))
+    }
+  }
+
+  pub fn test_can_register_for_election(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::Register) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::Register,
       ))
     }
   }

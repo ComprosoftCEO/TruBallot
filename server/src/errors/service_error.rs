@@ -9,7 +9,7 @@ use std::{error, fmt};
 use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
-use crate::errors::{ErrorResponse, GlobalErrorCode, ResourceAction, ResourceType};
+use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -28,13 +28,16 @@ pub enum ServiceError {
   InvalidEmailPassword,
   JWTError(JWTError),
   JWTExtractorError(AuthenticationError<Bearer>),
-  JWTNoSuchUser(Uuid),
+  JWTNoSuchUser { user_id: Uuid },
   HashPasswordError(BcryptError),
   ZxcvbnError(zxcvbn::ZxcvbnError),
   PasswordComplexityError(zxcvbn::Entropy),
   MissingRecaptchaSecret,
   RecaptchaFailed(recaptcha::Error),
   ForbiddenResourceAction(ResourceType, ResourceAction),
+  NoSuchResource(NamedResourceType),
+  AlreadyRegistered { user_id: Uuid, election_id: Uuid },
+  RegistrationClosed { election_id: Uuid },
 }
 
 impl ServiceError {
@@ -138,7 +141,7 @@ impl ServiceError {
         format!("{}", error),
       ),
 
-      ServiceError::JWTNoSuchUser(user_id) => ErrorResponse::new(
+      ServiceError::JWTNoSuchUser { user_id } => ErrorResponse::new(
         StatusCode::UNAUTHORIZED,
         "Invalid JWT Token".into(),
         GlobalErrorCode::InvalidJWTToken,
@@ -185,6 +188,27 @@ impl ServiceError {
         format!("Forbidden Action: {} {}", action, resource),
         GlobalErrorCode::ForbiddenResourceAction,
         format!("{} {}", action, resource),
+      ),
+
+      ServiceError::NoSuchResource(resource) => ErrorResponse::new(
+        StatusCode::NOT_FOUND,
+        format!("No Such {}", resource.get_resource_type()),
+        GlobalErrorCode::NoSuchResource,
+        format!("{}", resource),
+      ),
+
+      ServiceError::AlreadyRegistered { user_id, election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "User is already registered for election".into(),
+        GlobalErrorCode::AlreadyRegistered,
+        format!("User ID: {}, Electon ID: {}", user_id, election_id),
+      ),
+
+      ServiceError::RegistrationClosed { election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Election registration is closed".into(),
+        GlobalErrorCode::RegistrationClosed,
+        format!("Electon ID: {}", election_id),
       ),
     }
   }

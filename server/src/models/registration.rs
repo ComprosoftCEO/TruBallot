@@ -24,11 +24,11 @@ impl Registration {
   // Sadly, our ORM can't represent this relationship
   // has_many!(Commitment);
 
-  pub fn new(user_id: Uuid, election_id: Uuid, encrypted_location: Vec<u8>) -> Self {
+  pub fn new(user_id: Uuid, election_id: Uuid) -> Self {
     Self {
       user_id,
       election_id,
-      encrypted_location,
+      encrypted_location: Vec::new(),
     }
   }
 }

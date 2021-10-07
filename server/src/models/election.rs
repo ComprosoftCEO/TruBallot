@@ -2,6 +2,8 @@ use rand::{thread_rng, Rng};
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
+use crate::db::DbConnection;
+use crate::errors::{NamedResourceType, ServiceError};
 use crate::models::{ElectionStatus, User};
 use crate::schema::elections;
 use crate::utils::new_safe_uuid_v4;
@@ -36,5 +38,10 @@ impl Election {
       status: ElectionStatus::Registration,
       encryption_key,
     }
+  }
+
+  /// Search for election in the database, and return a ServiceError (not a Diesel error)
+  pub fn find_resource(id: &Uuid, conn: &DbConnection) -> Result<Self, ServiceError> {
+    Self::find_optional(id, conn)?.ok_or_else(|| NamedResourceType::election(*id).into_error())
   }
 }

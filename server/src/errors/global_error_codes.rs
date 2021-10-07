@@ -19,4 +19,7 @@ pub enum GlobalErrorCode {
   PasswordComplexityError,
   RecaptchaError,
   ForbiddenResourceAction,
+  NoSuchResource,
+  AlreadyRegistered,
+  RegistrationClosed,
 }

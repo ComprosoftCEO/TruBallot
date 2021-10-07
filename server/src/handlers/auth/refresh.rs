@@ -14,7 +14,9 @@ pub async fn refresh(
   let user = if let Some(user) = User::find_optional(&token.get_user_id(), &conn)? {
     user
   } else {
-    return Err(ServiceError::JWTNoSuchUser(token.get_user_id()));
+    return Err(ServiceError::JWTNoSuchUser {
+      user_id: token.get_user_id(),
+    });
   };
 
   // Generate the JWT tokens
