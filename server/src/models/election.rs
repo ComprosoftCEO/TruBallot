@@ -15,6 +15,7 @@ pub const ACCESS_CODE_LENGTH: usize = 6;
 
 #[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
 #[belongs_to(User, foreign_key = "created_by")]
+#[changeset_options(treat_none_as_null = "true")]
 #[serde(rename_all = "camelCase")]
 pub struct Election {
   pub id: Uuid,

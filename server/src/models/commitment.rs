@@ -10,6 +10,7 @@ use crate::schema::commitments;
 #[belongs_to(User)]
 #[belongs_to(Question)]
 #[belongs_to(Election)]
+#[changeset_options(treat_none_as_null = "true")]
 #[serde(rename_all = "camelCase")]
 pub struct Commitment {
   pub user_id: Uuid,

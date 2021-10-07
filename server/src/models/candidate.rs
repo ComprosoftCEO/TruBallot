@@ -7,6 +7,7 @@ use crate::utils::new_safe_uuid_v4;
 
 #[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
 #[belongs_to(Question)]
+#[changeset_options(treat_none_as_null = "true")]
 #[serde(rename_all = "camelCase")]
 pub struct Candidate {
   pub id: Uuid,

@@ -8,6 +8,7 @@ use crate::schema::registrations;
 #[primary_key(user_id, election_id)]
 #[belongs_to(User)]
 #[belongs_to(Election)]
+#[changeset_options(treat_none_as_null = "true")]
 #[serde(rename_all = "camelCase")]
 pub struct Registration {
   pub user_id: Uuid,
