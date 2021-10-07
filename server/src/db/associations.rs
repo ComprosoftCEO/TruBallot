@@ -42,6 +42,16 @@ macro_rules! model_base(
         .get_results::<Self>(conn.get())
     }
 
+    // Count all users
+    pub fn count_all(
+      conn: &crate::db::DbConnection,
+    ) -> diesel::prelude::QueryResult<i64> {
+      use diesel::prelude::*;
+
+      <Self as diesel::associations::HasTable>::table()
+        .count().get_result::<i64>(conn.get())
+    }
+
     // Find from ID
     pub fn find(
       id: <&Self as diesel::associations::Identifiable>::Id,
@@ -550,6 +560,33 @@ macro_rules! has_many(
       }
     }
 
+    // Count children
+    paste::item! {
+      pub fn [<count_ $func_base>](
+        &self,
+        conn: &crate::db::DbConnection,
+      ) -> diesel::prelude::QueryResult<i64> {
+        use diesel::prelude::*;
+
+        $child::belonging_to(self).count().get_result::<i64>(conn.get())
+      }
+    }
+
+    // Count children from ID
+    paste::item! {
+      pub fn [<count_ $func_base _from_id>](
+        id: <&Self as diesel::associations::Identifiable>::Id,
+        conn: &crate::db::DbConnection,
+      ) -> diesel::prelude::QueryResult<i64> {
+        use diesel::prelude::*;
+
+        <$child as diesel::associations::HasTable>::table().filter(
+          <$child as diesel::associations::BelongsTo<Self>>::foreign_key_column()
+            .eq(id)
+        ).count().get_result::<i64>(conn.get())
+      }
+    }
+
     // Delete all children
     paste::item! {
       pub fn [<delete_all_ $func_base>](
@@ -687,6 +724,42 @@ macro_rules! has_many(
           )
           .get_results::<($through, $child)>(conn.get())
           .map(|results| results.into_iter().map(|(_, second)| second).collect())
+      }
+    }
+
+    // Count children
+    paste::item! {
+      pub fn [<count_ $func_base>](
+        &self,
+        conn: &crate::db::DbConnection,
+      ) -> diesel::prelude::QueryResult<i64> {
+        use diesel::prelude::*;
+
+        <$through as diesel::associations::HasTable>::table()
+          .inner_join(<$child as diesel::associations::HasTable>::table())
+          .filter(
+            <$through as diesel::associations::BelongsTo<Self>>::foreign_key_column()
+              .eq(<&Self as diesel::associations::Identifiable>::id(&self)),
+          )
+          .count().get_result::<i64>(conn.get())
+      }
+    }
+
+    // Count children from ID
+    paste::item! {
+      pub fn [<count_ $func_base _from_id>](
+        id: <&Self as diesel::associations::Identifiable>::Id,
+        conn: &crate::db::DbConnection,
+      ) -> diesel::prelude::QueryResult<i64> {
+        use diesel::prelude::*;
+
+        <$through as diesel::associations::HasTable>::table()
+          .inner_join(<$child as diesel::associations::HasTable>::table())
+          .filter(
+            <$through as diesel::associations::BelongsTo<Self>>::foreign_key_column()
+              .eq(id),
+          )
+          .count().get_result::<i64>(conn.get())
       }
     }
 
