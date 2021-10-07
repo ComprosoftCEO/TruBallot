@@ -16,6 +16,10 @@ pub struct Election {
   pub name: String,
   pub created_by: Uuid,
   pub status: ElectionStatus,
+
+  pub is_public: bool,
+  pub access_code: Option<String>,
+
   pub encryption_key: Vec<u8>,
 }
 
@@ -27,7 +31,7 @@ impl Election {
   has_many!(Registration);
   has_many!(Commitment);
 
-  pub fn new(name: impl Into<String>, created_by: Uuid) -> Self {
+  pub fn new(name: impl Into<String>, created_by: Uuid, is_public: bool) -> Self {
     // Generate a random AES encryption key
     let encryption_key = thread_rng().gen::<[u8; 32]>().to_vec();
 
@@ -35,7 +39,9 @@ impl Election {
       id: new_safe_uuid_v4(),
       name: name.into(),
       created_by,
-      status: ElectionStatus::Registration,
+      status: ElectionStatus::Draft,
+      is_public,
+      access_code: None,
       encryption_key,
     }
   }

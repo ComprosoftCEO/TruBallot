@@ -51,9 +51,13 @@ async fn main() -> anyhow::Result<()> {
           .service(
             web::scope("/elections")
               .route("", web::post().to(handlers::election::create_election))
-              .service(web::scope("/{}").service(
-                web::scope("/registration").route("", web::post().to(handlers::election::register_for_election)),
-              )),
+              .service(
+                web::scope("/{election_id}")
+                  .route("", web::patch().to(handlers::election::update_election))
+                  .service(
+                    web::scope("/registration").route("", web::post().to(handlers::election::register_for_election)),
+                  ),
+              ),
           ),
       )
       .default_service(web::route().to(|| HttpResponse::NotFound()))

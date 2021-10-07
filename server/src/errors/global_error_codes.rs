@@ -20,6 +20,8 @@ pub enum GlobalErrorCode {
   RecaptchaError,
   ForbiddenResourceAction,
   NoSuchResource,
+  ElectionNotOwnedByUser,
+  ElectionNotDraft,
   AlreadyRegistered,
   RegistrationClosed,
 }

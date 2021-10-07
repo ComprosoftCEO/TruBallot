@@ -36,6 +36,8 @@ pub enum ServiceError {
   RecaptchaFailed(recaptcha::Error),
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
+  ElectionNotOwnedByUser { current_user_id: Uuid, owner_id: Uuid },
+  ElectionNotDraft { election_id: Uuid },
   AlreadyRegistered { user_id: Uuid, election_id: Uuid },
   RegistrationClosed { election_id: Uuid },
 }
@@ -195,6 +197,23 @@ impl ServiceError {
         format!("No Such {}", resource.get_resource_type()),
         GlobalErrorCode::NoSuchResource,
         format!("{}", resource),
+      ),
+
+      ServiceError::ElectionNotOwnedByUser {
+        current_user_id,
+        owner_id,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Cannot update election: not owned by current user".into(),
+        GlobalErrorCode::ElectionNotOwnedByUser,
+        format!("Current User ID: {}, Owner ID: {}", current_user_id, owner_id),
+      ),
+
+      ServiceError::ElectionNotDraft { election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Cannot update election after it has left the draft status".into(),
+        GlobalErrorCode::ElectionNotDraft,
+        format!("Election ID: {}", election_id),
       ),
 
       ServiceError::AlreadyRegistered { user_id, election_id } => ErrorResponse::new(

@@ -29,6 +29,8 @@ table! {
         name -> Varchar,
         created_by -> Uuid,
         status -> Int4,
+        is_public -> Bool,
+        access_code -> Nullable<Varchar>,
         encryption_key -> Bytea,
     }
 }

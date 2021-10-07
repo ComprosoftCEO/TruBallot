@@ -5,6 +5,9 @@ CREATE TABLE elections (
   created_by UUID NOT NULL REFERENCES users (id),
   status INTEGER NOT NULL,
 
+  is_public BOOLEAN NOT NULL DEFAULT false,
+  access_code VARCHAR(6) NULL DEFAULT NULL UNIQUE,
+
   -- Used as part of the encryption for the location
   encryption_key BYTEA NOT NULL
 );
@@ -13,7 +16,7 @@ CREATE TABLE elections (
 -- Each election has many questions
 CREATE TABLE questions (
   id UUID NOT NULL PRIMARY KEY,
-  election_id UUID NOT NULL REFERENCES elections (id),
+  election_id UUID NOT NULL REFERENCES elections (id) ON DELETE CASCADE,
   question VARCHAR(255) NOT NULL,
   question_number BIGINT NOT NULL CHECK (question_number >= 0),
   UNIQUE (election_id, question_number),
@@ -33,7 +36,7 @@ CREATE TABLE questions (
 -- Each question has many candidates
 CREATE TABLE candidates (
   id UUID NOT NULL PRIMARY KEY,
-  question_id UUID NOT NULL REFERENCES questions (id),
+  question_id UUID NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
   candidate VARCHAR(255) NOT NULL,
   candidate_number BIGINT NOT NULL CHECK (candidate_number >= 0),
   UNIQUE (question_id, candidate_number),
