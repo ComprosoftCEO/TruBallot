@@ -4,3 +4,4 @@
 pub mod auth;
 pub mod election;
 pub mod registration;
+pub mod voting;

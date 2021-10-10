@@ -8,6 +8,11 @@ CREATE TABLE elections (
   is_public BOOLEAN NOT NULL DEFAULT false,
   access_code VARCHAR(6) NULL DEFAULT NULL UNIQUE,
 
+  -- g^x (mod p) is a cyclic group of order p-1
+  --   These values are not generated until the election is closed
+  generator NUMERIC NOT NULL,
+  prime NUMERIC NOT NULL,
+
   -- Used as part of the encryption for the location
   encryption_key BYTEA NOT NULL
 );
@@ -20,11 +25,6 @@ CREATE TABLE questions (
   question VARCHAR(255) NOT NULL,
   question_number BIGINT NOT NULL CHECK (question_number >= 0),
   UNIQUE (election_id, question_number),
-
-  -- g^x (mod p) is a cyclic group of order p-1
-  --   These values are not generated until the election is closed
-  prime NUMERIC NOT NULL,
-  generator NUMERIC NOT NULL,
 
   -- Cached values after electiton has ended
   final_forward_ballot NUMERIC NULL DEFAULT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE registrations (
   encrypted_location BYTEA NOT NULL,
 
   -- Cached value that is updated once all user votes have been cast
-  has_voted BOOLEAN NOT NULL DEFAULT false
+  has_voted BOOLEAN NOT NULL
 );
 
 

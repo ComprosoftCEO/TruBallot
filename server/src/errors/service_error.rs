@@ -10,6 +10,7 @@ use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
 use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
+use crate::models::ElectionStatus;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -47,6 +48,11 @@ pub enum ServiceError {
     election_id: Uuid,
     action: ResourceAction,
   },
+  WrongStatusFor {
+    election_id: Uuid,
+    action: ResourceAction,
+    status: ElectionStatus,
+  },
   AccessCodeNotFound(String),
   AlreadyRegistered {
     user_id: Uuid,
@@ -54,6 +60,10 @@ pub enum ServiceError {
   },
   RegistrationClosed {
     election_id: Uuid,
+  },
+  NotEnoughRegistered {
+    election_id: Uuid,
+    num_registered: usize,
   },
 }
 
@@ -238,6 +248,21 @@ impl ServiceError {
         format!("Election ID: {}", election_id),
       ),
 
+      ServiceError::WrongStatusFor {
+        election_id,
+        action,
+        status,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        format!(
+          "Cannot {} election in '{}' status",
+          action.get_name().to_lowercase(),
+          status.get_name().to_lowercase()
+        ),
+        GlobalErrorCode::WrongElectionStatus,
+        format!("Election ID: {}", election_id),
+      ),
+
       ServiceError::AccessCodeNotFound(code) => ErrorResponse::new(
         StatusCode::NOT_FOUND,
         "Invalid access code or code expired".into(),
@@ -257,6 +282,16 @@ impl ServiceError {
         "Election registration is closed".into(),
         GlobalErrorCode::RegistrationClosed,
         format!("Electon ID: {}", election_id),
+      ),
+
+      ServiceError::NotEnoughRegistered {
+        election_id,
+        num_registered,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Need at least two registered users before voting can begin".into(),
+        GlobalErrorCode::NotEnoughRegistered,
+        format!("Electon ID: {}, Num Registered: {}", election_id, num_registered),
       ),
     }
   }

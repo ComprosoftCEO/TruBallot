@@ -16,9 +16,6 @@ pub struct Question {
   pub question: String,
   pub question_number: i64,
 
-  pub prime: BigDecimal,
-  pub generator: BigDecimal,
-
   pub final_forward_ballot: Option<BigDecimal>,
   pub final_reverse_ballot: Option<BigDecimal>,
   pub ballot_valid: bool,
@@ -37,8 +34,6 @@ impl Question {
       election_id,
       question: question.into(),
       question_number,
-      prime: BigDecimal::default(),
-      generator: BigDecimal::default(),
       final_forward_ballot: None,
       final_reverse_ballot: None,
       ballot_valid: false,

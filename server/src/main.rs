@@ -65,7 +65,8 @@ async fn main() -> anyhow::Result<()> {
                     web::scope("/registration")
                       .route("", web::post().to(handlers::registration::register_for_election))
                       .route("", web::put().to(handlers::registration::open_registration)),
-                  ),
+                  )
+                  .route("/voting", web::post().to(handlers::voting::initialize_voting)),
               ),
           ),
       )

@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use diesel::prelude::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -7,7 +8,7 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError};
-use crate::models::{ElectionStatus, Registration, User};
+use crate::models::{Candidate, ElectionStatus, Question, Registration, User};
 use crate::schema::elections;
 use crate::utils::new_safe_uuid_v4;
 
@@ -25,6 +26,9 @@ pub struct Election {
 
   pub is_public: bool,
   pub access_code: Option<String>,
+
+  pub generator: BigDecimal,
+  pub prime: BigDecimal,
 
   pub encryption_key: Vec<u8>,
 }
@@ -49,6 +53,8 @@ impl Election {
       status: ElectionStatus::Draft,
       is_public,
       access_code: None,
+      generator: BigDecimal::default(),
+      prime: BigDecimal::default(),
       encryption_key,
     }
   }
@@ -68,6 +74,16 @@ impl Election {
         .get_result::<Self>(conn.get())
         .optional()?,
     )
+  }
+
+  /// Get the questions and the candidates
+  pub fn get_questions_candidates(&self, conn: &DbConnection) -> Result<Vec<(Question, Vec<Candidate>)>, ServiceError> {
+    let questions = self.get_questions(conn)?;
+    let candidates = Candidate::belonging_to(&questions)
+      .get_results::<Candidate>(conn.get())?
+      .grouped_by(&questions);
+
+    Ok(questions.into_iter().zip(candidates).collect())
   }
 
   /// Get a user registration for an election

@@ -1,8 +1,8 @@
 // State Transition Diagram:
 //
-//   [Draft] -> [Registration] -> [Voting] -> [Finished]
-//      V
-//   <Delete>
+//   [Draft] -> [Registration] -> [Voting] ----------> [Finished]
+//      V        V                 ^  V                      ^
+//   <Delete>    \-> [InitFailed] -/  \->[CollectionFailed] -/
 //
 // Note: Elections can ONLY be edited or deleted in the [Draft] state.
 //   Once registration has begun, the election must be carried to the end.
@@ -12,7 +12,22 @@ sql_enum!(
   pub ElectionStatus {
     Draft = 0,
     Registration,
+    InitFailed,
     Voting,
+    CollectionFailed,
     Finished
   }
 );
+
+impl ElectionStatus {
+  pub fn get_name(&self) -> &'static str {
+    match self {
+      ElectionStatus::Draft => "Draft",
+      ElectionStatus::Registration => "Registration",
+      ElectionStatus::InitFailed => "Initialization Failed",
+      ElectionStatus::Voting => "Voting",
+      ElectionStatus::CollectionFailed => "Collection Failed",
+      ElectionStatus::Finished => "Finished",
+    }
+  }
+}

@@ -31,6 +31,8 @@ table! {
         status -> Int4,
         is_public -> Bool,
         access_code -> Nullable<Varchar>,
+        prime -> Numeric,
+        generator -> Numeric,
         encryption_key -> Bytea,
     }
 }
@@ -41,8 +43,6 @@ table! {
         election_id -> Uuid,
         question -> Varchar,
         question_number -> Int8,
-        prime -> Numeric,
-        generator -> Numeric,
         final_forward_ballot -> Nullable<Numeric>,
         final_reverse_ballot -> Nullable<Numeric>,
         ballot_valid -> Bool,

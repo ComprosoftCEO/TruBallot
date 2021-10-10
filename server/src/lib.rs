@@ -13,6 +13,7 @@ mod collector;
 pub mod errors;
 pub mod handlers;
 pub mod models;
+pub mod protocol;
 pub mod schema;
 pub mod utils;
 pub mod views;
