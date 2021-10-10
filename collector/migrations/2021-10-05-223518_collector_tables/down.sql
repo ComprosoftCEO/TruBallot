@@ -1,1 +1,3 @@
--- This file should undo anything in `up.sql`
+DROP TABLE registrations;
+DROP TABLE questions;
+DROP TABLE elections;

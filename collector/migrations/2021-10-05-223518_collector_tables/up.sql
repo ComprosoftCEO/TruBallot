@@ -9,6 +9,10 @@ CREATE TABLE elections (
   prime NUMERIC NOT NULL,
   generator NUMERIC NOT NULL,
 
+  -- Private key used by Paillier Cryptosystem for secure, two-party multiplication (STPM)
+  paillier_p NUMERIC NOT NULL,
+  paillier_q NUMERIC NOT NULL,
+
   -- Used as part of the encryption for the location
   encryption_key BYTEA NOT NULL
 );

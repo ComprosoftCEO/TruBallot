@@ -3,6 +3,8 @@ table! {
         id -> Uuid,
         prime -> Numeric,
         generator -> Numeric,
+        paillier_p -> Numeric,
+        paillier_q -> Numeric,
         encryption_key -> Bytea,
     }
 }
