@@ -89,11 +89,10 @@ async fn main() -> anyhow::Result<()> {
 /// Load and configure SSL if required
 ///
 fn get_ssl_configuration() -> anyhow::Result<SslAcceptorBuilder> {
-  let private_key_file = config::get_key_file()
-    .ok_or_else(|| ServiceError::SSLConfigurationError("KEY_FILE environment variable not set".into()))?;
+  let private_key_file =
+    config::get_key_file().ok_or_else(|| anyhow::anyhow!("KEY_FILE environment variable not set"))?;
 
-  let cert_file = config::get_cert_file()
-    .ok_or_else(|| ServiceError::SSLConfigurationError("CERT_FILE environment variable not set".into()))?;
+  let cert_file = config::get_cert_file().ok_or_else(|| anyhow::anyhow!("CERT_FILE environment variable not set"))?;
 
   let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
 

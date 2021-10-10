@@ -3,11 +3,11 @@ use diesel::{pg::PgConnection, Connection};
 
 use crate::config;
 use crate::db::{DbConnection, PgPool};
-use crate::errors::ServiceError;
 
-pub fn establish_new_connection_pool() -> Result<PgPool, ServiceError> {
+pub fn establish_new_connection_pool() -> anyhow::Result<PgPool> {
   let database_url =
-    config::get_database_url().ok_or_else(|| ServiceError::MissingDatabaseConnectionUrl(config::get_collector()))?;
+    config::get_database_url().ok_or_else(|| anyhow::anyhow!("DATABASE_URL environment variable not set"))?;
+
   Ok(init_pool(&database_url)?)
 }
 
@@ -16,8 +16,9 @@ fn init_pool(database_url: &str) -> Result<PgPool, PoolError> {
   Pool::builder().build(manager)
 }
 
-pub fn open_new_connection() -> Result<DbConnection, ServiceError> {
+pub fn open_new_connection() -> anyhow::Result<DbConnection> {
   let database_url =
-    config::get_database_url().ok_or_else(|| ServiceError::MissingDatabaseConnectionUrl(config::get_collector()))?;
+    config::get_database_url().ok_or_else(|| anyhow::anyhow!("DATABASE_URL environment variable not set"))?;
+
   Ok(DbConnection::new(PgConnection::establish(&database_url)?))
 }

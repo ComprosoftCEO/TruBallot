@@ -1,13 +1,12 @@
-use serde_repr::Serialize_repr;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// Error codes that are exposed on the frontend
-#[derive(Serialize_repr, Debug)]
+#[derive(Serialize_repr, Deserialize_repr, Debug)]
 #[repr(u32)]
 pub enum GlobalErrorCode {
-  UnknownError,
+  UnknownError = 0,
   DatabaseConnectionError,
   DatabaseQueryError,
-  SSLConfigurationError,
   MissingAppData,
   JSONPayloadError,
   FormPayloadError,
@@ -27,4 +26,6 @@ pub enum GlobalErrorCode {
   AlreadyRegistered,
   RegistrationClosed,
   NotEnoughRegistered,
+  CollectorURLNotSet,
+  RegisterElectionError,
 }

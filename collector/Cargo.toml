@@ -6,10 +6,12 @@ edition = "2018"
 default-run = "evoting-collector"
 
 [dependencies]
+actix-http = "2.2.1"
 actix-web = { version = "3", features = ["openssl"] }
 actix-web-httpauth = "0.5.1"
 aes = "0.7.5"
 anyhow = "1.0.44"
+awc = "2.0.3"
 bigdecimal = { version = "0.1.2", features = ["serde"] }
 chrono = "0.4.19"
 curv-kzen = { package = "curv-kzen", version = "0.8.0" }

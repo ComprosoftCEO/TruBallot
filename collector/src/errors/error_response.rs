@@ -1,14 +1,18 @@
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
-use serde::{Serialize, Serializer};
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 
 use crate::errors::GlobalErrorCode;
 
 /// JSON response returned to the frontend on an error
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorResponse {
-  #[serde(serialize_with = "serialize_status_code")]
+  #[serde(
+    serialize_with = "serialize_status_code",
+    deserialize_with = "deserialize_status_code"
+  )]
   status_code: StatusCode,
   description: String,
   error_code: GlobalErrorCode,
@@ -24,6 +28,14 @@ where
   S: Serializer,
 {
   serializer.serialize_u16(code.as_u16())
+}
+
+fn deserialize_status_code<'de, D>(deserializer: D) -> Result<StatusCode, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let integer: u16 = Deserialize::deserialize(deserializer)?;
+  StatusCode::from_u16(integer).map_err(D::Error::custom)
 }
 
 impl ErrorResponse {

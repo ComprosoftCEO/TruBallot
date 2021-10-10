@@ -9,17 +9,18 @@ use std::{error, fmt};
 use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
-use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
+use crate::errors::{
+  ClientRequestError, ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType,
+};
 use crate::models::ElectionStatus;
+use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
 pub enum ServiceError {
-  MissingDatabaseConnectionUrl,
   DatabaseConnectionError(diesel::ConnectionError),
   DatabasePoolError(PoolError),
   DatabaseError(diesel::result::Error),
-  SSLConfigurationError(String),
   MissingAppData(String),
   JSONPayloadError(JsonPayloadError),
   FormPayloadError(UrlencodedError),
@@ -65,18 +66,18 @@ pub enum ServiceError {
     election_id: Uuid,
     num_registered: usize,
   },
+  CollectorURLNotSet(Collector),
+  RegisterElectionError(Collector, ClientRequestError),
+  WrongNumberOfEncryptedPositions {
+    collector: Collector,
+    given: usize,
+    expected: usize,
+  },
 }
 
 impl ServiceError {
   pub fn get_error_response(&self) -> ErrorResponse {
     match self {
-      ServiceError::MissingDatabaseConnectionUrl => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Database Connection Error".into(),
-        GlobalErrorCode::DatabaseConnectionError,
-        "DATABASE_URL environment variable not set".into(),
-      ),
-
       ServiceError::DatabaseConnectionError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Database Connection Error".into(),
@@ -96,13 +97,6 @@ impl ServiceError {
         "Database Query Error".into(),
         GlobalErrorCode::DatabaseQueryError,
         format!("{}", error),
-      ),
-
-      ServiceError::SSLConfigurationError(error) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "SSL Configuration Error".into(),
-        GlobalErrorCode::SSLConfigurationError,
-        error.clone(),
       ),
 
       ServiceError::MissingAppData(data) => ErrorResponse::new(
@@ -292,6 +286,34 @@ impl ServiceError {
         "Need at least two registered users before voting can begin".into(),
         GlobalErrorCode::NotEnoughRegistered,
         format!("Electon ID: {}, Num Registered: {}", election_id, num_registered),
+      ),
+
+      ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Server Misconfiguration".into(),
+        GlobalErrorCode::CollectorURLNotSet,
+        format!("{} environment variable not set", collector.env_prefix("URL")),
+      ),
+
+      ServiceError::RegisterElectionError(collector, error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!("Failed to register election with collector {}", collector.to_number()),
+        GlobalErrorCode::RegisterElectionError,
+        format!("{:?}", error),
+      ),
+
+      ServiceError::WrongNumberOfEncryptedPositions {
+        collector,
+        given,
+        expected,
+      } => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!("Failed to register election with collector {}", collector.to_number()),
+        GlobalErrorCode::RegisterElectionError,
+        format!(
+          "Wrong number of encrypted positions: Given {}, Expected: {}",
+          given, expected
+        ),
       ),
     }
   }

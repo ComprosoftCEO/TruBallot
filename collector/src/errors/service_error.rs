@@ -8,16 +8,13 @@ use std::{error, fmt};
 use validator::ValidationErrors;
 
 use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
-use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
 pub enum ServiceError {
-  MissingDatabaseConnectionUrl(Collector),
   DatabaseConnectionError(diesel::ConnectionError),
   DatabasePoolError(PoolError),
   DatabaseError(diesel::result::Error),
-  SSLConfigurationError(String),
   MissingAppData(String),
   JSONPayloadError(JsonPayloadError),
   FormPayloadError(UrlencodedError),
@@ -34,13 +31,6 @@ pub enum ServiceError {
 impl ServiceError {
   pub fn get_error_response(&self) -> ErrorResponse {
     match self {
-      ServiceError::MissingDatabaseConnectionUrl(c) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Database Connection Error".into(),
-        GlobalErrorCode::DatabaseConnectionError,
-        format!("C{}_DATABASE_URL environment variable not set", c.to_number()),
-      ),
-
       ServiceError::DatabaseConnectionError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Database Connection Error".into(),
@@ -60,13 +50,6 @@ impl ServiceError {
         "Database Query Error".into(),
         GlobalErrorCode::DatabaseQueryError,
         format!("{}", error),
-      ),
-
-      ServiceError::SSLConfigurationError(error) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "SSL Configuration Error".into(),
-        GlobalErrorCode::SSLConfigurationError,
-        error.clone(),
       ),
 
       ServiceError::MissingAppData(data) => ErrorResponse::new(

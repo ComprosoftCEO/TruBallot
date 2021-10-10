@@ -960,10 +960,12 @@ dependencies = [
 name = "evoting-collector"
 version = "0.1.0"
 dependencies = [
+ "actix-http",
  "actix-web",
  "actix-web-httpauth",
  "aes",
  "anyhow",
+ "awc",
  "bigdecimal",
  "chrono",
  "curv-kzen",
