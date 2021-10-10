@@ -8,20 +8,23 @@ default-run = "evoting-server"
 [dependencies]
 actix-web = { version = "3", features = ["openssl"] }
 actix-web-httpauth = "0.5.1"
+aes = "0.7.5"
 anyhow = "1.0.44"
 bcrypt = "0.10.1"
 bigdecimal = { version = "0.1.2", features = ["serde"] }
 censor = "0.2.0"
 chrono = "0.4.19"
+curv-kzen = { package = "curv-kzen", version = "0.8.0" }
 diesel = { version = "1.4.8", features = ["postgres", "extras"] }
 dotenv = "0.15.0"
 futures = "0.3.17"
 jsonwebtoken = "7.2.0"
+kzen-paillier = "0.4.1"
 lazy_static = "1.4.0"
 log = "0.4.14"
-num = "0.4.0"
-num-derive = "0.3.3"
-num-traits = "0.2.14"
+num = "0.2.1"
+num-derive = "0.2"
+num-traits = "0.2"
 openssl = "0.10.36"
 paste = "1.0.5"
 rand = "0.8.4"

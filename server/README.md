@@ -25,6 +25,7 @@ You will also need to install the following shared libraries:
 
 - **libpq.so** - PostgreSQL development library. _Install `postgresql-devel` (Fedora) or `libpq-dev` (Debian)_
 - **ssl.so** - OpenSSL development library. _Install `openssl-devel` (Fedora) or `libssl-dev` (Debian)_
+- **gmp3.so** - GNU MP BigNum Library. _Install `gmp-devel` (Fedora) or `libgmp3-dev` (Debian)_
 
 Finally, run `cargo build` from the root directory to compile the source code.
 All of the additional frameworks listed will be installed automatically when you first build the project.
