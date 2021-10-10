@@ -11,7 +11,7 @@ use std::marker::PhantomData;
 use uuid_b64::UuidB64 as Uuid;
 
 use crate::auth::{audience, Audience, JWTSecret, Permission, JWT_EXPIRATION_MIN, JWT_ISSUER};
-use crate::errors::ServiceError;
+use crate::errors::{ResourceAction, ResourceType, ServiceError};
 
 // Type aliases for the different JWT tokens
 pub type ClientToken = JWTToken<audience::ClientOnly, JWTUserData>;
@@ -97,6 +97,39 @@ where
   /// Test if the user has permission to do something
   pub fn has_permission(&self, p: Permission) -> bool {
     self.user_data.permissions.contains(&p)
+  }
+
+  pub fn test_can_view_elections(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::ReadPrivate,
+      ))
+    }
+  }
+
+  pub fn test_can_create_election(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) && self.has_permission(Permission::CreateElection) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::Create,
+      ))
+    }
+  }
+
+  pub fn test_can_register_for_election(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) && self.has_permission(Permission::Register) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::Register,
+      ))
+    }
   }
 }
 

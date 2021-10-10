@@ -61,7 +61,13 @@ async fn main() -> anyhow::Result<()> {
       .app_data(web::PathConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
       .app_data(web::QueryConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
       // Load all routes
-      .service(web::scope("/api/v1").service(web::scope("/auth").route("", web::get().to(handlers::auth::get_me))))
+      .service(
+        web::scope(&format!("/api/v1/collector/{}", collector.to_number()))
+          .service(web::scope("/auth").route("", web::get().to(handlers::auth::get_me)))
+          .service(
+            web::scope("/elections").route("", web::post().to(handlers::election::create_and_initialize_election)),
+          ),
+      )
       .default_service(web::route().to(|| HttpResponse::NotFound()))
   });
 

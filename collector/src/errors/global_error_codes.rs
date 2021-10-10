@@ -18,4 +18,13 @@ pub enum GlobalErrorCode {
   InvalidJWTToken,
   PasswordComplexityError,
   RecaptchaError,
+  ForbiddenResourceAction,
+  NoSuchResource,
+  ElectionNotOwnedByUser,
+  ElectionNotDraft,
+  WrongElectionStatus,
+  AccessCodeNotFound,
+  AlreadyRegistered,
+  RegistrationClosed,
+  NotEnoughRegistered,
 }

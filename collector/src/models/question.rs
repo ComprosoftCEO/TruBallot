@@ -19,4 +19,12 @@ impl Question {
 
   belongs_to!(Election);
   has_many!(Registration);
+
+  pub fn new(id: Uuid, election_id: Uuid, num_candidates: i64) -> Self {
+    Self {
+      id,
+      election_id,
+      num_candidates,
+    }
+  }
 }

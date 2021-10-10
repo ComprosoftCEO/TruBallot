@@ -25,7 +25,7 @@ impl Election {
 
   has_many!(Registration);
 
-  pub fn new(id: Uuid, generator: BigInt, prime: BigInt, paillier: DecryptionKey) -> Self {
+  pub fn new(id: Uuid, generator: &BigInt, prime: &BigInt, paillier: &DecryptionKey) -> Self {
     // Convert from BigInt to BigDecimal
     let generator = generator.to_bigdecimal();
     let prime = prime.to_bigdecimal();

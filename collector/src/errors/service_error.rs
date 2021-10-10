@@ -7,7 +7,7 @@ use jsonwebtoken::errors::Error as JWTError;
 use std::{error, fmt};
 use validator::ValidationErrors;
 
-use crate::errors::{ErrorResponse, GlobalErrorCode};
+use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
 use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
@@ -27,6 +27,8 @@ pub enum ServiceError {
   InvalidEmailPassword,
   JWTError(JWTError),
   JWTExtractorError(AuthenticationError<Bearer>),
+  ForbiddenResourceAction(ResourceType, ResourceAction),
+  NoSuchResource(NamedResourceType),
 }
 
 impl ServiceError {
@@ -128,6 +130,20 @@ impl ServiceError {
         "Invalid JWT Token".into(),
         GlobalErrorCode::InvalidJWTToken,
         format!("{}", error),
+      ),
+
+      ServiceError::ForbiddenResourceAction(resource, action) => ErrorResponse::new(
+        StatusCode::FORBIDDEN,
+        format!("Forbidden Action: {} {}", action, resource),
+        GlobalErrorCode::ForbiddenResourceAction,
+        format!("{} {}", action, resource),
+      ),
+
+      ServiceError::NoSuchResource(resource) => ErrorResponse::new(
+        StatusCode::NOT_FOUND,
+        format!("No Such {}", resource.get_resource_type()),
+        GlobalErrorCode::NoSuchResource,
+        format!("{}", resource),
       ),
     }
   }
