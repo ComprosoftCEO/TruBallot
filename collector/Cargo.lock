@@ -985,6 +985,7 @@ dependencies = [
  "serde_repr",
  "simple_logger",
  "structopt",
+ "uuid",
  "uuid-b64",
  "validator",
 ]

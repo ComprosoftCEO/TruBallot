@@ -6,10 +6,12 @@ edition = "2018"
 default-run = "evoting-server"
 
 [dependencies]
+actix-http = "2.2.1"
 actix-web = { version = "3", features = ["openssl"] }
 actix-web-httpauth = "0.5.1"
 aes = "0.7.5"
 anyhow = "1.0.44"
+awc = "2.0.3"
 bcrypt = "0.10.1"
 bigdecimal = { version = "0.1.2", features = ["serde"] }
 censor = "0.2.0"
@@ -33,6 +35,7 @@ serde = "1.0.130"
 serde_repr = "0.1.7"
 simple_logger = "1.13.0"
 structopt = "0.3.23"
+uuid = "0.6"
 uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }
 validator = { version = "0.14.0", features = ["derive"] }
 zxcvbn = "2.1.1"

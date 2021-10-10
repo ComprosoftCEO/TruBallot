@@ -16,10 +16,10 @@ use crate::errors::{ResourceAction, ResourceType, ServiceError};
 use crate::models::User;
 
 // Type aliases for the different JWT tokens
-pub type ClientToken = JWTToken<audience::ClientOnly, JWTUserData>;
-pub type ServerToken = JWTToken<audience::ServerOnly, JWTUserData>;
-pub type CollectorToken = JWTToken<audience::CollectorOnly, JWTUserData>;
-pub type AnyToken = JWTToken<audience::All, JWTUserData>;
+pub type ClientToken = JWTToken<audience::ClientOnly, JWTClientData>;
+pub type ServerToken = JWTToken<audience::ServerOnly, JWTInternalData>;
+pub type CollectorToken = JWTToken<audience::CollectorOnly, JWTInternalData>;
+pub type AnyToken = JWTToken<audience::All, JWTAnyData>;
 
 /// JSON Web Token used for user authentication
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,19 +33,30 @@ pub struct JWTToken<A: Audience, T> {
   exp: i64,    // Expiration time (as UTC timestamp)
 
   // Public and private claims
-  email: String,
-  name: String,
+  #[serde(flatten)]
   user_data: T,
+  permissions: HashSet<Permission>,
 
   #[serde(skip)]
   _aud: PhantomData<A>,
 }
 
-/// Internal data used by the JSON Web Token
+/// Internal data used by the client JSON Web Token
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct JWTUserData {
-  permissions: HashSet<Permission>,
+pub struct JWTClientData {
+  email: String,
+  name: String,
+}
+
+pub type JWTInternalData = ();
+
+/// Internal data used by the "Any" JSON Web Token
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JWTAnyData {
+  email: Option<String>,
+  name: Option<String>,
 }
 
 impl<A, T> JWTToken<A, T>
@@ -67,43 +78,9 @@ where
     User::find_optional(&self.sub, conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser { user_id: self.sub })
   }
 
-  pub fn get_name(&self) -> &String {
-    &self.name
-  }
-
-  pub fn get_email(&self) -> &String {
-    &self.email
-  }
-}
-
-impl<A> JWTToken<A, JWTUserData>
-where
-  A: Audience,
-{
-  /// Create a new JSON Web Token given the user, audience, and list of permissions
-  pub fn new(user: User, permissions: &[Permission]) -> Self {
-    let now = Utc::now();
-    let expiration = now + Duration::minutes(JWT_EXPIRATION_MIN);
-
-    Self {
-      iss: JWT_ISSUER.to_string(),
-      sub: user.id,
-      aud: A::get_name(),
-      iat: now.timestamp(),
-      exp: expiration.timestamp(),
-
-      email: user.email,
-      name: user.name,
-      user_data: JWTUserData {
-        permissions: HashSet::from_iter(permissions.into_iter().cloned()),
-      },
-      _aud: PhantomData,
-    }
-  }
-
   /// Test if the user has permission to do something
   pub fn has_permission(&self, p: Permission) -> bool {
-    self.user_data.permissions.contains(&p)
+    self.permissions.contains(&p)
   }
 
   //
@@ -140,6 +117,79 @@ where
         ResourceAction::Register,
       ))
     }
+  }
+}
+
+impl<A> JWTToken<A, JWTClientData>
+where
+  A: Audience,
+{
+  /// Create a new JSON Web Token given the user, audience, and list of permissions
+  pub fn new(user: User, permissions: &[Permission]) -> Self {
+    let now = Utc::now();
+    let expiration = now + Duration::minutes(JWT_EXPIRATION_MIN);
+
+    Self {
+      iss: JWT_ISSUER.to_string(),
+      sub: user.id,
+      aud: A::get_name(),
+      iat: now.timestamp(),
+      exp: expiration.timestamp(),
+
+      user_data: JWTClientData {
+        email: user.email,
+        name: user.name,
+      },
+      permissions: HashSet::from_iter(permissions.into_iter().cloned()),
+
+      _aud: PhantomData,
+    }
+  }
+
+  pub fn get_name(&self) -> &String {
+    &self.user_data.name
+  }
+
+  pub fn get_email(&self) -> &String {
+    &self.user_data.email
+  }
+}
+
+impl<A> JWTToken<A, JWTInternalData>
+where
+  A: Audience,
+{
+  pub fn new(permissions: &[Permission]) -> Self {
+    use uuid::Uuid;
+
+    let now = Utc::now();
+    let expiration = now + Duration::minutes(JWT_EXPIRATION_MIN);
+
+    Self {
+      iss: JWT_ISSUER.to_string(),
+      sub: Uuid::nil().into(),
+      aud: A::get_name(),
+      iat: now.timestamp(),
+      exp: expiration.timestamp(),
+
+      user_data: (),
+      permissions: HashSet::from_iter(permissions.into_iter().cloned()),
+
+      _aud: PhantomData,
+    }
+  }
+}
+
+impl<A> JWTToken<A, JWTAnyData>
+where
+  A: Audience,
+{
+  pub fn get_name(&self) -> Option<&String> {
+    self.user_data.name.as_ref()
+  }
+
+  pub fn get_email(&self) -> Option<&String> {
+    self.user_data.email.as_ref()
   }
 }
 
