@@ -68,7 +68,7 @@ pub enum ServiceError {
   },
   CollectorURLNotSet(Collector),
   RegisterElectionError(Collector, ClientRequestError),
-  WrongNumberOfEncryptedPositions {
+  WrongNumberOfEncryptedLocations {
     collector: Collector,
     given: usize,
     expected: usize,
@@ -302,7 +302,7 @@ impl ServiceError {
         format!("{:?}", error),
       ),
 
-      ServiceError::WrongNumberOfEncryptedPositions {
+      ServiceError::WrongNumberOfEncryptedLocations {
         collector,
         given,
         expected,

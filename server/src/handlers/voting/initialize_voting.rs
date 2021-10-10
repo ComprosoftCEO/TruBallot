@@ -2,22 +2,28 @@ use actix_web::client::Client;
 use actix_web::{web, HttpResponse};
 use aes::cipher::{generic_array::GenericArray, BlockEncrypt, NewBlockCipher};
 use aes::{Aes256, Block, BLOCK_SIZE};
+use curv_kzen::BigInt;
+use diesel::prelude::*;
 use num::Zero;
 use rand::{seq::SliceRandom, thread_rng};
+use serde::{Deserialize, Serialize};
 
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
+use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
+use crate::config;
 use crate::db::DbConnection;
-use crate::errors::{ResourceAction, ServiceError};
+use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus, Registration};
 use crate::protocol::generator_prime_pair;
 use crate::utils::ConvertBigInt;
+use crate::Collector;
 
 pub async fn initialize_voting(
   token: ClientToken,
   path: web::Path<Uuid>,
   conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_create_election()?;
   token.validate_user_id(&conn)?;
@@ -35,7 +41,7 @@ pub async fn initialize_voting(
     });
   }
 
-  // Make sure the election is in the correct
+  // Make sure the election is in the correct status
   if !(election.status == ElectionStatus::Registration || election.status == ElectionStatus::InitFailed) {
     return Err(ServiceError::WrongStatusFor {
       election_id: election.id,
@@ -70,20 +76,126 @@ pub async fn initialize_voting(
     election = election.update(&conn)?;
   }
 
-  // Encrypt the positions 0 to N using AES
+  // Encrypt the locations 0 to N using AES
   let key = GenericArray::from_slice(election.encryption_key.as_slice());
   let cipher = Aes256::new(&key);
-  let mut encrypted_positions: Vec<Block> = (0u128..(registrations.len() as u128))
+  let mut encrypted_locations: Vec<Block> = (0u128..(registrations.len() as u128))
     .into_iter()
     .map(|i| Block::from(i.to_be_bytes()))
     .collect();
-  cipher.encrypt_blocks(&mut encrypted_positions);
+  cipher.encrypt_blocks(&mut encrypted_locations);
 
   // Then shuffle the list
-  encrypted_positions.shuffle(&mut thread_rng());
+  encrypted_locations.shuffle(&mut thread_rng());
 
-  // TODO: Register the election with the first collector
-  // TODO: Register the election with the second collector
+  // Build data needed to register the election with both collectors
+  let jwt_encoding_key = jwt_key.get_encoding_key();
+  let c1_url = config::get_c1_url().ok_or_else(|| ServiceError::CollectorURLNotSet(Collector::One))?;
+  let c2_url = config::get_c2_url().ok_or_else(|| ServiceError::CollectorURLNotSet(Collector::Two))?;
+
+  let mut create_elections_data = CreateElectionData {
+    id: election.id,
+    generator: election.generator.to_bigint(),
+    prime: election.prime.to_bigint(),
+    questions: questions_candidates
+      .iter()
+      .map(|(question, candidates)| CreateElectionQuestion {
+        id: question.id,
+        num_candidates: candidates.len() as i64,
+      })
+      .collect(),
+    registered_users: registrations.iter().map(|r| r.user_id).collect(),
+    encrypted_locations: encrypted_locations.into_iter().map(|e| *e.as_ref()).collect(),
+  };
+
+  // Register the election with the first collector
+  let collector1_request = Client::builder()
+    .disable_timeout()
+    .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
+    .finish()
+    .post(format!("{}/elections", c1_url))
+    .send_json(&create_elections_data);
+
+  let collector1_response: CreateElectionResponse = ClientRequestError::handle(collector1_request)
+    .await
+    .map_err(|e| ServiceError::RegisterElectionError(Collector::One, e))?;
+
+  // Make sure collector 1 returned the correct number of encrypted locations
+  let encrypted_locations = collector1_response.encrypted_locations;
+  if encrypted_locations.len() != registrations.len() {
+    return Err(ServiceError::WrongNumberOfEncryptedLocations {
+      collector: Collector::Two,
+      given: encrypted_locations.len(),
+      expected: registrations.len(),
+    });
+  }
+
+  // Register the election with the second collector
+  create_elections_data.encrypted_locations = encrypted_locations;
+  let collector2_request = Client::builder()
+    .disable_timeout()
+    .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
+    .finish()
+    .post(format!("{}/elections", c2_url))
+    .send_json(&create_elections_data);
+
+  let collector2_response: CreateElectionResponse = ClientRequestError::handle(collector2_request)
+    .await
+    .map_err(|e| ServiceError::RegisterElectionError(Collector::Two, e))?;
+
+  // Make sure collector 2 returned the correct number of encrypted locations
+  let encrypted_locations = collector2_response.encrypted_locations;
+  if encrypted_locations.len() != registrations.len() {
+    return Err(ServiceError::WrongNumberOfEncryptedLocations {
+      collector: Collector::Two,
+      given: encrypted_locations.len(),
+      expected: registrations.len(),
+    });
+  }
+
+  // Give an encrypted location to each registered user
+  conn.get().transaction::<(), ServiceError, _>(|| {
+    for (mut registration, location) in registrations.into_iter().zip(encrypted_locations.into_iter()) {
+      registration.encrypted_location = location.to_vec();
+      registration.update(&conn)?;
+    }
+
+    // Election is now FULLY INITIALIZED!!!
+    election.status = ElectionStatus::Voting;
+    election.update(&conn)?;
+
+    Ok(())
+  })?;
 
   Ok(HttpResponse::Ok().finish())
+}
+
+///
+/// JSON structure to send to the collectors to register an election
+///
+#[derive(Debug, Serialize)]
+struct CreateElectionData {
+  id: Uuid,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  generator: BigInt,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  prime: BigInt,
+
+  questions: Vec<CreateElectionQuestion>,
+  registered_users: Vec<Uuid>,
+  encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
+}
+
+#[derive(Debug, Serialize)]
+struct CreateElectionQuestion {
+  id: Uuid,
+  num_candidates: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateElectionResponse {
+  encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
 }

@@ -19,7 +19,7 @@ use crate::views::election::CreateElectionResponse;
 use crate::Collector;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
-#[validate(schema(function = "validate_encrypted_positions", skip_on_field_errors = false))]
+#[validate(schema(function = "validate_encrypted_locations", skip_on_field_errors = false))]
 pub struct CreateElectionData {
   id: Uuid,
 
@@ -36,7 +36,7 @@ pub struct CreateElectionData {
   #[validate(length(min = 2))]
   registered_users: Vec<Uuid>,
 
-  encrypted_positions: Vec<[u8; BLOCK_SIZE]>,
+  encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -48,12 +48,12 @@ pub struct CreateElectionQuestion {
 }
 
 ///
-/// Special validator function to make sure there is an encrypted position entry for every registered user
+/// Special validator function to make sure there is an encrypted location entry for every registered user
 ///
-fn validate_encrypted_positions(input: &CreateElectionData) -> Result<(), ValidationError> {
-  if input.registered_users.len() != input.encrypted_positions.len() {
+fn validate_encrypted_locations(input: &CreateElectionData) -> Result<(), ValidationError> {
+  if input.registered_users.len() != input.encrypted_locations.len() {
     return Err(ValidationError::new(
-      "length(registered_users) not equal to length(encrypted_positions)",
+      "length(registered_users) not equal to length(encrypted_locations)",
     ));
   }
 
@@ -81,15 +81,15 @@ pub async fn create_and_initialize_election(
   // Perform the encryption
   let key = GenericArray::from_slice(election.encryption_key.as_slice());
   let cipher = Aes256::new(&key);
-  let mut encrypted_positions: Vec<_> = data.encrypted_positions.into_iter().map(Block::from).collect();
-  cipher.encrypt_blocks(&mut encrypted_positions);
+  let mut encrypted_locations: Vec<_> = data.encrypted_locations.into_iter().map(Block::from).collect();
+  cipher.encrypt_blocks(&mut encrypted_locations);
 
   // And shuffle the blocks
-  encrypted_positions.shuffle(&mut thread_rng());
+  encrypted_locations.shuffle(&mut thread_rng());
 
   // Done!
   Ok(HttpResponse::Ok().json(CreateElectionResponse {
-    encrypted_positions: encrypted_positions.into_iter().map(|p| *p.as_ref()).collect(),
+    encrypted_locations: encrypted_locations.into_iter().map(|p| *p.as_ref()).collect(),
   }))
 }
 
