@@ -8,6 +8,7 @@ use std::{error, fmt};
 use validator::ValidationErrors;
 
 use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
+use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -26,6 +27,7 @@ pub enum ServiceError {
   JWTExtractorError(AuthenticationError<Bearer>),
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
+  CollectorURLNotSet(Collector),
 }
 
 impl ServiceError {
@@ -127,6 +129,13 @@ impl ServiceError {
         format!("No Such {}", resource.get_resource_type()),
         GlobalErrorCode::NoSuchResource,
         format!("{}", resource),
+      ),
+
+      ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Server Misconfiguration".into(),
+        GlobalErrorCode::CollectorURLNotSet,
+        format!("{} environment variable not set", collector.env_prefix("URL")),
       ),
     }
   }

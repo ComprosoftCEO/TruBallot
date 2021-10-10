@@ -105,6 +105,7 @@ fn create_new_election(
   // Generate the STPM Paillier cryptosystem key pair
   // Should have enough bits to store x1 * x2 without any modulus
   let num_bits = 4 * data.prime.bit_length();
+  log::debug!("Generate Paillier keypair with {} bits", num_bits);
   let (_, decryption_key) = Paillier::keypair_safe_primes_with_modulus_size(num_bits).keys();
 
   Ok(conn.get().transaction::<Election, ServiceError, _>(|| {
@@ -119,13 +120,16 @@ fn create_new_election(
       .collect::<Result<Vec<Question>, _>>()?;
 
     // Finally, create all of the registrations with the user shares
-    for question in questions {
-      for (user_index, user_id) in data.registered_users.iter().enumerate() {
-        // Generate all of the shares for the voters
-        //  Since our generator g^x (mod p) is order p - 1 (NOT order p), our shares are mod (p-1)
-        let forward_shares = SharesMatrix::new(collector, data.registered_users.len(), &data.prime - 1);
-        let reverse_shares = SharesMatrix::new(collector, data.registered_users.len(), &data.prime - 1);
+    for (question, question_number) in questions.into_iter().zip(1usize..) {
+      // Generate all of the shares for the voters for each question
+      //  Since our generator g^x (mod p) is order p - 1 (NOT order p), our shares are mod (p-1)
+      log::debug!("Generate shares for question {}", question_number);
+      let forward_shares = SharesMatrix::new(collector, data.registered_users.len(), &data.prime - 1);
+      let reverse_shares = SharesMatrix::new(collector, data.registered_users.len(), &data.prime - 1);
 
+      // Now register all of the users!
+      log::debug!("Register users for question {}", question_number);
+      for (user_index, user_id) in data.registered_users.iter().enumerate() {
         // S_c,i
         let forward_verification_shares = forward_shares
           .get_verification_shares(user_index)

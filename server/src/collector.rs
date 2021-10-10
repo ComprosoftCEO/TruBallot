@@ -2,6 +2,9 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt;
 use std::str::FromStr;
 
+use crate::config;
+use crate::errors::ServiceError;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
 #[repr(i32)]
 pub enum Collector {
@@ -27,6 +30,19 @@ impl Collector {
   /// Get the prefix to use when loading collector-specific environment variables
   pub fn env_prefix(&self, env: &str) -> String {
     format!("C{}_{}", self.to_number(), env)
+  }
+
+  /// Build the URL for a given collector, relative from the root API endpoint
+  ///
+  /// _Note:_ The root endpoint is `/api/v1/collector/{1 or 2}`
+  pub fn api_url(&self, url: &str) -> Result<String, ServiceError> {
+    let url_base = match self {
+      Collector::One => config::get_c1_url(),
+      Collector::Two => config::get_c2_url(),
+    }
+    .ok_or_else(|| ServiceError::CollectorURLNotSet(*self))?;
+
+    Ok(format!("{}/api/v1/collector/{}{}", url_base, self.to_number(), url))
   }
 }
 

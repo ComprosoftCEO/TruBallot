@@ -31,8 +31,8 @@ table! {
         status -> Int4,
         is_public -> Bool,
         access_code -> Nullable<Varchar>,
-        prime -> Numeric,
         generator -> Numeric,
+        prime -> Numeric,
         encryption_key -> Bytea,
     }
 }

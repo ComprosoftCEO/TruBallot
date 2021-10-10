@@ -7,11 +7,11 @@ use diesel::prelude::*;
 use num::Zero;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 
 use uuid_b64::UuidB64 as Uuid;
 
 use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
-use crate::config;
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus, Registration};
@@ -50,9 +50,9 @@ pub async fn initialize_voting(
     });
   }
 
-  // Election MUST have at least 2 users registered
+  // Election MUST have at least 4 users registered
   let registrations: Vec<Registration> = election.get_registrations(&conn)?;
-  if registrations.len() < 2 {
+  if registrations.len() < 4 {
     return Err(ServiceError::NotEnoughRegistered {
       election_id: election.id,
       num_registered: registrations.len(),
@@ -70,15 +70,22 @@ pub async fn initialize_voting(
 
   // Since we may call this method multiple times, only generate if we haven't done so before
   if election.generator.is_zero() || election.prime.is_zero() {
-    let (generator, prime) = generator_prime_pair(2 * voting_vector_max_bits + 1);
+    let num_bits = max(2 * voting_vector_max_bits + 1, 256);
+    log::debug!("Generating prime with {} bits", num_bits);
+
+    let (generator, prime) = generator_prime_pair(num_bits);
     election.generator = generator.to_bigdecimal();
     election.prime = prime.to_bigdecimal();
     election = election.update(&conn)?;
+
+    log::debug!("Picked g = {} and p = {}", generator, prime);
   }
 
   // Encrypt the locations 0 to N using AES
   let key = GenericArray::from_slice(election.encryption_key.as_slice());
   let cipher = Aes256::new(&key);
+
+  log::debug!("Encrypting locations 0 .. {}", registrations.len());
   let mut encrypted_locations: Vec<Block> = (0u128..(registrations.len() as u128))
     .into_iter()
     .map(|i| Block::from(i.to_be_bytes()))
@@ -86,13 +93,11 @@ pub async fn initialize_voting(
   cipher.encrypt_blocks(&mut encrypted_locations);
 
   // Then shuffle the list
+  log::debug!("Shuffle encrypted locations");
   encrypted_locations.shuffle(&mut thread_rng());
 
   // Build data needed to register the election with both collectors
   let jwt_encoding_key = jwt_key.get_encoding_key();
-  let c1_url = config::get_c1_url().ok_or_else(|| ServiceError::CollectorURLNotSet(Collector::One))?;
-  let c2_url = config::get_c2_url().ok_or_else(|| ServiceError::CollectorURLNotSet(Collector::Two))?;
-
   let mut create_elections_data = CreateElectionData {
     id: election.id,
     generator: election.generator.to_bigint(),
@@ -109,16 +114,18 @@ pub async fn initialize_voting(
   };
 
   // Register the election with the first collector
+  log::debug!("Send election parameters to collector 1");
   let collector1_request = Client::builder()
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
     .finish()
-    .post(format!("{}/elections", c1_url))
+    .post(Collector::One.api_url("/elections")?)
     .send_json(&create_elections_data);
 
   let collector1_response: CreateElectionResponse = ClientRequestError::handle(collector1_request)
     .await
     .map_err(|e| ServiceError::RegisterElectionError(Collector::One, e))?;
+  log::debug!("Got success response from collector 1");
 
   // Make sure collector 1 returned the correct number of encrypted locations
   let encrypted_locations = collector1_response.encrypted_locations;
@@ -131,17 +138,19 @@ pub async fn initialize_voting(
   }
 
   // Register the election with the second collector
+  log::debug!("Send election parameters to collector 2");
   create_elections_data.encrypted_locations = encrypted_locations;
   let collector2_request = Client::builder()
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
     .finish()
-    .post(format!("{}/elections", c2_url))
+    .post(Collector::Two.api_url("/elections")?)
     .send_json(&create_elections_data);
 
   let collector2_response: CreateElectionResponse = ClientRequestError::handle(collector2_request)
     .await
     .map_err(|e| ServiceError::RegisterElectionError(Collector::Two, e))?;
+  log::debug!("Got success response from collector 2");
 
   // Make sure collector 2 returned the correct number of encrypted locations
   let encrypted_locations = collector2_response.encrypted_locations;
@@ -154,6 +163,7 @@ pub async fn initialize_voting(
   }
 
   // Give an encrypted location to each registered user
+  log::debug!("Giving an encrypted location to each registered user");
   conn.get().transaction::<(), ServiceError, _>(|| {
     for (mut registration, location) in registrations.into_iter().zip(encrypted_locations.into_iter()) {
       registration.encrypted_location = location.to_vec();

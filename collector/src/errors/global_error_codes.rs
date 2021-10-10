@@ -26,4 +26,6 @@ pub enum GlobalErrorCode {
   AlreadyRegistered,
   RegistrationClosed,
   NotEnoughRegistered,
+  CollectorURLNotSet,
+  RegisterElectionError,
 }

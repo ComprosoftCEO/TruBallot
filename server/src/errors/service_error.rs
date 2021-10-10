@@ -273,7 +273,7 @@ impl ServiceError {
 
       ServiceError::RegistrationClosed { election_id } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Election registration is closed".into(),
+        "Election registration is not available".into(),
         GlobalErrorCode::RegistrationClosed,
         format!("Electon ID: {}", election_id),
       ),
@@ -283,7 +283,7 @@ impl ServiceError {
         num_registered,
       } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Need at least two registered users before voting can begin".into(),
+        "Need at least four registered users before voting can begin".into(),
         GlobalErrorCode::NotEnoughRegistered,
         format!("Electon ID: {}, Num Registered: {}", election_id, num_registered),
       ),

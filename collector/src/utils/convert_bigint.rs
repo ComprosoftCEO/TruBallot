@@ -17,7 +17,7 @@ impl ConvertBigInt for BigInt {
   }
 
   fn to_bigdecimal(&self) -> BigDecimal {
-    BigDecimal::new(NumBigInt::from_bytes_be(Sign::NoSign, &self.to_bytes()), 0)
+    BigDecimal::new(NumBigInt::from_bytes_be(Sign::Plus, &self.to_bytes()), 0)
   }
 
   fn from_bigint(bigint: BigInt) -> Self {
@@ -39,7 +39,7 @@ impl ConvertBigInt for BigDecimal {
   }
 
   fn from_bigint(bigint: BigInt) -> Self {
-    BigDecimal::new(NumBigInt::from_bytes_be(Sign::NoSign, &bigint.to_bytes()), 0)
+    BigDecimal::new(NumBigInt::from_bytes_be(Sign::Plus, &bigint.to_bytes()), 0)
   }
 
   fn from_bigdecimal(bigdecimal: BigDecimal) -> Self {
