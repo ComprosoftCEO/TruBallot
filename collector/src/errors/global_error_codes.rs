@@ -23,9 +23,11 @@ pub enum GlobalErrorCode {
   ElectionNotDraft,
   WrongElectionStatus,
   AccessCodeNotFound,
+  NotRegistered,
   AlreadyRegistered,
   RegistrationClosed,
   NotEnoughRegistered,
   CollectorURLNotSet,
   RegisterElectionError,
+  VerificationError,
 }

@@ -5,6 +5,9 @@ use rand::{thread_rng, Rng};
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
+use crate::db::DbConnection;
+use crate::errors::{NamedResourceType, ServiceError};
+use crate::models::Registration;
 use crate::schema::elections;
 use crate::utils::ConvertBigInt;
 
@@ -44,5 +47,20 @@ impl Election {
       paillier_q,
       encryption_key,
     }
+  }
+
+  /// Search for election in the database, and return a ServiceError (not a Diesel error)
+  pub fn find_resource(id: &Uuid, conn: &DbConnection) -> Result<Self, ServiceError> {
+    Self::find_optional(id, conn)?.ok_or_else(|| NamedResourceType::election(*id).into_error())
+  }
+
+  /// Get a user registration for an election
+  pub fn get_registration(
+    &self,
+    question_id: &Uuid,
+    user_id: &Uuid,
+    conn: &DbConnection,
+  ) -> Result<Option<Registration>, ServiceError> {
+    Ok(Registration::find_optional((&self.id, &question_id, user_id), conn)?)
   }
 }

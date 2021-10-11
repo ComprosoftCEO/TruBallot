@@ -8,6 +8,7 @@ mod named_resource_type;
 mod resource_action;
 mod resource_type;
 mod service_error;
+mod websocket_error;
 
 pub use client_request_error::ClientRequestError;
 pub use error_response::ErrorResponse;
@@ -16,3 +17,4 @@ pub use named_resource_type::NamedResourceType;
 pub use resource_action::ResourceAction;
 pub use resource_type::ResourceType;
 pub use service_error::ServiceError;
+pub use websocket_error::WebsocketError;

@@ -5,9 +5,10 @@ use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
 use diesel::r2d2::PoolError;
 use jsonwebtoken::errors::Error as JWTError;
 use std::{error, fmt};
+use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
-use crate::errors::{ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType};
+use crate::errors::*;
 use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
@@ -28,6 +29,8 @@ pub enum ServiceError {
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
   CollectorURLNotSet(Collector),
+  UserNotRegistered { user_id: Uuid, election_id: Uuid },
+  VerificationError(WebsocketError),
 }
 
 impl ServiceError {
@@ -136,6 +139,20 @@ impl ServiceError {
         "Server Misconfiguration".into(),
         GlobalErrorCode::CollectorURLNotSet,
         format!("{} environment variable not set", collector.env_prefix("URL")),
+      ),
+
+      ServiceError::UserNotRegistered { user_id, election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "User not registered for election".into(),
+        GlobalErrorCode::NotRegistered,
+        format!("Election ID: {}, User ID: {}", election_id, user_id),
+      ),
+
+      ServiceError::VerificationError(error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Error verifying ballot".into(),
+        GlobalErrorCode::VerificationError,
+        format!("{:?}", error),
       ),
     }
   }
