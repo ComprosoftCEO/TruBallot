@@ -2,7 +2,7 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use uuid_b64::UuidB64 as Uuid;
 
-use super::BallotWebsocket;
+use super::VerificationWebsocket;
 use crate::auth::CollectorToken;
 use crate::db::DbConnection;
 use crate::errors::{ServiceError, WebsocketError};
@@ -35,7 +35,7 @@ pub async fn verify_ballot_websocket(
   log::debug!("Starting actor to serve verification websocket...");
   Ok(
     ws::start(
-      BallotWebsocket::new(election, question, num_registered, registration),
+      VerificationWebsocket::new(election, question, num_registered, registration),
       &req,
       payload,
     )

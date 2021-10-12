@@ -10,13 +10,13 @@ use super::websocket_messages::*;
 use crate::models::{Election, Question, Registration};
 use crate::utils::ConvertBigInt;
 
-/// Structure used for managing the websocket protocol
+/// Actor used for managing the verification protocol
 ///
 /// This protocol verifies both sub-protocol 1 and sub-protocol 2 over websockets.
 ///
 /// The protocol is symmetric as long as we keep track of the "opposite" collector.
 /// To make the convention easier, we assume the client is C1 and the server actor is C2
-pub struct BallotWebsocket {
+pub struct VerificationWebsocket {
   // Election parameters:
   //   g^x (mod p) is a cyclic group of order p-1
   generator: BigInt,
@@ -58,7 +58,7 @@ pub struct BallotWebsocket {
   g_p_i_prime: BigInt, // g^(p_i')
 }
 
-impl BallotWebsocket {
+impl VerificationWebsocket {
   pub fn new(election: Election, question: Question, num_registered: i64, registration: Registration) -> Self {
     let generator = election.generator.to_bigint();
     let prime = election.prime.to_bigint();
@@ -147,9 +147,9 @@ enum AllClientMessages {
 }
 
 ///
-/// BallotWebsocket Methods
+/// VerificationWebsocket Methods
 ///
-impl BallotWebsocket {
+impl VerificationWebsocket {
   /// Send a JSON response back to the client, handling any serialization errors
   fn send_json<T>(data: &T, ctx: &mut <Self as Actor>::Context)
   where
@@ -165,16 +165,16 @@ impl BallotWebsocket {
 }
 
 ///
-/// Make BallotWebsocket into an actor that can run in the background
+/// Make VerificationWebsocket into an actor that can run in the background
 ///
-impl Actor for BallotWebsocket {
+impl Actor for VerificationWebsocket {
   type Context = ws::WebsocketContext<Self>;
 }
 
 ///
 /// Handler for individual websocket messages
 ///
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for BallotWebsocket {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebsocket {
   fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
     let self_addr = ctx.address();
 
@@ -228,7 +228,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for BallotWebsocket {
 ///
 /// Close the websocket due to an error
 ///
-impl Handler<ErrorClose> for BallotWebsocket {
+impl Handler<ErrorClose> for VerificationWebsocket {
   type Result = ();
 
   fn handle(&mut self, ErrorClose(code, description): ErrorClose, ctx: &mut Self::Context) -> Self::Result {
@@ -246,7 +246,7 @@ impl Handler<ErrorClose> for BallotWebsocket {
 ///
 /// Initialize the websocket parameters
 ///
-impl Handler<Initialize> for BallotWebsocket {
+impl Handler<Initialize> for VerificationWebsocket {
   type Result = ();
 
   fn handle(&mut self, init: Initialize, _ctx: &mut Self::Context) -> Self::Result {
@@ -276,7 +276,7 @@ impl Handler<Initialize> for BallotWebsocket {
 /// Sub-Protocol 1 - First Secure Two-Party Multiplication Request
 ///
 /// Computes r1 + r2' = S_i,C1 * S_i,C2'
-impl Handler<SP1_STMP1_Request> for BallotWebsocket {
+impl Handler<SP1_STMP1_Request> for VerificationWebsocket {
   type Result = ();
 
   fn handle(&mut self, request: SP1_STMP1_Request, ctx: &mut Self::Context) -> Self::Result {
@@ -305,7 +305,7 @@ impl Handler<SP1_STMP1_Request> for BallotWebsocket {
 /// Sub-Protocol 1 - Second Secure Two-Party Multiplication Request
 ///
 /// Computes r1' + r2 = S_i,C1' * S_i,C2
-impl Handler<SP1_STMP2_Request> for BallotWebsocket {
+impl Handler<SP1_STMP2_Request> for VerificationWebsocket {
   type Result = ();
 
   fn handle(&mut self, request: SP1_STMP2_Request, ctx: &mut Self::Context) -> Self::Result {
@@ -334,7 +334,7 @@ impl Handler<SP1_STMP2_Request> for BallotWebsocket {
 ///
 /// Sub-Protocol 1 - Computed product P1 request, returns P2
 ///
-impl Handler<SP1_Product1_Request> for BallotWebsocket {
+impl Handler<SP1_Product1_Request> for VerificationWebsocket {
   type Result = ();
 
   fn handle(&mut self, request: SP1_Product1_Request, ctx: &mut Self::Context) -> Self::Result {
@@ -395,7 +395,7 @@ impl Handler<SP1_Product1_Request> for BallotWebsocket {
 //
 /// Sub-Protocol 2 - Computed values g^(S~i,C1) and g^(S~i,C1'), returns g^(S~i,C2) and g^(S~i,C2')
 ///
-impl Handler<SP2_C1_Request> for BallotWebsocket {
+impl Handler<SP2_C1_Request> for VerificationWebsocket {
   type Result = ();
 
   fn handle(&mut self, request: SP2_C1_Request, ctx: &mut Self::Context) -> Self::Result {
