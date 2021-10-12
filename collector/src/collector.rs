@@ -44,6 +44,13 @@ impl Collector {
 
     Ok(format!("{}/api/v1/collector/{}{}", url_base, self.to_number(), url))
   }
+
+  /// Test if the collector us using TLS or not
+  pub fn is_secure(&self) -> bool {
+    std::env::var(self.env_prefix("USE_HTTPS"))
+      .map(|https| https.parse().unwrap_or(false))
+      .unwrap_or(false)
+  }
 }
 
 impl fmt::Display for Collector {

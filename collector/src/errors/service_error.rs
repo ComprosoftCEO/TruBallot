@@ -29,7 +29,11 @@ pub enum ServiceError {
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
   CollectorURLNotSet(Collector),
-  UserNotRegistered { user_id: Uuid, election_id: Uuid },
+  UserNotRegistered {
+    user_id: Uuid,
+    election_id: Uuid,
+    question_id: Uuid,
+  },
   VerificationError(WebsocketError),
 }
 
@@ -141,11 +145,18 @@ impl ServiceError {
         format!("{} environment variable not set", collector.env_prefix("URL")),
       ),
 
-      ServiceError::UserNotRegistered { user_id, election_id } => ErrorResponse::new(
+      ServiceError::UserNotRegistered {
+        user_id,
+        election_id,
+        question_id,
+      } => ErrorResponse::new(
         StatusCode::CONFLICT,
         "User not registered for election".into(),
         GlobalErrorCode::NotRegistered,
-        format!("Election ID: {}, User ID: {}", election_id, user_id),
+        format!(
+          "Election ID: {}, Question ID: {}, User ID: {}",
+          election_id, question_id, user_id
+        ),
       ),
 
       ServiceError::VerificationError(error) => ErrorResponse::new(

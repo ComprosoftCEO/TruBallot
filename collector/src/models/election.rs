@@ -61,6 +61,6 @@ impl Election {
     user_id: &Uuid,
     conn: &DbConnection,
   ) -> Result<Option<Registration>, ServiceError> {
-    Ok(Registration::find_optional((&self.id, &question_id, user_id), conn)?)
+    Ok(Registration::find_optional((user_id, &self.id, &question_id), conn)?)
   }
 }

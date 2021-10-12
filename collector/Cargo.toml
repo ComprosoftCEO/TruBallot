@@ -7,6 +7,7 @@ default-run = "evoting-collector"
 
 [dependencies]
 actix = "0.10.0"
+actix-codec = "0.3.0"
 actix-http = "2.2.1"
 actix-web = { version = "3", features = ["openssl"] }
 actix-web-actors = "3.0.0"

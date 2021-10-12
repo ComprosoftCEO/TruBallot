@@ -1,44 +1,41 @@
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use uuid_b64::UuidB64 as Uuid;
-use validator::Validate;
 
-use super::{BallotWebsocket, VerifyBallotWebsocketData};
+use super::BallotWebsocket;
 use crate::auth::CollectorToken;
 use crate::db::DbConnection;
 use crate::errors::{ServiceError, WebsocketError};
-use crate::models::{Election, Question, Registration};
-use crate::protocol::SharesMatrix;
-use crate::utils::ConvertBigInt;
-use crate::views::election::CreateElectionResponse;
-use crate::Collector;
+use crate::models::{Election, Question};
 
 pub async fn verify_ballot_websocket(
   token: CollectorToken,
-  path: web::Path<(Uuid, Uuid)>,
-  data: web::Json<VerifyBallotWebsocketData>,
-  collector: web::Data<Collector>,
+  path: web::Path<(Uuid, Uuid, Uuid)>,
   conn: DbConnection,
   req: HttpRequest,
   payload: web::Payload,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_view_elections()?;
-  data.validate()?;
 
-  let (election_id, question_id) = path.into_inner();
+  let (election_id, question_id, user_id) = path.into_inner();
 
-  // Make sure the election and user registration exist
+  // Make sure the election, question, and user registration exist
   let election = Election::find_resource(&election_id, &conn)?;
+  let question = Question::find_resource(&question_id, &election_id, &conn)?;
+  let num_registered = election.count_registrations(&conn)?;
   let registration = election
-    .get_registration(&question_id, &data.user_id, &conn)?
+    .get_registration(&question_id, &user_id, &conn)?
     .ok_or_else(|| ServiceError::UserNotRegistered {
-      user_id: data.user_id,
+      user_id,
       election_id: election.id,
+      question_id,
     })?;
 
+  // Start the websocket server
+  log::debug!("Starting actor to serve verification websocket...");
   Ok(
     ws::start(
-      BallotWebsocket::new(data.into_inner(), election, registration, conn),
+      BallotWebsocket::new(election, question, num_registered, registration),
       &req,
       payload,
     )

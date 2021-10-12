@@ -6,8 +6,8 @@ CREATE TABLE elections (
   --
   -- g^x (mod p) is a cyclic group of order p-1
   --   These values are not generated until the election is closed
-  prime NUMERIC NOT NULL,
   generator NUMERIC NOT NULL,
+  prime NUMERIC NOT NULL,
 
   -- Private key used by Paillier Cryptosystem for secure, two-party multiplication (STPM)
   paillier_p NUMERIC NOT NULL,

@@ -1,6 +1,8 @@
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
+use crate::db::DbConnection;
+use crate::errors::{NamedResourceType, ServiceError};
 use crate::models::Election;
 use crate::schema::questions;
 
@@ -26,5 +28,18 @@ impl Question {
       election_id,
       num_candidates,
     }
+  }
+
+  /// Search for an election question in the database, and return a ServiceError (not a Diesel error)
+  pub fn find_resource(id: &Uuid, election_id: &Uuid, conn: &DbConnection) -> Result<Self, ServiceError> {
+    let question =
+      Self::find_optional(id, conn)?.ok_or_else(|| NamedResourceType::question(*id, *election_id).into_error())?;
+
+    // Make sure the election ID matches
+    if question.election_id != *election_id {
+      return Err(NamedResourceType::question(*id, *election_id).into_error());
+    }
+
+    Ok(question)
   }
 }

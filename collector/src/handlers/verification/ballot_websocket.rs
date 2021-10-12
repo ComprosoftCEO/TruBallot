@@ -1,31 +1,32 @@
 use actix::prelude::*;
 use actix_http::ws::{CloseCode, CloseReason};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
-use curv_kzen::arithmetic::{BitManipulation, Modulo, Samplable};
+use curv_kzen::arithmetic::{Modulo, Samplable};
 use curv_kzen::BigInt;
 use kzen_paillier::*;
 use serde::{Deserialize, Serialize};
 
-use super::{Product1, Product2, VerificationResult, VerifyBallotWebsocketData, VerifyBallotWebsocketResult};
-use crate::db::DbConnection;
-use crate::models::{Election, Registration};
+use super::websocket_messages::*;
+use crate::models::{Election, Question, Registration};
 use crate::utils::ConvertBigInt;
 
 /// Structure used for managing the websocket protocol
 ///
 /// This protocol verifies both sub-protocol 1 and sub-protocol 2 over websockets.
-/// Messages are combined to limit the amount of back-and-forth communication.
 ///
 /// The protocol is symmetric as long as we keep track of the "opposite" collector.
 /// To make the convention easier, we assume the client is C1 and the server actor is C2
 pub struct BallotWebsocket {
-  // Database connection
-  conn: DbConnection,
+  // Election parameters:
+  //   g^x (mod p) is a cyclic group of order p-1
+  generator: BigInt,
+  prime: BigInt,
+  num_registered: i64,
+  num_candidates: i64,
 
   // Published ballots
-  forward_ballot: BigInt,
-  reverse_ballot: BigInt,
+  p_i: BigInt,       // Forward Ballot = p_i
+  p_i_prime: BigInt, // Reverse Ballot = p_i'
 
   // Commitments
   g_s: BigInt,
@@ -38,22 +39,12 @@ pub struct BallotWebsocket {
   stild_i_c2: BigInt,       // S~i,C2
   stild_i_c2_prime: BigInt, // S~i,C2'
 
-  // g^x (mod p) is a cyclic group of order p-1
-  generator: BigInt,
-  prime: BigInt,
+  // Secure Two-Party Multiplication (STPM)
+  n: BigInt,        // Modulus for Paillier encryption
+  r2_prime: BigInt, // STPM: r1 + r2' S_i,C1 * S_i,C2'
+  r2: BigInt,       // STPM: r1' + r2 = S_i,C1' * S_i,C2
 
-  // Modulus for Paillier encryption
-  n: BigInt,
-
-  // Exchanges S_i,C1 * S_i,C2'
-  e_s_c1: BigInt, // E(S_i,C1, e)
-  r2_prime: BigInt,
-
-  // Exchanges S_i,C1' * S_i,C2
-  e_s_c1_prime: BigInt, // E(S_i,C1', e)
-  r2: BigInt,
-
-  // Combined products
+  // Combined products for Sub-protocol 1
   p1: BigInt,
   p2: BigInt,
 
@@ -68,18 +59,9 @@ pub struct BallotWebsocket {
 }
 
 impl BallotWebsocket {
-  pub fn new(
-    data: VerifyBallotWebsocketData,
-    election: Election,
-    registration: Registration,
-    conn: DbConnection,
-  ) -> Self {
+  pub fn new(election: Election, question: Question, num_registered: i64, registration: Registration) -> Self {
     let generator = election.generator.to_bigint();
     let prime = election.prime.to_bigint();
-
-    // Pick values for r2' and r2 for STPM
-    let r2_prime = BigInt::sample_below(&prime);
-    let r2 = BigInt::sample_below(&prime);
 
     // Extract the shares
     let s_i_c2 = registration.forward_verification_shares.to_bigint(); // S_i,C2
@@ -87,24 +69,21 @@ impl BallotWebsocket {
     let stild_i_c2 = registration.forward_ballot_shares.to_bigint(); // S~i,C2
     let stild_i_c2_prime = registration.reverse_ballot_shares.to_bigint(); // S~i,C2'
 
-    // Compute values for sub-protocol 2
-    let g_stild_2 = BigInt::mod_pow(&generator, &stild_i_c2, &prime); // g^(S~i,C2)
-    let g_stild_2_prime = BigInt::mod_pow(&generator, &stild_i_c2_prime, &prime); // g^(S~i,C2')
-
-    let g_p_i = BigInt::mod_pow(&generator, &data.forward_ballot, &prime);
-    let g_p_i_prime = BigInt::mod_pow(&generator, &data.reverse_ballot, &prime);
-
     Self {
-      conn,
+      // Election Parameters
+      num_registered,
+      num_candidates: question.num_candidates,
+      generator,
+      prime,
 
-      // Ballots
-      forward_ballot: data.forward_ballot,
-      reverse_ballot: data.reverse_ballot,
+      // Ballots  (Don't have this right now)
+      p_i: BigInt::from(0),       // Initialized later
+      p_i_prime: BigInt::from(0), // Initialized later
 
-      // Commitments
-      g_s: data.g_s,
-      g_s_prime: data.g_s_prime,
-      g_s_s_prime: data.g_s_s_prime,
+      // Commitments (Also don't have this right now)
+      g_s: BigInt::from(0),         // Initialized later
+      g_s_prime: BigInt::from(0),   // Initialized later
+      g_s_s_prime: BigInt::from(0), // Initialized later
 
       // Shares held by the collector
       s_i_c2,           // S_i,C2
@@ -112,33 +91,25 @@ impl BallotWebsocket {
       stild_i_c2,       // S~i,C2
       stild_i_c2_prime, // S~i,C2'
 
-      // g^x (mod p) is a cyclic group of order p-1
-      generator,
-      prime,
+      // Modulus for Paillier encryption (Don't have right now)
+      n: BigInt::from(0), // Initialized later
 
-      // Modulus for Paillier encryption
-      n: data.n,
+      // r2' and r2 are picked when STPM is actually run
+      r2_prime: BigInt::from(0), // Picked later
+      r2: BigInt::from(0),       // Picked later
 
-      // Exchanges S_i,C1 * S_i,C2'
-      e_s_c1: data.e_s_c1, // E(S_i,C1, e)
-      r2_prime,
-
-      // Exchanges S_i,C1' * S_i,C2
-      e_s_c1_prime: data.e_s_c1_prime, // E(S_i,C1', e)
-      r2,
-
-      // Combined products (Compute later)
-      p1: BigInt::from(0),
-      p2: BigInt::from(0),
+      // Combined products (Can't be computed right now)
+      p1: BigInt::from(0), // Computed later
+      p2: BigInt::from(0), // Computed later
 
       // Sub-protocol 2 values
-      g_stild_1: data.g_stild_1,             // g^(S~i,C1)
-      g_stild_1_prime: data.g_stild_1_prime, // g^(S~i,C1')
-      g_stild_2,                             // g^(S~i,C2)
-      g_stild_2_prime,                       // g^(S~i,C2')
+      g_stild_1: BigInt::from(0),       // Computed later
+      g_stild_1_prime: BigInt::from(0), // Computed later
+      g_stild_2: BigInt::from(0),       // Computed later
+      g_stild_2_prime: BigInt::from(0), // Computed later
 
-      g_p_i,       // g^(p_i)
-      g_p_i_prime, // g^(p_i')
+      g_p_i: BigInt::from(0),       // g^(p_i), Initialized later
+      g_p_i_prime: BigInt::from(0), // g^(p_i'), Initialized later
     }
   }
 }
@@ -166,50 +137,43 @@ where
 /// Enum of all messages that can be received from the client
 #[derive(Deserialize)]
 #[serde(untagged)]
+#[allow(non_camel_case_types)]
 enum AllClientMessages {
-  Product1(Product1),
+  Initialize(Initialize),
+  SP1_STMP1_Request(SP1_STMP1_Request),
+  SP1_STMP2_Request(SP1_STMP2_Request),
+  SP1_Product1_Request(SP1_Product1_Request),
+  SP2_C1_Request(SP2_C1_Request),
 }
 
-impl Actor for BallotWebsocket {
-  type Context = ws::WebsocketContext<Self>;
-
-  fn started(&mut self, ctx: &mut Self::Context) {
-    let ek: EncryptionKey = MinimalEncryptionKey { n: self.n.clone() }.into();
-
-    // Compute E(r2', e)
-    let encrypt_r2_prime: RawCiphertext = Paillier::encrypt(&ek, self.r2_prime.clone().into());
-
-    // Compute (E(S_i,C1, e)^(S_i,C2')) * (E(r2', e)^(-1)) (mod n^2)
-    let e_r1 = BigInt::mod_mul(
-      &BigInt::mod_pow(&self.e_s_c1, &self.s_i_c2_prime, &ek.nn),
-      &BigInt::mod_inv(&encrypt_r2_prime.0, &ek.nn).expect("Error: No Inverse"),
-      &ek.nn,
-    );
-
-    // Compute E(r2, e)
-    let encrypt_r2: RawCiphertext = Paillier::encrypt(&ek, self.r2.clone().into());
-
-    // Compute (E(S_i,C1', e)^(S_i,C2)) * (E(r2, e)^(-1)) (mod n^2)
-    let e_r1_prime = BigInt::mod_mul(
-      &BigInt::mod_pow(&self.e_s_c1_prime, &self.s_i_c2, &ek.nn),
-      &BigInt::mod_inv(&encrypt_r2.0, &ek.nn).expect("Error: No Inverse"),
-      &ek.nn,
-    );
-
-    // Values to send back
-    let message = VerifyBallotWebsocketResult {
-      e_s_c1_e_r2_prime: e_r1,
-      e_s_c1_prime_r2: e_r1_prime,
-      g_stild_2: self.g_stild_2.clone(),
-      g_stild_2_prime: self.g_stild_2_prime.clone(),
-    };
-
-    // TODO:
-    ctx.text(serde_json::to_string(&message).unwrap());
+///
+/// BallotWebsocket Methods
+///
+impl BallotWebsocket {
+  /// Send a JSON response back to the client, handling any serialization errors
+  fn send_json<T>(data: &T, ctx: &mut <Self as Actor>::Context)
+  where
+    T: ?Sized + Serialize,
+  {
+    match serde_json::to_string_pretty(data) {
+      Ok(json) => ctx.text(&json),
+      Err(e) => ctx
+        .address()
+        .do_send(ErrorClose::from((CloseCode::Error, format!("{}", e)))),
+    }
   }
 }
 
-/// Handler for ws::Message message
+///
+/// Make BallotWebsocket into an actor that can run in the background
+///
+impl Actor for BallotWebsocket {
+  type Context = ws::WebsocketContext<Self>;
+}
+
+///
+/// Handler for individual websocket messages
+///
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for BallotWebsocket {
   fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
     let self_addr = ctx.address();
@@ -247,8 +211,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for BallotWebsocket {
 
     // Send actor message to handle the data
     match json {
-      AllClientMessages::Product1(data) => self_addr.do_send(data),
+      AllClientMessages::Initialize(data) => self_addr.do_send(data),
+      AllClientMessages::SP1_STMP1_Request(data) => self_addr.do_send(data),
+      AllClientMessages::SP1_STMP2_Request(data) => self_addr.do_send(data),
+      AllClientMessages::SP1_Product1_Request(data) => self_addr.do_send(data),
+      AllClientMessages::SP2_C1_Request(data) => self_addr.do_send(data),
     }
+  }
+
+  fn finished(&mut self, ctx: &mut Self::Context) {
+    log::debug!("Websocket stream closed, stopping actor");
+    ctx.stop()
   }
 }
 
@@ -271,14 +244,107 @@ impl Handler<ErrorClose> for BallotWebsocket {
 }
 
 ///
-/// Handle product 1 response
+/// Initialize the websocket parameters
 ///
-impl Handler<Product1> for BallotWebsocket {
+impl Handler<Initialize> for BallotWebsocket {
   type Result = ();
 
-  fn handle(&mut self, product1: Product1, ctx: &mut Self::Context) -> Self::Result {
-    self.p1 = product1.p1;
+  fn handle(&mut self, init: Initialize, _ctx: &mut Self::Context) -> Self::Result {
+    log::debug!("Initialize parameters");
 
+    // Ballots
+    self.p_i = init.forward_ballot;
+    self.p_i_prime = init.reverse_ballot;
+
+    // Commitments
+    self.g_s = init.g_s;
+    self.g_s_prime = init.g_s_prime;
+    self.g_s_s_prime = init.g_s_s_prime;
+
+    // STPM Encryption Key
+    self.n = init.n;
+
+    // Compute values for sub-protocol 2
+    self.g_stild_2 = BigInt::mod_pow(&self.generator, &self.stild_i_c2, &self.prime); // g^(S~i,C2)
+    self.g_stild_2_prime = BigInt::mod_pow(&self.generator, &self.stild_i_c2_prime, &self.prime); // g^(S~i,C2')
+
+    self.g_p_i = BigInt::mod_pow(&self.generator, &self.p_i, &self.prime); // g^(p_i)
+    self.g_p_i_prime = BigInt::mod_pow(&self.generator, &self.p_i_prime, &self.prime);
+  }
+}
+
+/// Sub-Protocol 1 - First Secure Two-Party Multiplication Request
+///
+/// Computes r1 + r2' = S_i,C1 * S_i,C2'
+impl Handler<SP1_STMP1_Request> for BallotWebsocket {
+  type Result = ();
+
+  fn handle(&mut self, request: SP1_STMP1_Request, ctx: &mut Self::Context) -> Self::Result {
+    log::debug!("Sub-protocol 1: First STPM: r1 + r2' = S_i,C1 * S_i,C2'");
+
+    // Pick values for r2'
+    self.r2_prime = BigInt::sample_below(&(&self.prime - 1));
+    log::debug!("r2' = {}", self.r2_prime);
+
+    // Compute E(r2', e)
+    let ek: EncryptionKey = MinimalEncryptionKey { n: self.n.clone() }.into();
+    let encrypt_r2_prime: RawCiphertext = Paillier::encrypt(&ek, self.r2_prime.clone().into());
+
+    // Step 2: Compute (E(S_i,C1, e)^(S_i,C2')) * (E(r2', e)^(-1)) (mod n^2)
+    let e_s_c1_e_r2_prime = BigInt::mod_mul(
+      &BigInt::mod_pow(&request.e_s_c1, &self.s_i_c2_prime, &ek.nn),
+      &BigInt::mod_inv(&encrypt_r2_prime.0, &ek.nn).expect("Error: No Inverse"),
+      &ek.nn,
+    );
+
+    // Send response back to client
+    Self::send_json(&SP1_STMP1_Response { e_s_c1_e_r2_prime }, ctx)
+  }
+}
+
+/// Sub-Protocol 1 - Second Secure Two-Party Multiplication Request
+///
+/// Computes r1' + r2 = S_i,C1' * S_i,C2
+impl Handler<SP1_STMP2_Request> for BallotWebsocket {
+  type Result = ();
+
+  fn handle(&mut self, request: SP1_STMP2_Request, ctx: &mut Self::Context) -> Self::Result {
+    log::debug!("Sub-protocol 1: Second STPM: r1' + r2 = S_i,C1' * S_i,C2");
+
+    // Pick values for r2
+    self.r2 = BigInt::sample_below(&(&self.prime - 1));
+    log::debug!("r2 = {}", self.r2);
+
+    // Compute E(r2, e)
+    let ek: EncryptionKey = MinimalEncryptionKey { n: self.n.clone() }.into();
+    let encrypt_r2: RawCiphertext = Paillier::encrypt(&ek, self.r2.clone().into());
+
+    // Step 2: Compute (E(S_i,C1', e)^(S_i,C2)) * (E(r2, e)^(-1)) (mod n^2)
+    let e_s_c1_prime_e_r2 = BigInt::mod_mul(
+      &BigInt::mod_pow(&request.e_s_c1_prime, &self.s_i_c2, &ek.nn),
+      &BigInt::mod_inv(&encrypt_r2.0, &ek.nn).expect("Error: No Inverse"),
+      &ek.nn,
+    );
+
+    // Send response back to client
+    Self::send_json(&SP1_STMP2_Response { e_s_c1_prime_e_r2 }, ctx)
+  }
+}
+
+///
+/// Sub-Protocol 1 - Computed product P1 request, returns P2
+///
+impl Handler<SP1_Product1_Request> for BallotWebsocket {
+  type Result = ();
+
+  fn handle(&mut self, request: SP1_Product1_Request, ctx: &mut Self::Context) -> Self::Result {
+    log::debug!("Sub-protocol 1: Computing combined products P1 and P2");
+
+    // Save the values
+    self.p1 = request.p1;
+    log::debug!("P1 = {}", self.p1);
+
+    // Compute the product
     let p2 = BigInt::mod_mul(
       &BigInt::mod_mul(
         &BigInt::mod_pow(&self.g_s, &self.s_i_c2_prime, &self.prime),
@@ -292,10 +358,106 @@ impl Handler<Product1> for BallotWebsocket {
       ),
       &self.prime,
     );
+    self.p2 = p2.clone();
+    log::debug!("P2 = {}", p2);
 
-    let message = Product2 { p2 };
+    // Send response back
+    Self::send_json(&SP1_Product2_Response { p2 }, ctx);
 
-    // TODO:
-    ctx.text(serde_json::to_string(&message).unwrap());
+    // Compute the combined product: g^(s_i * s_i') * P1 * P2
+    let combined_product = BigInt::mod_mul(
+      &self.g_s_s_prime,
+      &BigInt::mod_mul(&self.p1, &self.p2, &self.prime),
+      &self.prime,
+    );
+    log::debug!("g^(s_i * s_i') * P1 * P2 = {}", combined_product);
+
+    // Compute the expected product:
+    //   g^(2^(L - 1)), where L is the number of bits in the voting vector
+    let expected_product = BigInt::mod_pow(
+      &self.generator,
+      &(BigInt::from(1) << (self.num_registered * self.num_candidates - 1) as usize),
+      &self.prime,
+    );
+    log::debug!("g^(2^(L - 1)) = {}", expected_product);
+
+    // Send the verification result
+    let ballot_valid = combined_product == expected_product;
+    log::debug!(
+      "Sub-protocol 1: ballot {}",
+      if ballot_valid { "valid" } else { "invalid" }
+    );
+
+    Self::send_json(&SP1_Result_Response { ballot_valid }, ctx);
+  }
+}
+
+//
+/// Sub-Protocol 2 - Computed values g^(S~i,C1) and g^(S~i,C1'), returns g^(S~i,C2) and g^(S~i,C2')
+///
+impl Handler<SP2_C1_Request> for BallotWebsocket {
+  type Result = ();
+
+  fn handle(&mut self, request: SP2_C1_Request, ctx: &mut Self::Context) -> Self::Result {
+    log::debug!("Sub-protocol 2 - Compute g values");
+
+    // Save the values
+    self.g_stild_1 = request.g_stild_1;
+    self.g_stild_1_prime = request.g_stild_1_prime;
+
+    log::debug!("g^(S~i,C1) = {}", self.g_stild_1);
+    log::debug!("g^(S~i,C1') = {}", self.g_stild_1_prime);
+    log::debug!("g^(S~i,C2) = {}", self.g_stild_2);
+    log::debug!("g^(S~i,C2') = {}", self.g_stild_2_prime);
+
+    // Return the collector values
+    Self::send_json(
+      &SP2_C2_Response {
+        g_stild_2: self.g_stild_2.clone(),
+        g_stild_2_prime: self.g_stild_2_prime.clone(),
+      },
+      ctx,
+    );
+
+    // Verify the forward ballot
+    let g_p_i_combined = BigInt::mod_mul(
+      &self.g_s,
+      &BigInt::mod_mul(&self.g_stild_1, &self.g_stild_2, &self.prime),
+      &self.prime,
+    );
+    let g_p_i_verified = &g_p_i_combined == &self.g_p_i;
+
+    log::debug!("g^(p_i) = {}", self.g_p_i);
+    log::debug!("g^(s_i) * g^(S~i,C1) * g^(S~i,C2) = {}", g_p_i_combined);
+    log::debug!("Forward ballot {}", if g_p_i_verified { "valid" } else { "invalid" });
+
+    // Verify the reverse ballot
+    let g_p_i_prime_combined = BigInt::mod_mul(
+      &self.g_s_prime,
+      &BigInt::mod_mul(&self.g_stild_1_prime, &self.g_stild_2_prime, &self.prime),
+      &self.prime,
+    );
+    let g_p_i_prime_verified = &g_p_i_prime_combined == &self.g_p_i_prime;
+
+    log::debug!("g^(p_i') = {}", self.g_p_i_prime);
+    log::debug!("g^(s_i') * g^(S~i,C1') * g^(S~i,C2') = {}", g_p_i_prime_combined);
+    log::debug!(
+      "Reverse ballot {}",
+      if g_p_i_prime_verified { "valid" } else { "invalid" }
+    );
+
+    // Send the verification result
+    let ballot_valid = g_p_i_verified && g_p_i_prime_verified;
+    log::debug!(
+      "Sub-protocol 2: ballot {}",
+      if ballot_valid { "valid" } else { "invalid" }
+    );
+
+    Self::send_json(&SP2_Result_Response { ballot_valid }, ctx);
+
+    // Close the connection cleanly
+    log::debug!("Both protocols finished, closing websocket cleanly");
+    ctx.close(Some(CloseCode::Normal.into()));
+    ctx.stop();
   }
 }

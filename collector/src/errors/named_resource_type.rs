@@ -8,6 +8,7 @@ use crate::errors::{ResourceType, ServiceError};
 pub enum NamedResourceType {
   User { id: Uuid },
   Election { id: Uuid },
+  Question { id: Uuid, election_id: Uuid },
 }
 
 impl NamedResourceType {
@@ -15,6 +16,7 @@ impl NamedResourceType {
     match self {
       NamedResourceType::User { .. } => ResourceType::User,
       NamedResourceType::Election { .. } => ResourceType::Election,
+      NamedResourceType::Question { .. } => ResourceType::Question,
     }
   }
 
@@ -33,6 +35,10 @@ impl NamedResourceType {
   pub fn election(id: Uuid) -> Self {
     NamedResourceType::Election { id }
   }
+
+  pub fn question(id: Uuid, election_id: Uuid) -> Self {
+    NamedResourceType::Question { id, election_id }
+  }
 }
 
 impl fmt::Display for NamedResourceType {
@@ -40,6 +46,9 @@ impl fmt::Display for NamedResourceType {
     match self {
       NamedResourceType::User { id } => write!(f, "{} (ID: {})", self.get_name(), id),
       NamedResourceType::Election { id } => write!(f, "{} (ID: {})", self.get_name(), id),
+      NamedResourceType::Question { id, election_id } => {
+        write!(f, "{} (ID: {}, Election ID: {})", self.get_name(), id, election_id)
+      }
     }
   }
 }

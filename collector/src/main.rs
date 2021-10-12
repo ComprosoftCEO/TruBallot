@@ -65,7 +65,20 @@ async fn main() -> anyhow::Result<()> {
         web::scope(&format!("/api/v1/collector/{}", collector.to_number()))
           .service(web::scope("/auth").route("", web::get().to(handlers::auth::get_me)))
           .service(
-            web::scope("/elections").route("", web::post().to(handlers::election::create_and_initialize_election)),
+            web::scope("/elections")
+              .route("", web::post().to(handlers::election::create_and_initialize_election))
+              .service(
+                web::scope("/{election_id}").service(
+                  web::scope("/questions").service(
+                    web::scope("/{question_id}")
+                      .route("/verification", web::post().to(handlers::verification::verify_ballot))
+                      .route(
+                        "/verification/ws/{user_id}",
+                        web::get().to(handlers::verification::verify_ballot_websocket),
+                      ),
+                  ),
+                ),
+              ),
           ),
       )
       .default_service(web::route().to(|| HttpResponse::NotFound()))

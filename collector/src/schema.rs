@@ -1,8 +1,8 @@
 table! {
     elections (id) {
         id -> Uuid,
-        prime -> Numeric,
         generator -> Numeric,
+        prime -> Numeric,
         paillier_p -> Numeric,
         paillier_q -> Numeric,
         encryption_key -> Bytea,
@@ -33,8 +33,4 @@ joinable!(questions -> elections (election_id));
 joinable!(registrations -> elections (election_id));
 joinable!(registrations -> questions (question_id));
 
-allow_tables_to_appear_in_same_query!(
-    elections,
-    questions,
-    registrations,
-);
+allow_tables_to_appear_in_same_query!(elections, questions, registrations,);

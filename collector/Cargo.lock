@@ -1034,6 +1034,7 @@ name = "evoting-collector"
 version = "0.1.0"
 dependencies = [
  "actix",
+ "actix-codec",
  "actix-http",
  "actix-web",
  "actix-web-actors",
