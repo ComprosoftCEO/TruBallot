@@ -55,6 +55,10 @@ pub enum ServiceError {
     status: ElectionStatus,
   },
   AccessCodeNotFound(String),
+  NotRegistered {
+    user_id: Uuid,
+    election_id: Uuid,
+  },
   AlreadyRegistered {
     user_id: Uuid,
     election_id: Uuid,
@@ -264,6 +268,13 @@ impl ServiceError {
         format!("Access Code: {}", code),
       ),
 
+      ServiceError::NotRegistered { user_id, election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "User is not registered for election".into(),
+        GlobalErrorCode::NotRegistered,
+        format!("User ID: {}, Electon ID: {}", user_id, election_id),
+      ),
+
       ServiceError::AlreadyRegistered { user_id, election_id } => ErrorResponse::new(
         StatusCode::CONFLICT,
         "User is already registered for election".into(),
@@ -273,7 +284,7 @@ impl ServiceError {
 
       ServiceError::RegistrationClosed { election_id } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Election registration is not available".into(),
+        "Election registration is closed".into(),
         GlobalErrorCode::RegistrationClosed,
         format!("Electon ID: {}", election_id),
       ),

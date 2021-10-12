@@ -29,4 +29,5 @@ pub enum GlobalErrorCode {
   NotEnoughRegistered,
   CollectorURLNotSet,
   RegisterElectionError,
+  VerificationError,
 }
