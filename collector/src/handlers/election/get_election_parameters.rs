@@ -14,8 +14,15 @@ pub async fn get_election_parameters(
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_view_elections()?;
 
-  // Make sure the election exists
+  // Make sure the election exists and user is registered
   let election = Election::find_resource(&*path, &conn)?;
+  if !election.is_user_registered(&token.get_user_id(), &conn)? {
+    return Err(ServiceError::UserNotRegistered {
+      user_id: token.get_user_id(),
+      election_id: election.id,
+      question_id: None,
+    });
+  }
 
   // Build the final result
   let result = ElectionParameters {

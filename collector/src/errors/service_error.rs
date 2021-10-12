@@ -32,7 +32,7 @@ pub enum ServiceError {
   UserNotRegistered {
     user_id: Uuid,
     election_id: Uuid,
-    question_id: Uuid,
+    question_id: Option<Uuid>,
   },
   VerificationError(WebsocketError),
 }
@@ -154,7 +154,7 @@ impl ServiceError {
         "User not registered for election".into(),
         GlobalErrorCode::NotRegistered,
         format!(
-          "User ID: {}, Election ID: {}, Question ID: {}",
+          "User ID: {}, Election ID: {}, Question ID: {:#?}",
           user_id, election_id, question_id,
         ),
       ),

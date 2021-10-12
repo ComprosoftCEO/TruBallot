@@ -24,7 +24,7 @@ pub async fn get_question_parameters(
     .ok_or_else(|| ServiceError::UserNotRegistered {
       user_id: token.get_user_id(),
       election_id,
-      question_id,
+      question_id: Some(question_id),
     })?;
 
   // Build the final result

@@ -1,5 +1,6 @@
 use bigdecimal::BigDecimal;
 use curv_kzen::BigInt;
+use diesel::prelude::*;
 use kzen_paillier::DecryptionKey;
 use rand::{thread_rng, Rng};
 use serde::Serialize;
@@ -62,5 +63,20 @@ impl Election {
     conn: &DbConnection,
   ) -> Result<Option<Registration>, ServiceError> {
     Ok(Registration::find_optional((user_id, &self.id, &question_id), conn)?)
+  }
+
+  /// Test if a user is registered for an election
+  pub fn is_user_registered(&self, user_id: &Uuid, conn: &DbConnection) -> Result<bool, ServiceError> {
+    use crate::schema::registrations::dsl::{election_id, registrations, user_id as registration_user_id};
+    use diesel::dsl::{exists, select};
+
+    Ok(
+      select(exists(
+        registrations
+          .filter(election_id.eq(&self.id))
+          .filter(registration_user_id.eq(user_id)),
+      ))
+      .get_result(conn.get())?,
+    )
   }
 }

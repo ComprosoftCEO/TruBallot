@@ -32,7 +32,7 @@ pub struct ClientOnly;
 
 impl Audience for ClientOnly {
   const TEXT: &'static str = "client-only";
-  const ACCEPTS: &'static [&'static str] = &["client-only"];
+  const ACCEPTS: &'static [&'static str] = &["all", "client-only"];
 }
 
 /// Route can only be called by the server
@@ -40,7 +40,7 @@ pub struct ServerOnly;
 
 impl Audience for ServerOnly {
   const TEXT: &'static str = "server-only";
-  const ACCEPTS: &'static [&'static str] = &["server-only"];
+  const ACCEPTS: &'static [&'static str] = &["all", "server-only"];
 }
 
 /// Route can only be called by a collector
@@ -48,5 +48,5 @@ pub struct CollectorOnly;
 
 impl Audience for CollectorOnly {
   const TEXT: &'static str = "collector-only";
-  const ACCEPTS: &'static [&'static str] = &["collector-only"];
+  const ACCEPTS: &'static [&'static str] = &["all", "collector-only"];
 }

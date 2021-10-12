@@ -39,7 +39,7 @@ pub async fn verify_ballot(
     .ok_or_else(|| ServiceError::UserNotRegistered {
       user_id: data.user_id,
       election_id: election.id,
-      question_id,
+      question_id: Some(question_id),
     })?;
 
   // Various election parameters

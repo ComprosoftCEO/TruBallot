@@ -28,7 +28,7 @@ pub async fn verify_ballot_websocket(
     .ok_or_else(|| ServiceError::UserNotRegistered {
       user_id,
       election_id: election.id,
-      question_id,
+      question_id: Some(question_id),
     })?;
 
   // Start the websocket server
