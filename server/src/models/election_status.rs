@@ -30,4 +30,16 @@ impl ElectionStatus {
       ElectionStatus::Finished => "Finished",
     }
   }
+
+  /// Test if the election parameters have been initialized
+  pub fn is_initialized(&self) -> bool {
+    match self {
+      ElectionStatus::Draft => false,
+      ElectionStatus::Registration => false,
+      ElectionStatus::InitFailed => false,
+      ElectionStatus::Voting => true,
+      ElectionStatus::CollectionFailed => true,
+      ElectionStatus::Finished => true,
+    }
+  }
 }

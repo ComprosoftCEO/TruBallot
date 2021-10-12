@@ -1090,6 +1090,7 @@ dependencies = [
  "aes",
  "anyhow",
  "awc",
+ "base64 0.13.0",
  "bcrypt",
  "bigdecimal",
  "censor",

@@ -27,6 +27,7 @@ pub enum GlobalErrorCode {
   AlreadyRegistered,
   RegistrationClosed,
   NotEnoughRegistered,
+  ElectionNotInitialized,
   CollectorURLNotSet,
   RegisterElectionError,
   VerificationError,

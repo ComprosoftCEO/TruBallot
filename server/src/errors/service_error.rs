@@ -70,6 +70,9 @@ pub enum ServiceError {
     election_id: Uuid,
     num_registered: usize,
   },
+  ElectionNotInitialized {
+    election_id: Uuid,
+  },
   CollectorURLNotSet(Collector),
   RegisterElectionError(Collector, ClientRequestError),
   WrongNumberOfEncryptedLocations {
@@ -297,6 +300,13 @@ impl ServiceError {
         "Need at least four registered users before voting can begin".into(),
         GlobalErrorCode::NotEnoughRegistered,
         format!("Electon ID: {}, Num Registered: {}", election_id, num_registered),
+      ),
+
+      ServiceError::ElectionNotInitialized { election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Election parameters have not been initialized".into(),
+        GlobalErrorCode::ElectionNotInitialized,
+        format!("Election ID: {}", election_id),
       ),
 
       ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(

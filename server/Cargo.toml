@@ -12,6 +12,7 @@ actix-web-httpauth = "0.5.1"
 aes = "0.7.5"
 anyhow = "1.0.44"
 awc = "2.0.3"
+base64 = "0.13.0"
 bcrypt = "0.10.1"
 bigdecimal = { version = "0.1.2", features = ["serde"] }
 censor = "0.2.0"

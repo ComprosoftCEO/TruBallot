@@ -1,3 +1,4 @@
+use curv_kzen::BigInt;
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
@@ -69,6 +70,21 @@ pub struct PublicElectionQuestion {
   pub name: String,
   pub num_votes_received: i64,
   pub candidates: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ElectionParameters {
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub generator: BigInt,
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub prime: BigInt,
+
+  // These two values are only sent if the user is registered for the election
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub encryption_key: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub encrypted_location: Option<String>,
 }
 
 impl PublicElectionList {
