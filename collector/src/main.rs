@@ -80,6 +80,10 @@ async fn main() -> anyhow::Result<()> {
                           "/parameters",
                           web::get().to(handlers::election::get_question_parameters),
                         )
+                        .route(
+                          "/cancelation",
+                          web::get().to(handlers::election::get_cancelation_shares),
+                        )
                         .route("/verification", web::post().to(handlers::verification::verify_ballot))
                         .route(
                           "/verification/ws/{user_id}",

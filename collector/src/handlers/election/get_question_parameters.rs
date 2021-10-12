@@ -4,7 +4,7 @@ use uuid_b64::UuidB64 as Uuid;
 use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
-use crate::models::{Election, Registration};
+use crate::models::Election;
 use crate::utils::ConvertBigInt;
 use crate::views::election::QuestionParameters;
 
@@ -19,7 +19,7 @@ pub async fn get_question_parameters(
 
   // Make sure the election exists
   let election = Election::find_resource(&election_id, &conn)?;
-  let registration: Registration = election
+  let registration = election
     .get_registration(&question_id, &token.get_user_id(), &conn)?
     .ok_or_else(|| ServiceError::UserNotRegistered {
       user_id: token.get_user_id(),
