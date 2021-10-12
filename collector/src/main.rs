@@ -68,16 +68,25 @@ async fn main() -> anyhow::Result<()> {
             web::scope("/elections")
               .route("", web::post().to(handlers::election::create_and_initialize_election))
               .service(
-                web::scope("/{election_id}").service(
-                  web::scope("/questions").service(
-                    web::scope("/{question_id}")
-                      .route("/verification", web::post().to(handlers::verification::verify_ballot))
-                      .route(
-                        "/verification/ws/{user_id}",
-                        web::get().to(handlers::verification::verify_ballot_websocket),
-                      ),
+                web::scope("/{election_id}")
+                  .route(
+                    "/parameters",
+                    web::get().to(handlers::election::get_election_parameters),
+                  )
+                  .service(
+                    web::scope("/questions").service(
+                      web::scope("/{question_id}")
+                        .route(
+                          "/parameters",
+                          web::get().to(handlers::election::get_question_parameters),
+                        )
+                        .route("/verification", web::post().to(handlers::verification::verify_ballot))
+                        .route(
+                          "/verification/ws/{user_id}",
+                          web::get().to(handlers::verification::verify_ballot_websocket),
+                        ),
+                    ),
                   ),
-                ),
               ),
           ),
       )

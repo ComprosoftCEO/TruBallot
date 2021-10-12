@@ -47,8 +47,7 @@ pub async fn get_election(
 
   // Get all of the questions and candidates
   let mut questions: Vec<PublicElectionQuestion> = Vec::new();
-  for question in election.get_questions(&conn)? {
-    let candidates = question.get_candidates(&conn)?;
+  for (question, candidates) in election.get_questions_candidates(&conn)? {
     let num_votes_received = question.count_commitments(&conn)?;
 
     questions.push(PublicElectionQuestion::new(question, num_votes_received, candidates));

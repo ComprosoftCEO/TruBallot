@@ -6,7 +6,7 @@ use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus};
 use crate::utils::ConvertBigInt;
-use crate::views::election::ElectionParameters;
+use crate::views::election::{ElectionParameters, QuestionParameters};
 
 pub async fn get_election_parameters(
   token: ClientToken,
@@ -45,7 +45,20 @@ pub async fn get_election_parameters(
   }
 
   // Build the final result
+  let questions = election
+    .get_questions_candidates(&conn)?
+    .into_iter()
+    .map(|(_question, candidates)| {
+      Ok(QuestionParameters {
+        num_candidates: candidates.len() as i64,
+      })
+    })
+    .collect::<Result<Vec<_>, ServiceError>>()?;
+
   let result = ElectionParameters {
+    num_registered: election.count_registrations(&conn)?,
+    questions,
+
     generator: election.generator.to_bigint(),
     prime: election.prime.to_bigint(),
 

@@ -154,8 +154,8 @@ impl ServiceError {
         "User not registered for election".into(),
         GlobalErrorCode::NotRegistered,
         format!(
-          "Election ID: {}, Question ID: {}, User ID: {}",
-          election_id, question_id, user_id
+          "User ID: {}, Election ID: {}, Question ID: {}",
+          user_id, election_id, question_id,
         ),
       ),
 

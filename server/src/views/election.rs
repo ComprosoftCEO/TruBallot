@@ -75,6 +75,9 @@ pub struct PublicElectionQuestion {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElectionParameters {
+  pub num_registered: i64,
+  pub questions: Vec<QuestionParameters>,
+
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub generator: BigInt,
   #[serde(with = "kzen_paillier::serialize::bigint")]
@@ -85,6 +88,12 @@ pub struct ElectionParameters {
   pub encryption_key: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub encrypted_location: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestionParameters {
+  pub num_candidates: i64,
 }
 
 impl PublicElectionList {
