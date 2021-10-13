@@ -79,4 +79,11 @@ impl User {
   pub fn verify_password(&self, password: impl AsRef<[u8]>) -> Result<bool, ServiceError> {
     Ok(bcrypt::verify(password, &self.hashed_password)?)
   }
+
+  /// Update the user password
+  pub fn update_password(&mut self, new_password: impl AsRef<[u8]>) -> Result<(), ServiceError> {
+    let hashed_password = bcrypt::hash(new_password, bcrypt::DEFAULT_COST)?;
+    self.hashed_password = hashed_password;
+    Ok(())
+  }
 }
