@@ -34,6 +34,9 @@ pub enum ServiceError {
     user_id: Uuid,
   },
   HashPasswordError(BcryptError),
+  UserEmailExists {
+    email: String,
+  },
   ZxcvbnError(zxcvbn::ZxcvbnError),
   PasswordComplexityError(zxcvbn::Entropy),
   MissingRecaptchaSecret,
@@ -181,6 +184,13 @@ impl ServiceError {
         "Invalid email or password".into(),
         GlobalErrorCode::InvalidEmailPassword,
         format!("Password Hashing Failed: {}", error),
+      ),
+
+      ServiceError::UserEmailExists { email } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "That email is already taken".into(),
+        GlobalErrorCode::UserEmailExists,
+        email.clone(),
       ),
 
       ServiceError::ZxcvbnError(error) => ErrorResponse::new(

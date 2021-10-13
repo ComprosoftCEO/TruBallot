@@ -46,7 +46,8 @@ async fn main() -> anyhow::Result<()> {
             web::scope("/auth")
               .route("", web::get().to(handlers::auth::get_me))
               .route("/login", web::post().to(handlers::auth::login))
-              .route("/refresh", web::post().to(handlers::auth::refresh)),
+              .route("/refresh", web::post().to(handlers::auth::refresh))
+              .route("/register", web::post().to(handlers::auth::register_account)),
           )
           .service(
             web::scope("/elections")

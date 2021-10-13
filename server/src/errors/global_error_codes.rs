@@ -15,6 +15,7 @@ pub enum GlobalErrorCode {
   StructValidationError,
   InvalidEmailPassword,
   InvalidJWTToken,
+  UserEmailExists,
   PasswordComplexityError,
   RecaptchaError,
   ForbiddenResourceAction,
