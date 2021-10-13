@@ -177,6 +177,12 @@ pub async fn initialize_voting(
     Ok(())
   })?;
 
+  log::info!(
+    "Voting initialized for election \"{}\" <{}>",
+    election.name,
+    election.id
+  );
+
   Ok(HttpResponse::Ok().finish())
 }
 

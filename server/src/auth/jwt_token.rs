@@ -129,6 +129,17 @@ where
       ))
     }
   }
+
+  pub fn test_can_vote(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) && self.has_permission(Permission::Vote) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Election,
+        ResourceAction::Vote,
+      ))
+    }
+  }
 }
 
 impl<A> JWTToken<A, JWTClientData>

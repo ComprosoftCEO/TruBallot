@@ -5,6 +5,7 @@ use std::fmt;
 pub enum ResourceType {
   User,
   Election,
+  Question,
 }
 
 impl ResourceType {
@@ -12,6 +13,7 @@ impl ResourceType {
     match self {
       ResourceType::User => "User",
       ResourceType::Election => "Election",
+      ResourceType::Question => "Question",
     }
   }
 }

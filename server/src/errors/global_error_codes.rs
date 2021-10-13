@@ -32,4 +32,7 @@ pub enum GlobalErrorCode {
   CollectorURLNotSet,
   RegisterElectionError,
   VerificationError,
+  AlreadyVoted,
+  VerifyVoteError,
+  VoteInvalid,
 }

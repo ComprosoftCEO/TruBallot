@@ -86,6 +86,11 @@ impl Election {
     Ok(questions.into_iter().zip(candidates).collect())
   }
 
+  /// Find a question from this election given the question ID
+  pub fn find_question(&self, question_id: &Uuid, conn: &DbConnection) -> Result<Question, ServiceError> {
+    Question::find_resource(&self.id, question_id, conn)
+  }
+
   /// Get a user registration for an election
   pub fn get_user_registration(
     &self,

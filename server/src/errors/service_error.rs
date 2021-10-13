@@ -83,6 +83,16 @@ pub enum ServiceError {
     given: usize,
     expected: usize,
   },
+  AlreadyVoted {
+    user_id: Uuid,
+    election_id: Uuid,
+    question_id: Uuid,
+  },
+  VerifyVoteError(ClientRequestError),
+  VoteInvalid {
+    sub_protocol_1: bool,
+    sub_protocol_2: bool,
+  },
 }
 
 impl ServiceError {
@@ -345,6 +355,44 @@ impl ServiceError {
           "Wrong number of encrypted positions: Given {}, Expected: {}",
           given, expected
         ),
+      ),
+
+      ServiceError::AlreadyVoted {
+        user_id,
+        election_id,
+        question_id,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "User already voted".into(),
+        GlobalErrorCode::AlreadyVoted,
+        format!(
+          "User ID: {}, Election ID: {}, Question ID: {}",
+          user_id, election_id, question_id
+        ),
+      ),
+
+      ServiceError::VerifyVoteError(error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Failed to verify vote with the collectors".into(),
+        GlobalErrorCode::VerifyVoteError,
+        format!("{:?}", error),
+      ),
+
+      ServiceError::VoteInvalid {
+        sub_protocol_1,
+        sub_protocol_2,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        format!(
+          "Vote is not valid: failed to validate {}",
+          match (sub_protocol_1, sub_protocol_2) {
+            (true, false) => "sub-protocol 1",
+            (false, true) => "sub-protocol 2",
+            _ => "sub-protocol 1 and sub-protocol 2",
+          }
+        ),
+        GlobalErrorCode::VoteInvalid,
+        format!("Sub-protocol 1: {}, Sub-protocol 2: {}", sub_protocol_1, sub_protocol_2),
       ),
     }
   }

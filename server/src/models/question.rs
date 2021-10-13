@@ -2,7 +2,9 @@ use bigdecimal::BigDecimal;
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::models::Election;
+use crate::db::DbConnection;
+use crate::errors::{NamedResourceType, ServiceError};
+use crate::models::{Commitment, Election};
 use crate::schema::questions;
 use crate::utils::new_safe_uuid_v4;
 
@@ -38,5 +40,30 @@ impl Question {
       final_reverse_ballot: None,
       ballot_valid: false,
     }
+  }
+
+  /// Search for election in the database, and return a ServiceError (not a Diesel error)
+  pub fn find_resource(election_id: &Uuid, question_id: &Uuid, conn: &DbConnection) -> Result<Self, ServiceError> {
+    let question = Self::find_optional(question_id, conn)?
+      .ok_or_else(|| NamedResourceType::question(*election_id, *question_id).into_error())?;
+
+    // Make sure the election ID matches
+    if question.election_id != *election_id {
+      Err(NamedResourceType::question(*election_id, *question_id).into_error())
+    } else {
+      Ok(question)
+    }
+  }
+
+  /// Optionally get a commitment for a question
+  pub fn find_commitment_optional(
+    &self,
+    user_id: &Uuid,
+    conn: &DbConnection,
+  ) -> Result<Option<Commitment>, ServiceError> {
+    Ok(Commitment::find_optional(
+      (user_id, &self.election_id, &self.id),
+      &conn,
+    )?)
   }
 }
