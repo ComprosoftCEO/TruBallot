@@ -9,7 +9,7 @@ use uuid_b64::UuidB64 as Uuid;
 use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ServiceError};
-use crate::models::{Commitment, Election};
+use crate::models::{Commitment, Election, ElectionStatus};
 use crate::utils::ConvertBigInt;
 use crate::Collector;
 
@@ -48,6 +48,11 @@ pub async fn vote(
   // Make sure the election and question exist
   let election = Election::find_resource(&election_id, &conn)?;
   let question = election.find_question(&question_id, &conn)?;
+
+  // Make sure the election is actually open for voting
+  if election.status != ElectionStatus::Voting {
+    return Err(ServiceError::NotOpenForVoting { election_id });
+  }
 
   // Make sure the user has not already voted
   let user_id = token.get_user_id();

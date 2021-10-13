@@ -35,4 +35,5 @@ pub enum GlobalErrorCode {
   AlreadyVoted,
   VerifyVoteError,
   VoteInvalid,
+  NotOpenForVoting,
 }

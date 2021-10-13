@@ -93,6 +93,9 @@ pub enum ServiceError {
     sub_protocol_1: bool,
     sub_protocol_2: bool,
   },
+  NotOpenForVoting {
+    election_id: Uuid,
+  },
 }
 
 impl ServiceError {
@@ -393,6 +396,13 @@ impl ServiceError {
         ),
         GlobalErrorCode::VoteInvalid,
         format!("Sub-protocol 1: {}, Sub-protocol 2: {}", sub_protocol_1, sub_protocol_2),
+      ),
+
+      ServiceError::NotOpenForVoting { election_id } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Election not open for voting".into(),
+        GlobalErrorCode::NotOpenForVoting,
+        format!("Election ID: {}", election_id),
       ),
     }
   }
