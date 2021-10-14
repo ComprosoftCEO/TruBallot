@@ -1,0 +1,29 @@
+[package]
+name = "evoting-notifications"
+version = "0.1.0"
+authors = ["Bryan McClain <bryamccl@iu.edu>"]
+edition = "2018"
+default-run = "evoting-notifications"
+
+[dependencies]
+actix = "0.10.0"
+actix-codec = "0.3.0"
+actix-http = "2.2.1"
+actix-web = { version = "3", features = ["openssl"] }
+actix-web-actors = "3.0.0"
+actix-web-httpauth = "0.5.1"
+anyhow = "1.0.44"
+awc = "2.0.3"
+chrono = "0.4.19"
+dotenv = "0.15.0"
+futures = "0.3.17"
+jsonwebtoken = "7.2.0"
+log = "0.4.14"
+openssl = "0.10.36"
+serde = "1.0.130"
+serde_json = "1.0.68"
+serde_repr = "0.1.7"
+simple_logger = "1.13.0"
+structopt = "0.3.23"
+uuid = "0.6"
+uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }

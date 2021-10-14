@@ -1,2 +1,5 @@
 # Vim Swap Files
 *.sw*
+
+# Custom sync scripts
+sync-*.sh

@@ -36,4 +36,7 @@ pub enum GlobalErrorCode {
   VerifyVoteError,
   VoteInvalid,
   NotOpenForVoting,
+  NoNotifyPermission,
+  NoSubscribePermission,
+  NotificationError,
 }

@@ -10,5 +10,6 @@ The code is laid out as a [monorepo](https://en.wikipedia.org/wiki/Monorepo) wit
 
 - `/server` - Code for REST API server
 - `/collector` - Code for collector
+- `/notifications` - Code for websocket notification server
 - `/evoting` - Frontend WebAssembly package code
 - `/frontend` - TypeScript code for single-page application

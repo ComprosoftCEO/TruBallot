@@ -2,64 +2,29 @@ use actix_web::error::{JsonPayloadError, PathError, QueryPayloadError, Urlencode
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
-use diesel::r2d2::PoolError;
 use jsonwebtoken::errors::Error as JWTError;
 use std::{error, fmt};
-use uuid_b64::UuidB64 as Uuid;
-use validator::ValidationErrors;
 
 use crate::errors::*;
-use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
 pub enum ServiceError {
-  DatabaseConnectionError(diesel::ConnectionError),
-  DatabasePoolError(PoolError),
-  DatabaseError(diesel::result::Error),
   MissingAppData(String),
   JSONPayloadError(JsonPayloadError),
   FormPayloadError(UrlencodedError),
   URLPathError(PathError),
   QueryStringError(QueryPayloadError),
-  StructValidationError(ValidationErrors),
   JWTError(JWTError),
   JWTExtractorError(AuthenticationError<Bearer>),
-  ForbiddenResourceAction(ResourceType, ResourceAction),
-  NoSuchResource(NamedResourceType),
-  CollectorURLNotSet(Collector),
-  UserNotRegistered {
-    user_id: Uuid,
-    election_id: Uuid,
-    question_id: Option<Uuid>,
-  },
-  VerificationError(WebsocketError),
+  NoNotifyPermission,
+  NoSubscribePermission,
+  NotificationError(WebsocketError),
 }
 
 impl ServiceError {
   pub fn get_error_response(&self) -> ErrorResponse {
     match self {
-      ServiceError::DatabaseConnectionError(error) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Database Connection Error".into(),
-        GlobalErrorCode::DatabaseConnectionError,
-        format!("{}", error),
-      ),
-
-      ServiceError::DatabasePoolError(error) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Database Connection Error".into(),
-        GlobalErrorCode::DatabaseConnectionError,
-        format!("{}", error),
-      ),
-
-      ServiceError::DatabaseError(error) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Database Query Error".into(),
-        GlobalErrorCode::DatabaseQueryError,
-        format!("{}", error),
-      ),
-
       ServiceError::MissingAppData(data) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Server Misconfiguration".into(),
@@ -95,13 +60,6 @@ impl ServiceError {
         format!("{}", error),
       ),
 
-      ServiceError::StructValidationError(error) => ErrorResponse::new(
-        StatusCode::BAD_REQUEST,
-        "Invalid JSON Object".into(),
-        GlobalErrorCode::StructValidationError,
-        format!("{}", error),
-      ),
-
       ServiceError::JWTError(error) => ErrorResponse::new(
         StatusCode::UNAUTHORIZED,
         "Invalid JWT Token".into(),
@@ -116,46 +74,25 @@ impl ServiceError {
         format!("{}", error),
       ),
 
-      ServiceError::ForbiddenResourceAction(resource, action) => ErrorResponse::new(
+      ServiceError::NoNotifyPermission => ErrorResponse::new(
         StatusCode::FORBIDDEN,
-        format!("Forbidden Action: {} {}", action, resource),
-        GlobalErrorCode::ForbiddenResourceAction,
-        format!("{} {}", action, resource),
+        "Insufficient permission to send notification".into(),
+        GlobalErrorCode::NoNotifyPermission,
+        "".into(),
       ),
 
-      ServiceError::NoSuchResource(resource) => ErrorResponse::new(
-        StatusCode::NOT_FOUND,
-        format!("No Such {}", resource.get_resource_type()),
-        GlobalErrorCode::NoSuchResource,
-        format!("{}", resource),
+      ServiceError::NoSubscribePermission => ErrorResponse::new(
+        StatusCode::FORBIDDEN,
+        "Insufficient permission to subscribe to websocket notifications".into(),
+        GlobalErrorCode::NoSubscribePermission,
+        "".into(),
       ),
 
-      ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
+      ServiceError::NotificationError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        "Server Misconfiguration".into(),
-        GlobalErrorCode::CollectorURLNotSet,
-        format!("{} environment variable not set", collector.env_prefix("URL")),
-      ),
-
-      ServiceError::UserNotRegistered {
-        user_id,
-        election_id,
-        question_id,
-      } => ErrorResponse::new(
-        StatusCode::CONFLICT,
-        "User not registered for election".into(),
-        GlobalErrorCode::NotRegistered,
-        format!(
-          "User ID: {}, Election ID: {}, Question ID: {:#?}",
-          user_id, election_id, question_id,
-        ),
-      ),
-
-      ServiceError::VerificationError(error) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Error verifying ballot".into(),
-        GlobalErrorCode::VerificationError,
-        format!("{:?}", error),
+        "Unexpected websocket error with notification system".into(),
+        GlobalErrorCode::NotificationError,
+        format!("{:#?}", error),
       ),
     }
   }
@@ -183,24 +120,6 @@ impl error::Error for ServiceError {}
 //
 // Implicit conversion functions
 //
-impl From<diesel::ConnectionError> for ServiceError {
-  fn from(error: diesel::ConnectionError) -> Self {
-    ServiceError::DatabaseConnectionError(error)
-  }
-}
-
-impl From<PoolError> for ServiceError {
-  fn from(error: PoolError) -> Self {
-    ServiceError::DatabasePoolError(error)
-  }
-}
-
-impl From<diesel::result::Error> for ServiceError {
-  fn from(error: diesel::result::Error) -> Self {
-    ServiceError::DatabaseError(error)
-  }
-}
-
 impl From<JsonPayloadError> for ServiceError {
   fn from(error: JsonPayloadError) -> Self {
     ServiceError::JSONPayloadError(error)
@@ -222,12 +141,6 @@ impl From<PathError> for ServiceError {
 impl From<QueryPayloadError> for ServiceError {
   fn from(error: QueryPayloadError) -> Self {
     ServiceError::QueryStringError(error)
-  }
-}
-
-impl From<ValidationErrors> for ServiceError {
-  fn from(error: ValidationErrors) -> Self {
-    ServiceError::StructValidationError(error)
   }
 }
 
