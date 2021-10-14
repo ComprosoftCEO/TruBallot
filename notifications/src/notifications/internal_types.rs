@@ -20,13 +20,13 @@ pub struct Subscribe {
   pub me: Recipient<Notify>,
 
   // Specific global events
-  pub global_events: HashSet<GlobalEvents>,
+  pub global_events: Option<HashSet<GlobalEvents>>,
 
   // All events from a given election
-  pub elections: HashSet<Uuid>,
+  pub elections: Option<HashSet<Uuid>>,
 
   // Specific events from a given election
-  pub election_events: HashMap<Uuid, HashSet<ElectionEvents>>,
+  pub election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
 }
 
 /// Remove the actor from specific types of messages
@@ -36,13 +36,13 @@ pub struct Unsubscribe {
   pub me: Recipient<Notify>,
 
   // Specific global events
-  pub global_events: HashSet<GlobalEvents>,
+  pub global_events: Option<HashSet<GlobalEvents>>,
 
   // All events from a given election
-  pub elections: HashSet<Uuid>,
+  pub elections: Option<HashSet<Uuid>>,
 
   // Specific events from a given election
-  pub election_events: HashMap<Uuid, HashSet<ElectionEvents>>,
+  pub election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
 }
 
 /// Unsubscribe the actor from all messages

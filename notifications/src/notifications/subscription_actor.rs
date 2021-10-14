@@ -64,32 +64,38 @@ impl Handler<Subscribe> for SubscriptionActor {
     } = subscribe;
 
     // Subscribe to global events
-    for event in global_events {
-      let set = self.global_subscriptions.entry(event).or_insert_with(|| HashSet::new());
+    if let Some(global_events) = global_events {
+      for event in global_events {
+        let set = self.global_subscriptions.entry(event).or_insert_with(|| HashSet::new());
 
-      set.insert(me.clone());
+        set.insert(me.clone());
+      }
     }
 
     // Subscribe to all election events
-    for election_id in elections {
-      let set = self
-        .election_subscriptions
-        .entry(election_id)
-        .or_insert_with(|| HashSet::new());
+    if let Some(elections) = elections {
+      for election_id in elections {
+        let set = self
+          .election_subscriptions
+          .entry(election_id)
+          .or_insert_with(|| HashSet::new());
 
-      set.insert(me.clone());
+        set.insert(me.clone());
+      }
     }
 
     // Subscribe to specific election events
-    for (election_id, election_events) in election_events {
-      let map = self
-        .election_event_subscriptions
-        .entry(election_id)
-        .or_insert_with(|| HashMap::new());
+    if let Some(election_events) = election_events {
+      for (election_id, election_events) in election_events {
+        let map = self
+          .election_event_subscriptions
+          .entry(election_id)
+          .or_insert_with(|| HashMap::new());
 
-      for event in election_events {
-        let set = map.entry(event).or_insert_with(|| HashSet::new());
-        set.insert(me.clone());
+        for event in election_events {
+          let set = map.entry(event).or_insert_with(|| HashSet::new());
+          set.insert(me.clone());
+        }
       }
     }
   }
@@ -107,25 +113,31 @@ impl Handler<Unsubscribe> for SubscriptionActor {
     } = unsubscribe;
 
     // Unsubscribe from global events
-    for event in global_events {
-      if let Some(set) = self.global_subscriptions.get_mut(&event) {
-        set.remove(&me);
+    if let Some(global_events) = global_events {
+      for event in global_events {
+        if let Some(set) = self.global_subscriptions.get_mut(&event) {
+          set.remove(&me);
+        }
       }
     }
 
     // Unsubscribe from all election events
-    for election_id in elections {
-      if let Some(set) = self.election_subscriptions.get_mut(&election_id) {
-        set.remove(&me);
+    if let Some(elections) = elections {
+      for election_id in elections {
+        if let Some(set) = self.election_subscriptions.get_mut(&election_id) {
+          set.remove(&me);
+        }
       }
     }
 
     // Unsubscribe from specific election events
-    for (election_id, election_events) in election_events {
-      if let Some(map) = self.election_event_subscriptions.get_mut(&election_id) {
-        for event in election_events {
-          if let Some(set) = map.get_mut(&event) {
-            set.remove(&me);
+    if let Some(election_events) = election_events {
+      for (election_id, election_events) in election_events {
+        if let Some(map) = self.election_event_subscriptions.get_mut(&election_id) {
+          for event in election_events {
+            if let Some(set) = map.get_mut(&event) {
+              set.remove(&me);
+            }
           }
         }
       }

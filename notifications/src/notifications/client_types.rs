@@ -8,39 +8,51 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::notifications::{ElectionEvents, GlobalEvents};
 
-/// Set actor subscriptions
+/// =========================================================
+/// Set actor subscriptions - Client sends this to websocket
+/// =========================================================
 #[derive(Serialize, Deserialize, Message)]
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum SubscriptionActions {
+  #[serde(rename_all = "camelCase")]
   Subscribe {
     // Specific global events
-    global_events: HashSet<GlobalEvents>,
+    global_events: Option<HashSet<GlobalEvents>>,
 
     // All events from a given election
-    elections: HashSet<Uuid>,
+    elections: Option<HashSet<Uuid>>,
 
     // Specific events from a given election
-    election_events: HashMap<Uuid, HashSet<ElectionEvents>>,
+    election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
   },
+
+  #[serde(rename_all = "camelCase")]
   Unsubscribe {
     // Specific global events
-    global_events: HashSet<GlobalEvents>,
+    global_events: Option<HashSet<GlobalEvents>>,
 
     // All events from a given election
-    elections: HashSet<Uuid>,
+    elections: Option<HashSet<Uuid>>,
 
     // Specific events from a given election
-    election_events: HashMap<Uuid, HashSet<ElectionEvents>>,
+    election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
   },
+
+  #[serde(rename_all = "camelCase")]
   UnsubscribeAll,
 }
 
-/// JSON returned after the subscriptions are updated
+/// =========================================================
+///   JSON returned after the subscriptions are updated
+/// =========================================================
 #[derive(Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WebsocketResponse {
+  #[serde(rename_all = "camelCase")]
   Success,
+
+  #[serde(rename_all = "camelCase")]
   Error {
     message: String,
 
@@ -51,14 +63,44 @@ pub enum WebsocketResponse {
   },
 }
 
+// ==========================================
+//      Main Response Data Types
+// ==========================================
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ElectionPublished {
-  pub id: Uuid,
+pub enum AllClientResponses {
+  ElectionPublished(ElectionDetails),
+  RegistrationOpened(ElectionDetails),
+  RegistrationCountUpdated(RegistrationCountUpdated),
+  RegistrationClosed(ElectionDetails),
+  VotingOpened(ElectionDetails),
+  VoteCountUpdated(VoteCountUpdated),
+  VotingClosed(ElectionDetails),
+  ResultsPublished(ElectionDetails),
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RegistrationOpened {
-  pub id: Uuid,
+pub struct ElectionDetails {
+  pub election_id: Uuid,
+}
+
+impl From<Uuid> for ElectionDetails {
+  fn from(election_id: Uuid) -> Self {
+    Self { election_id }
+  }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegistrationCountUpdated {
+  pub election_id: Uuid,
+  pub num_registered: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoteCountUpdated {
+  pub election_id: Uuid,
+  pub new_counts: Vec<i64>,
 }
