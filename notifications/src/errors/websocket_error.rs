@@ -48,7 +48,7 @@ impl WebsocketError {
 
   /// Serialize and send JSON data through the steam
   pub async fn send_json<T: Serialize>(stream: &mut Framed<BoxedSocket, Codec>, data: &T) -> Result<(), Self> {
-    let json_string = serde_json::to_string_pretty(data).map_err(|e| Self::JSONError(e))?;
+    let json_string = serde_json::to_string(data).map_err(|e| Self::JSONError(e))?;
     stream
       .send(Message::Text(json_string))
       .await

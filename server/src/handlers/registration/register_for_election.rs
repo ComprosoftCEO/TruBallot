@@ -1,15 +1,17 @@
 use actix_web::{web, HttpResponse};
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
+use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::{Election, ElectionStatus, Registration};
+use crate::notifications::notify_registration_count_updated;
 
 pub async fn register_for_election(
   token: ClientToken,
   path: web::Path<Uuid>,
   conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_register_for_election()?;
   token.validate_user_id(&conn)?;
@@ -35,6 +37,7 @@ pub async fn register_for_election(
 
   // Create the new registration in the database
   Registration::new(user_id, election.id).insert(&conn)?;
+  notify_registration_count_updated(&election, &conn, &jwt_key).await;
 
   Ok(HttpResponse::Ok().finish())
 }

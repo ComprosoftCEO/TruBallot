@@ -15,6 +15,7 @@ use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus, Registration};
+use crate::notifications::{notify_registration_closed, notify_voting_opened};
 use crate::protocol::generator_prime_pair;
 use crate::utils::ConvertBigInt;
 use crate::Collector;
@@ -62,6 +63,7 @@ pub async fn initialize_voting(
   // Mark the election as being initialized
   election.status = ElectionStatus::InitFailed;
   election = election.update(&conn)?;
+  notify_registration_closed(&election, &jwt_key).await;
 
   // We use a single prime that can serve the largest voting vector
   let questions_candidates = election.get_questions_candidates(&conn)?;
@@ -177,6 +179,7 @@ pub async fn initialize_voting(
     Ok(())
   })?;
 
+  notify_voting_opened(&election, &jwt_key).await;
   log::info!(
     "Voting initialized for election \"{}\" <{}>",
     election.name,

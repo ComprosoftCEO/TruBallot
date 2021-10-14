@@ -147,7 +147,8 @@ impl ElectionEvent for VotingOpened {
 #[rtype(result = "()")]
 pub struct VoteCountUpdated {
   pub election_id: Uuid,
-  pub new_counts: Vec<i64>,
+  pub question_id: Uuid,
+  pub new_count: i64,
 }
 
 impl ElectionEvent for VoteCountUpdated {
@@ -161,7 +162,8 @@ impl ElectionEvent for VoteCountUpdated {
   fn into_output(self) -> Self::Output {
     AllClientResponses::VoteCountUpdated(client_types::VoteCountUpdated {
       election_id: self.election_id,
-      new_counts: self.new_counts,
+      question_id: self.question_id,
+      new_count: self.new_count,
     })
   }
 }

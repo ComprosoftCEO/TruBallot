@@ -102,5 +102,6 @@ pub struct RegistrationCountUpdated {
 #[serde(rename_all = "camelCase")]
 pub struct VoteCountUpdated {
   pub election_id: Uuid,
-  pub new_counts: Vec<i64>,
+  pub question_id: Uuid,
+  pub new_count: i64,
 }

@@ -32,7 +32,7 @@ impl SubscriptionActor {
     I: IntoIterator<Item = &'a Recipient<Notify>>,
   {
     // Convert the data structure to a JSON string
-    let json = match serde_json::to_string_pretty(data) {
+    let json = match serde_json::to_string(data) {
       Ok(json) => json,
       Err(e) => return log::error!("Failed to serialize JSON data: {}", e),
     };

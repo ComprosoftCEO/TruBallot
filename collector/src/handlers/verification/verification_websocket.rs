@@ -155,7 +155,7 @@ impl VerificationWebsocket {
   where
     T: ?Sized + Serialize,
   {
-    match serde_json::to_string_pretty(data) {
+    match serde_json::to_string(data) {
       Ok(json) => ctx.text(&json),
       Err(e) => ctx
         .address()

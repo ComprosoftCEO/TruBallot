@@ -1,12 +1,12 @@
 use actix::Addr;
 use actix_web::{web, HttpResponse};
 
-use crate::auth::ClientToken;
+use crate::auth::ServerToken;
 use crate::errors::ServiceError;
 use crate::notifications::{AllServerMessages, ElectionEvent, GlobalEvent, SubscriptionActor};
 
 pub async fn notify(
-  token: ClientToken,
+  token: ServerToken,
   data: web::Json<AllServerMessages>,
   actor: web::Data<Addr<SubscriptionActor>>,
 ) -> Result<HttpResponse, ServiceError> {

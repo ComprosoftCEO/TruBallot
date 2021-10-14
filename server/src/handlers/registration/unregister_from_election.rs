@@ -1,15 +1,17 @@
 use actix_web::{web, HttpResponse};
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
+use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::{Election, ElectionStatus};
+use crate::notifications::notify_registration_count_updated;
 
 pub async fn unregister_from_election(
   token: ClientToken,
   path: web::Path<Uuid>,
   conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_register_for_election()?;
   token.validate_user_id(&conn)?;
@@ -38,6 +40,7 @@ pub async fn unregister_from_election(
 
   // Delete the registration from the database
   registration.delete(&conn)?;
+  notify_registration_count_updated(&election, &conn, &jwt_key).await;
 
   Ok(HttpResponse::Ok().finish())
 }
