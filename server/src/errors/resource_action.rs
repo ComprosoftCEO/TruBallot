@@ -11,6 +11,7 @@ pub enum ResourceAction {
   Register,
   InitVoting,
   Vote,
+  CloseVoting,
 }
 
 impl ResourceAction {
@@ -24,6 +25,7 @@ impl ResourceAction {
       ResourceAction::Register => "Register for",
       ResourceAction::InitVoting => "Initialize voting for",
       ResourceAction::Vote => "Vote in",
+      ResourceAction::CloseVoting => "Close voting for",
     }
   }
 }

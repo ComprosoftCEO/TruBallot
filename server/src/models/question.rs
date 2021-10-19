@@ -1,4 +1,6 @@
 use bigdecimal::BigDecimal;
+use curv_kzen::BigInt;
+use diesel::prelude::*;
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
@@ -6,7 +8,7 @@ use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError};
 use crate::models::{Commitment, Election};
 use crate::schema::questions;
-use crate::utils::new_safe_uuid_v4;
+use crate::utils::{new_safe_uuid_v4, ConvertBigInt};
 
 #[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
 #[belongs_to(Election)]
@@ -18,9 +20,13 @@ pub struct Question {
   pub question: String,
   pub question_number: i64,
 
-  pub final_forward_ballot: Option<BigDecimal>,
-  pub final_reverse_ballot: Option<BigDecimal>,
-  pub ballot_valid: bool,
+  pub final_forward_ballots: BigDecimal,
+  pub final_reverse_ballots: BigDecimal,
+  pub ballots_valid: bool,
+
+  pub users_without_vote: Vec<Uuid>,
+  pub forward_cancelation_shares: BigDecimal,
+  pub reverse_cancelation_shares: BigDecimal,
 }
 
 impl Question {
@@ -36,9 +42,12 @@ impl Question {
       election_id,
       question: question.into(),
       question_number,
-      final_forward_ballot: None,
-      final_reverse_ballot: None,
-      ballot_valid: false,
+      final_forward_ballots: BigDecimal::default(),
+      final_reverse_ballots: BigDecimal::default(),
+      ballots_valid: false,
+      users_without_vote: Vec::new(),
+      forward_cancelation_shares: BigDecimal::default(),
+      reverse_cancelation_shares: BigDecimal::default(),
     }
   }
 
@@ -65,5 +74,54 @@ impl Question {
       (user_id, &self.election_id, &self.id),
       &conn,
     )?)
+  }
+
+  ///
+  /// Compute the forward and reverse ballot sum for a given question, mod (p - 1)
+  ///
+  pub fn get_ballots_sum(&self, modulo: &BigInt, conn: &DbConnection) -> Result<(BigInt, BigInt), ServiceError> {
+    use crate::schema::commitments::dsl::{commitments, election_id, forward_ballot, question_id, reverse_ballot};
+    use diesel::dsl::sum;
+
+    let forward: BigDecimal = commitments
+      .select(sum(forward_ballot))
+      .filter(election_id.eq(&self.election_id))
+      .filter(question_id.eq(&self.id))
+      .get_result::<Option<BigDecimal>>(conn.get())?
+      .unwrap_or_else(BigDecimal::default);
+
+    let reverse: BigDecimal = commitments
+      .select(sum(reverse_ballot))
+      .filter(election_id.eq(&self.election_id))
+      .filter(question_id.eq(&self.id))
+      .get_result::<Option<BigDecimal>>(conn.get())?
+      .unwrap_or_else(BigDecimal::default);
+
+    Ok((forward.to_bigint() % modulo, reverse.to_bigint() % modulo))
+  }
+
+  ///
+  /// Get the list of users who didn't cast a vote for this question
+  ///
+  pub fn get_users_without_vote(&self, conn: &DbConnection) -> Result<Vec<Uuid>, ServiceError> {
+    use crate::schema::commitments::dsl::{
+      commitments, election_id as c_election_id, question_id as c_question_id, user_id as c_user_id,
+    };
+    use crate::schema::registrations::dsl::{election_id, registrations, user_id};
+    use diesel::dsl::{exists, not};
+
+    Ok(
+      registrations
+        .select(user_id)
+        .distinct()
+        .filter(election_id.eq(&self.election_id))
+        .filter(not(exists(
+          commitments
+            .filter(c_user_id.eq(user_id))
+            .filter(c_election_id.eq(&self.election_id))
+            .filter(c_question_id.eq(&self.id)),
+        )))
+        .get_results::<Uuid>(conn.get())?,
+    )
   }
 }

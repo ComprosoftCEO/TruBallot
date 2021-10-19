@@ -26,10 +26,14 @@ CREATE TABLE questions (
   question_number BIGINT NOT NULL CHECK (question_number >= 0),
   UNIQUE (election_id, question_number),
 
-  -- Cached values after electiton has ended
-  final_forward_ballot NUMERIC NULL DEFAULT NULL,
-  final_reverse_ballot NUMERIC NULL DEFAULT NULL,
-  ballot_valid BOOLEAN NOT NULL DEFAULT false
+  -- Computed values after electiton has ended
+  final_forward_ballots NUMERIC NOT NULL,
+  final_reverse_ballots NUMERIC NOT NULL,
+  ballots_valid BOOLEAN NOT NULL DEFAULT false,
+
+  users_without_vote UUID[] NOT NULL,
+  forward_cancelation_shares NUMERIC NOT NULL,
+  reverse_cancelation_shares NUMERIC NOT NULL
 );
 
 

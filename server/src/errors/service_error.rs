@@ -96,6 +96,11 @@ pub enum ServiceError {
   NotOpenForVoting {
     election_id: Uuid,
   },
+  NotEnoughVotes {
+    election_id: Uuid,
+    question_id: Uuid,
+  },
+  CancelationSharesError(Collector, ClientRequestError),
 }
 
 impl ServiceError {
@@ -403,6 +408,26 @@ impl ServiceError {
         "Election not open for voting".into(),
         GlobalErrorCode::NotOpenForVoting,
         format!("Election ID: {}", election_id),
+      ),
+
+      ServiceError::NotEnoughVotes {
+        election_id,
+        question_id,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "Each question in election must have at least 2 votes before voting can be closed".into(),
+        GlobalErrorCode::NotEnoughVotes,
+        format!("Election ID: {}, Question ID: {}", election_id, question_id),
+      ),
+
+      ServiceError::CancelationSharesError(collector, error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!(
+          "Failed to get ballot cancelation shares from collector {}",
+          collector.to_number()
+        ),
+        GlobalErrorCode::CancelationSharesError,
+        format!("{:?}", error),
       ),
     }
   }

@@ -77,7 +77,11 @@ async fn main() -> anyhow::Result<()> {
                       .route("", web::delete().to(handlers::registration::unregister_from_election))
                       .route("", web::put().to(handlers::registration::open_registration)),
                   )
-                  .route("/voting", web::post().to(handlers::voting::initialize_voting))
+                  .service(
+                    web::scope("/voting")
+                      .route("", web::post().to(handlers::voting::initialize_voting))
+                      .route("", web::delete().to(handlers::voting::close_voting)),
+                  )
                   .service(
                     web::scope("/questions/{question_id}").route("/vote", web::post().to(handlers::voting::vote)),
                   ),

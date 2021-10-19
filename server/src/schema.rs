@@ -43,9 +43,12 @@ table! {
         election_id -> Uuid,
         question -> Varchar,
         question_number -> Int8,
-        final_forward_ballot -> Nullable<Numeric>,
-        final_reverse_ballot -> Nullable<Numeric>,
-        ballot_valid -> Bool,
+        final_forward_ballots -> Numeric,
+        final_reverse_ballots -> Numeric,
+        ballots_valid -> Bool,
+        users_without_vote -> Array<Uuid>,
+        forward_cancelation_shares -> Numeric,
+        reverse_cancelation_shares -> Numeric,
     }
 }
 
