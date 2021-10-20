@@ -11,6 +11,7 @@ use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus, Question};
 use crate::notifications::{notify_results_published, notify_voting_closed};
+use crate::protocol::{verify_voting_vector, VerifyVotingVectorInput};
 use crate::utils::ConvertBigInt;
 use crate::Collector;
 
@@ -64,6 +65,7 @@ pub async fn close_voting(
   // Cache all of the updates
   let jwt_encoding_key = jwt_key.get_encoding_key();
   let modulus = election.prime.to_bigint() - 1;
+  let num_voters = election.count_registrations(&conn)?;
   for question in questions.iter_mut() {
     // Sum the ballots for each question
     let (forward_ballots, reverse_ballots) = question.get_ballots_sum(&modulus, &conn)?;
@@ -73,13 +75,23 @@ pub async fn close_voting(
     let (forward_cancelation_shares, reverse_cancelation_shares) =
       get_cancelation_shares(&question, no_vote.clone(), &modulus, &jwt_encoding_key).await?;
 
-    // TODO: Test if the ballot is valid
+    // Test if the final ballot is valid
+    let num_candidates = question.count_candidates(&conn)?;
+    let ballots_valid = verify_voting_vector(VerifyVotingVectorInput {
+      forward_ballot: &forward_ballots,
+      reverse_ballot: &reverse_ballots,
+      num_candidates,
+      num_voters,
+      no_vote_count: no_vote.len(),
+    });
 
+    // Update the values in the database model
+    //  Don't save yet, we will perform a massive transaction at the end
     question.final_forward_ballots =
       BigInt::mod_add(&forward_ballots, &forward_cancelation_shares, &modulus).to_bigdecimal();
     question.final_reverse_ballots =
       BigInt::mod_add(&reverse_ballots, &reverse_cancelation_shares, &modulus).to_bigdecimal();
-    question.ballots_valid = true;
+    question.ballots_valid = ballots_valid;
 
     question.users_without_vote = no_vote;
     question.forward_cancelation_shares = forward_cancelation_shares.to_bigdecimal();
