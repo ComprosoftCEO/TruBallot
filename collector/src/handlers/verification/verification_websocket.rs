@@ -282,7 +282,7 @@ impl Handler<SP1_STMP1_Request> for VerificationWebsocket {
   fn handle(&mut self, request: SP1_STMP1_Request, ctx: &mut Self::Context) -> Self::Result {
     log::debug!("Sub-protocol 1: First STPM: r1 + r2' = S_i,C1 * S_i,C2'");
 
-    let (r2_prime, e_s_c1_e_r2_prime) = stpm::step_2(&request.e_s_c1, &self.s_i_c2_prime, &self.n, false);
+    let (r2_prime, e_s_c1_e_r2_prime) = stpm::step_2(&request.e_s_c1, &self.s_i_c2_prime, &self.n, true);
     self.r2_prime = r2_prime;
 
     // Send response back to client
@@ -300,7 +300,7 @@ impl Handler<SP1_STMP2_Request> for VerificationWebsocket {
   fn handle(&mut self, request: SP1_STMP2_Request, ctx: &mut Self::Context) -> Self::Result {
     log::debug!("Sub-protocol 1: Second STPM: r1' + r2 = S_i,C1' * S_i,C2");
 
-    let (r2, e_s_c1_prime_e_r2) = stpm::step_2(&request.e_s_c1_prime, &self.s_i_c2, &self.n, false);
+    let (r2, e_s_c1_prime_e_r2) = stpm::step_2(&request.e_s_c1_prime, &self.s_i_c2, &self.n, true);
     self.r2 = r2;
 
     // Send response back to client
@@ -323,7 +323,7 @@ impl Handler<SP1_Product1_Request> for VerificationWebsocket {
     log::debug!("P1 = {}", self.p1);
 
     // Compute the product
-    let r2_r2_prime = BigInt::mod_add(&self.r2, &self.r2_prime, &self.n);
+    let r2_r2_prime = BigInt::mod_add(&self.r2, &self.r2_prime, &(&self.prime - 1));
     let p2 = BigInt::mod_mul(
       &BigInt::mod_mul(
         &BigInt::mod_pow(&self.g_s, &self.s_i_c2_prime, &self.prime),

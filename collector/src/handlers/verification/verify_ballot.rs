@@ -112,7 +112,7 @@ pub async fn verify_ballot(
     .map_err(|e| ServiceError::VerificationError(e))?;
 
   // Step 3: Compute r1 = D((E(S_i,C1)^(S_i,C2')) * (E(r2')^(-1)))
-  let r1 = stpm::step_3(&e_s_c1_e_r2_prime, &p, &q, false);
+  let r1 = stpm::step_3(&e_s_c1_e_r2_prime, &p, &q, true);
   log::debug!("r1 = {}", r1);
 
   // ============================================================
@@ -134,7 +134,7 @@ pub async fn verify_ballot(
     .map_err(|e| ServiceError::VerificationError(e))?;
 
   // Step 3: Compute r1' = D((E(S_i,C1')^(S_i,C2)) * (E(r2)^(-1)))
-  let r1_prime = stpm::step_3(&e_s_c1_prime_e_r2, &p, &q, false);
+  let r1_prime = stpm::step_3(&e_s_c1_prime_e_r2, &p, &q, true);
   log::debug!("r1' = {}", r1_prime);
 
   // ============================================================
@@ -143,7 +143,7 @@ pub async fn verify_ballot(
   log::debug!("Sub-protocol 1: Computing combined products P1 and P2");
 
   // Step 1: Compute and send P1
-  let r1_r1_prime = BigInt::mod_add(&r1, &r1_prime, &n);
+  let r1_r1_prime = BigInt::mod_add(&r1, &r1_prime, &(&prime - 1));
   let p1 = BigInt::mod_mul(
     &BigInt::mod_mul(
       &BigInt::mod_pow(&data.g_s, &s_i_c1_prime, &prime),
