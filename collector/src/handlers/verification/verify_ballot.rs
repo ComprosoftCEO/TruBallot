@@ -2,7 +2,6 @@ use actix_web::client::Client;
 use actix_web::{web, HttpResponse};
 use curv_kzen::arithmetic::Modulo;
 use curv_kzen::BigInt;
-use kzen_paillier::*;
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
@@ -12,6 +11,7 @@ use crate::auth::{AnyToken, CollectorToken, JWTSecret, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ServiceError, WebsocketError};
 use crate::models::{Election, Question};
+use crate::protocol::stpm;
 use crate::utils::ConvertBigInt;
 use crate::views::verification::VerificationResult;
 use crate::Collector;
@@ -52,23 +52,17 @@ pub async fn verify_ballot(
   let stild_i_c1_prime = registration.reverse_ballot_shares.to_bigint(); // S~i,C1'
 
   // Paillier keys for secure two-party multiplication (STPM)
-  let (encryption_key, decryption_key) = Keypair {
-    p: election.paillier_p.to_bigint(),
-    q: election.paillier_q.to_bigint(),
-  }
-  .keys();
+  let p = election.paillier_p.to_bigint();
+  let q = election.paillier_q.to_bigint();
+  let n = &p * &q;
 
   // ============================================================
   // Open client websocket connection
   // ============================================================
-  let url = format!(
-    "{}://{}",
-    if collector.opposite().is_secure() { "wss" } else { "ws" },
-    collector.opposite().api_url(&format!(
-      "/elections/{}/questions/{}/verification/ws/{}",
-      election_id, question_id, data.user_id,
-    ))?
-  );
+  let url = collector.opposite().websocket_url(&format!(
+    "/elections/{}/questions/{}/verification/ws/{}",
+    election_id, question_id, data.user_id,
+  ))?;
 
   let request = Client::builder()
     .disable_timeout()
@@ -93,7 +87,7 @@ pub async fn verify_ballot(
       g_s: data.g_s.clone(),
       g_s_prime: data.g_s_prime.clone(),
       g_s_s_prime: data.g_s_s_prime.clone(),
-      n: encryption_key.n.clone(),
+      n: n.clone(),
     },
   )
   .await
@@ -106,25 +100,19 @@ pub async fn verify_ballot(
   // ============================================================
   log::debug!("Sub-protocol 1: First STPM: r1 + r2' = S_i,C1 * S_i,C2'");
 
-  // Step 1: Compute E(S_i,C1, e)
-  let e_s_c1: RawCiphertext = Paillier::encrypt(&encryption_key, s_i_c1.clone().into());
-  WebsocketError::send_json(
-    &mut stream,
-    &SP1_STMP1_Request {
-      e_s_c1: e_s_c1.0.into_owned(),
-    },
-  )
-  .await
-  .map_err(|e| ServiceError::VerificationError(e))?;
+  // Step 1: Compute E(S_i,C1)
+  let e_s_c1 = stpm::step_1(&s_i_c1, &n);
+  WebsocketError::send_json(&mut stream, &SP1_STMP1_Request { e_s_c1 })
+    .await
+    .map_err(|e| ServiceError::VerificationError(e))?;
 
-  // Step 2: Server picks r2' and computes E(S_i,C1, e)^(S_i,C2')) * (E(r2', e)^(-1))
+  // Step 2: Server picks r2' and computes (E(S_i,C1)^(S_i,C2')) * (E(r2')^(-1))
   let SP1_STMP1_Response { e_s_c1_e_r2_prime } = WebsocketError::read_json(&mut stream)
     .await
     .map_err(|e| ServiceError::VerificationError(e))?;
 
-  // Step 3: Compute r1 = D(E(S_i,C1, e)^(S_i,C2')) * (E(r2', e)^(-1)), d)
-  let r1: RawPlaintext = Paillier::decrypt(&decryption_key, RawCiphertext::from(&e_s_c1_e_r2_prime));
-  let r1 = r1.0.into_owned();
+  // Step 3: Compute r1 = D((E(S_i,C1)^(S_i,C2')) * (E(r2')^(-1)))
+  let r1 = stpm::step_3(&e_s_c1_e_r2_prime, &p, &q, false);
   log::debug!("r1 = {}", r1);
 
   // ============================================================
@@ -134,25 +122,19 @@ pub async fn verify_ballot(
   // ============================================================
   log::debug!("Sub-protocol 1: Second STPM: r1' + r2 = S_i,C1' * S_i,C2");
 
-  // Step 1: Compute E(S_i,C1', e)
-  let e_s_c1_prime: RawCiphertext = Paillier::encrypt(&encryption_key, s_i_c1_prime.clone().into());
-  WebsocketError::send_json(
-    &mut stream,
-    &SP1_STMP2_Request {
-      e_s_c1_prime: e_s_c1_prime.0.into_owned(),
-    },
-  )
-  .await
-  .map_err(|e| ServiceError::VerificationError(e))?;
+  // Step 1: Compute E(S_i,C1')
+  let e_s_c1_prime = stpm::step_1(&s_i_c1_prime, &n);
+  WebsocketError::send_json(&mut stream, &SP1_STMP2_Request { e_s_c1_prime })
+    .await
+    .map_err(|e| ServiceError::VerificationError(e))?;
 
-  // Step 2: Server picks r2 and computes E(S_i,C1', e)^(S_i,C2)) * (E(r2, e)^(-1))
+  // Step 2: Server picks r2 and computes (E(S_i,C1')^(S_i,C2)) * (E(r2)^(-1))
   let SP1_STMP2_Response { e_s_c1_prime_e_r2 } = WebsocketError::read_json(&mut stream)
     .await
     .map_err(|e| ServiceError::VerificationError(e))?;
 
-  // Step 3: Compute r1' = D(E(S_i,C1', e)^(S_i,C2)) * (E(r2, e)^(-1)), d)
-  let r1_prime: RawPlaintext = Paillier::decrypt(&decryption_key, RawCiphertext::from(&e_s_c1_prime_e_r2));
-  let r1_prime = r1_prime.0.into_owned();
+  // Step 3: Compute r1' = D((E(S_i,C1')^(S_i,C2)) * (E(r2)^(-1)))
+  let r1_prime = stpm::step_3(&e_s_c1_prime_e_r2, &p, &q, false);
   log::debug!("r1' = {}", r1_prime);
 
   // ============================================================
@@ -161,6 +143,7 @@ pub async fn verify_ballot(
   log::debug!("Sub-protocol 1: Computing combined products P1 and P2");
 
   // Step 1: Compute and send P1
+  let r1_r1_prime = BigInt::mod_add(&r1, &r1_prime, &n);
   let p1 = BigInt::mod_mul(
     &BigInt::mod_mul(
       &BigInt::mod_pow(&data.g_s, &s_i_c1_prime, &prime),
@@ -169,7 +152,7 @@ pub async fn verify_ballot(
     ),
     &BigInt::mod_mul(
       &BigInt::mod_pow(&generator, &(&s_i_c1 * &s_i_c1_prime), &prime),
-      &BigInt::mod_pow(&generator, &(&r1 + &r1_prime), &prime),
+      &BigInt::mod_pow(&generator, &r1_r1_prime, &prime),
       &prime,
     ),
     &prime,

@@ -32,17 +32,40 @@ impl Collector {
     format!("C{}_{}", self.to_number(), env)
   }
 
+  /// Get the base URL for the given collector
+  pub fn get_url_base(&self) -> Result<String, ServiceError> {
+    match self {
+      Collector::One => config::get_c1_url(),
+      Collector::Two => config::get_c2_url(),
+    }
+    .ok_or_else(|| ServiceError::CollectorURLNotSet(*self))
+  }
+
   /// Build the URL for a given collector, relative from the root API endpoint
   ///
   /// _Note:_ The root endpoint is `/api/v1/collector/{1 or 2}`
   pub fn api_url(&self, url: &str) -> Result<String, ServiceError> {
-    let url_base = match self {
-      Collector::One => config::get_c1_url(),
-      Collector::Two => config::get_c2_url(),
-    }
-    .ok_or_else(|| ServiceError::CollectorURLNotSet(*self))?;
-
+    let url_base = self.get_url_base()?;
     Ok(format!("{}/api/v1/collector/{}{}", url_base, self.to_number(), url))
+  }
+
+  /// Build the websocket URL for a given collector, relative from the root API endpoint
+  ///   Appends either "ws://" or "wss://" to the URL to make it valid for the protocol
+  ///
+  /// _Note:_ The root endpoint is `/api/v1/collector/{1 or 2}`
+  pub fn websocket_url(&self, url: &str) -> Result<String, ServiceError> {
+    let url_base = self.get_url_base()?;
+    let secure = std::env::var(self.env_prefix("USE_HTTPS"))
+      .map(|https| https.parse().unwrap_or(false))
+      .unwrap_or(false);
+
+    Ok(format!(
+      "{}://{}/api/v1/collector/{}{}",
+      if secure { "wss" } else { "ws" },
+      url_base,
+      self.to_number(),
+      url,
+    ))
   }
 
   /// Test if the collector us using TLS or not

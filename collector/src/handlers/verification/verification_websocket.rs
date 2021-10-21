@@ -1,13 +1,13 @@
 use actix::prelude::*;
 use actix_http::ws::{CloseCode, CloseReason};
 use actix_web_actors::ws;
-use curv_kzen::arithmetic::{Modulo, Samplable};
+use curv_kzen::arithmetic::Modulo;
 use curv_kzen::BigInt;
-use kzen_paillier::*;
 use serde::{Deserialize, Serialize};
 
 use super::websocket_messages::*;
 use crate::models::{Election, Question, Registration};
+use crate::protocol::stpm;
 use crate::utils::ConvertBigInt;
 
 /// Actor used for managing the verification protocol
@@ -282,22 +282,11 @@ impl Handler<SP1_STMP1_Request> for VerificationWebsocket {
   fn handle(&mut self, request: SP1_STMP1_Request, ctx: &mut Self::Context) -> Self::Result {
     log::debug!("Sub-protocol 1: First STPM: r1 + r2' = S_i,C1 * S_i,C2'");
 
-    // Pick values for r2'
-    self.r2_prime = BigInt::sample_below(&(&self.prime - 1));
-    log::debug!("r2' = {}", self.r2_prime);
-
-    // Compute E(r2', e)
-    let ek: EncryptionKey = MinimalEncryptionKey { n: self.n.clone() }.into();
-    let encrypt_r2_prime: RawCiphertext = Paillier::encrypt(&ek, self.r2_prime.clone().into());
-
-    // Step 2: Compute (E(S_i,C1, e)^(S_i,C2')) * (E(r2', e)^(-1)) (mod n^2)
-    let e_s_c1_e_r2_prime = BigInt::mod_mul(
-      &BigInt::mod_pow(&request.e_s_c1, &self.s_i_c2_prime, &ek.nn),
-      &BigInt::mod_inv(&encrypt_r2_prime.0, &ek.nn).expect("Error: No Inverse"),
-      &ek.nn,
-    );
+    let (r2_prime, e_s_c1_e_r2_prime) = stpm::step_2(&request.e_s_c1, &self.s_i_c2_prime, &self.n, false);
+    self.r2_prime = r2_prime;
 
     // Send response back to client
+    log::debug!("r2' = {}", self.r2_prime);
     Self::send_json(&SP1_STMP1_Response { e_s_c1_e_r2_prime }, ctx)
   }
 }
@@ -311,22 +300,11 @@ impl Handler<SP1_STMP2_Request> for VerificationWebsocket {
   fn handle(&mut self, request: SP1_STMP2_Request, ctx: &mut Self::Context) -> Self::Result {
     log::debug!("Sub-protocol 1: Second STPM: r1' + r2 = S_i,C1' * S_i,C2");
 
-    // Pick values for r2
-    self.r2 = BigInt::sample_below(&(&self.prime - 1));
-    log::debug!("r2 = {}", self.r2);
-
-    // Compute E(r2, e)
-    let ek: EncryptionKey = MinimalEncryptionKey { n: self.n.clone() }.into();
-    let encrypt_r2: RawCiphertext = Paillier::encrypt(&ek, self.r2.clone().into());
-
-    // Step 2: Compute (E(S_i,C1', e)^(S_i,C2)) * (E(r2, e)^(-1)) (mod n^2)
-    let e_s_c1_prime_e_r2 = BigInt::mod_mul(
-      &BigInt::mod_pow(&request.e_s_c1_prime, &self.s_i_c2, &ek.nn),
-      &BigInt::mod_inv(&encrypt_r2.0, &ek.nn).expect("Error: No Inverse"),
-      &ek.nn,
-    );
+    let (r2, e_s_c1_prime_e_r2) = stpm::step_2(&request.e_s_c1_prime, &self.s_i_c2, &self.n, false);
+    self.r2 = r2;
 
     // Send response back to client
+    log::debug!("r2 = {}", self.r2);
     Self::send_json(&SP1_STMP2_Response { e_s_c1_prime_e_r2 }, ctx)
   }
 }
@@ -345,6 +323,7 @@ impl Handler<SP1_Product1_Request> for VerificationWebsocket {
     log::debug!("P1 = {}", self.p1);
 
     // Compute the product
+    let r2_r2_prime = BigInt::mod_add(&self.r2, &self.r2_prime, &self.n);
     let p2 = BigInt::mod_mul(
       &BigInt::mod_mul(
         &BigInt::mod_pow(&self.g_s, &self.s_i_c2_prime, &self.prime),
@@ -353,7 +332,7 @@ impl Handler<SP1_Product1_Request> for VerificationWebsocket {
       ),
       &BigInt::mod_mul(
         &BigInt::mod_pow(&self.generator, &(&self.s_i_c2 * &self.s_i_c2_prime), &self.prime),
-        &BigInt::mod_pow(&self.generator, &(&self.r2 + &self.r2_prime), &self.prime),
+        &BigInt::mod_pow(&self.generator, &r2_r2_prime, &self.prime),
         &self.prime,
       ),
       &self.prime,
