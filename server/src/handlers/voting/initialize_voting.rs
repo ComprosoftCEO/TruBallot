@@ -66,7 +66,7 @@ pub async fn initialize_voting(
   notify_registration_closed(&election, &jwt_key).await;
 
   // We use a single prime that can serve the largest voting vector
-  let questions_candidates = election.get_questions_candidates(&conn)?;
+  let questions_candidates = election.get_questions_candidates_ordered(&conn)?;
   let max_num_candidates = questions_candidates.iter().map(|(_, c)| c.len()).max().unwrap_or(2);
   let voting_vector_max_bits = registrations.len() * max_num_candidates;
 

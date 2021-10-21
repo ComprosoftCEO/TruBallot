@@ -17,7 +17,7 @@ pub async fn get_question_parameters(
 
   let (election_id, question_id) = path.into_inner();
 
-  // Make sure the election exists
+  // Make sure the election exists and the user is registered
   let election = Election::find_resource(&election_id, &conn)?;
   let registration = election
     .get_registration(&question_id, &token.get_user_id(), &conn)?

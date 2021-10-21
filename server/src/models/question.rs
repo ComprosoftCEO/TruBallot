@@ -6,7 +6,7 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError};
-use crate::models::{Commitment, Election};
+use crate::models::{Commitment, Election, User};
 use crate::schema::questions;
 use crate::utils::{new_safe_uuid_v4, ConvertBigInt};
 
@@ -77,6 +77,23 @@ impl Question {
   }
 
   ///
+  /// Get all (commitment, user) pairs for the given question
+  ///
+  pub fn get_commitments_users(&self, conn: &DbConnection) -> Result<Vec<(Commitment, User)>, ServiceError> {
+    use crate::schema::commitments::dsl::{commitments, election_id, question_id};
+    use crate::schema::users::dsl::{name, users};
+
+    Ok(
+      commitments
+        .inner_join(users)
+        .filter(election_id.eq(&self.election_id))
+        .filter(question_id.eq(&self.id))
+        .order_by(name.asc())
+        .get_results(conn.get())?,
+    )
+  }
+
+  ///
   /// Compute the forward and reverse ballot sum for a given question, mod (p - 1)
   ///
   pub fn get_ballots_sum(&self, modulo: &BigInt, conn: &DbConnection) -> Result<(BigInt, BigInt), ServiceError> {
@@ -103,16 +120,21 @@ impl Question {
   ///
   /// Get the list of users who didn't cast a vote for this question
   ///
-  pub fn get_users_without_vote(&self, conn: &DbConnection) -> Result<Vec<Uuid>, ServiceError> {
+  pub fn get_users_without_vote_ordered(&self, conn: &DbConnection) -> Result<Vec<User>, ServiceError> {
     use crate::schema::commitments::dsl::{
       commitments, election_id as c_election_id, question_id as c_question_id, user_id as c_user_id,
     };
     use crate::schema::registrations::dsl::{election_id, registrations, user_id};
+    use crate::schema::users::{
+      all_columns as all_user_columns,
+      dsl::{name, users},
+    };
     use diesel::dsl::{exists, not};
 
     Ok(
       registrations
-        .select(user_id)
+        .inner_join(users)
+        .select(all_user_columns)
         .distinct()
         .filter(election_id.eq(&self.election_id))
         .filter(not(exists(
@@ -121,7 +143,21 @@ impl Question {
             .filter(c_election_id.eq(&self.election_id))
             .filter(c_question_id.eq(&self.id)),
         )))
-        .get_results::<Uuid>(conn.get())?,
+        .order_by(name.asc())
+        .get_results::<User>(conn.get())?,
+    )
+  }
+
+  ///
+  /// Get the list of user ids who didn't cast a vote for this question
+  ///
+  pub fn get_user_ids_without_vote(&self, conn: &DbConnection) -> Result<Vec<Uuid>, ServiceError> {
+    Ok(
+      self
+        .get_users_without_vote_ordered(conn)?
+        .into_iter()
+        .map(|u| u.id)
+        .collect(),
     )
   }
 }

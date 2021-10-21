@@ -71,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
                     "/parameters",
                     web::get().to(handlers::election::get_election_parameters),
                   )
+                  .route("/results", web::get().to(handlers::election::get_election_results))
                   .service(
                     web::scope("/registration")
                       .route("", web::post().to(handlers::registration::register_for_election))

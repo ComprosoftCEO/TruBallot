@@ -5,7 +5,7 @@ use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus};
-use crate::views::election::{CreatedByDetails, PublicElectionDetails, PublicElectionQuestion};
+use crate::views::election::{PublicElectionDetails, PublicElectionQuestion, UserDetails};
 
 pub async fn get_election(
   token: ClientToken,
@@ -38,16 +38,21 @@ pub async fn get_election(
   }
 
   // Nested details
-  let created_by_details = CreatedByDetails::new(election.get_user(&conn)?);
-  let num_registered = election.count_registrations(&conn)?;
-
+  let created_by_details = UserDetails::new(election.get_user(&conn)?);
   let registration = election.get_user_registration(&current_user_id, &conn)?;
   let is_registered = registration.is_some();
   let has_voted = registration.map(|r| r.has_voted).unwrap_or(false);
 
+  // Get users registered in the election
+  let registrations = election
+    .get_registered_users(&conn)?
+    .into_iter()
+    .map(UserDetails::new)
+    .collect();
+
   // Get all of the questions and candidates
   let mut questions: Vec<PublicElectionQuestion> = Vec::new();
-  for (question, candidates) in election.get_questions_candidates(&conn)? {
+  for (question, candidates) in election.get_questions_candidates_ordered(&conn)? {
     let num_votes_received = question.count_commitments(&conn)?;
 
     questions.push(PublicElectionQuestion::new(question, num_votes_received, candidates));
@@ -59,7 +64,7 @@ pub async fn get_election(
     created_by_details,
     is_registered,
     has_voted,
-    num_registered,
+    registrations,
     questions,
   );
   Ok(HttpResponse::Ok().json(result))

@@ -3,8 +3,8 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::auth::ClientToken;
 use crate::db::DbConnection;
-use crate::errors::{NamedResourceType, ResourceAction, ServiceError};
-use crate::models::{Election, ElectionStatus};
+use crate::errors::{NamedResourceType, ServiceError};
+use crate::models::Election;
 use crate::utils::ConvertBigInt;
 use crate::views::election::{ElectionParameters, QuestionParameters};
 
@@ -19,14 +19,10 @@ pub async fn get_election_parameters(
   // Make sure the election exists
   let election = Election::find_resource(&*path, &conn)?;
 
-  // When in the draft state, only the election creator can read the election
-  let current_user_id = token.get_user_id();
-  if election.status == ElectionStatus::Draft && election.created_by != current_user_id {
-    return Err(ServiceError::ElectionNotOwnedByUser {
-      current_user_id,
-      owner_id: election.created_by,
-      action: ResourceAction::ReadPrivate,
-    });
+  // If the election is private, then can only be read if user is registered
+  let registration = election.get_user_registration(&token.get_user_id(), &conn)?;
+  if !election.is_public && registration.is_none() {
+    return Err(NamedResourceType::election(election.id).into_error());
   }
 
   // Election must have already closed voting
@@ -36,17 +32,9 @@ pub async fn get_election_parameters(
     });
   }
 
-  // User must be registered for election
-  let registration = election.get_user_registration(&token.get_user_id(), &conn)?;
-
-  // If the election is private, then can only be read if user is registered
-  if !election.is_public && registration.is_none() {
-    return Err(NamedResourceType::election(election.id).into_error());
-  }
-
   // Build the final result
   let questions = election
-    .get_questions_candidates(&conn)?
+    .get_questions_candidates_ordered(&conn)?
     .into_iter()
     .map(|(_question, candidates)| {
       Ok(QuestionParameters {

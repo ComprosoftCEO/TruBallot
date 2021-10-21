@@ -2,45 +2,44 @@ use curv_kzen::arithmetic::traits::Converter;
 use curv_kzen::BigInt;
 use std::iter;
 
-pub struct VerifyVotingVectorInput<'a, 'b> {
-  pub forward_ballot: &'a BigInt,
-  pub reverse_ballot: &'b BigInt,
-  pub num_candidates: i64,
-  pub num_voters: i64,
-  pub no_vote_count: usize,
-}
-
 ///
-/// Test the validity of the voting vector
+/// Test the validity of the voting vector, then count the number of votes
 ///
-pub fn verify_voting_vector(input: VerifyVotingVectorInput) -> bool {
-  let total_bits = (input.num_candidates * input.num_voters) as usize;
-  let forward_bits = get_bits(&input.forward_ballot, total_bits);
-  let reverse_bits = get_bits(&input.reverse_ballot, total_bits);
+/// On error, this returns None
+/// On success, it returns the number of votes for each candidate
+///
+pub fn count_ballot_votes(
+  forward_ballot: &BigInt,
+  reverse_ballot: &BigInt,
+  num_candidates: i64,
+  num_voters: i64,
+  no_vote_count: usize,
+) -> Option<Vec<i64>> {
+  let total_bits = (num_candidates * num_voters) as usize;
+  let forward_bits = get_bits(forward_ballot, total_bits);
+  let reverse_bits = get_bits(reverse_ballot, total_bits);
 
   // Step 1: Make sure the forward and reverse bits match
   for (f, r) in forward_bits.iter().zip(reverse_bits.iter().rev()) {
     if *f != *r {
-      return false;
+      return None;
     }
   }
 
   // Step 2: Make sure each chunk has, at most, only one candidate selected
-  let chunks = get_chunks(&forward_bits, input.num_candidates as usize);
+  let chunks = get_chunks(&forward_bits, num_candidates as usize);
   let (voted, no_vote) = match verify_chunks(&chunks) {
     Some((voted, no_vote)) => (voted, no_vote),
-    None => return false,
+    None => return None,
   };
 
   // Step 3: Make sure the number of voted bits matches the users who voted
-  let expected_voted = total_bits - input.no_vote_count;
-  let expected_no_vote = input.no_vote_count;
-  if voted != expected_voted || no_vote != expected_no_vote {
-    return false;
+  if voted + no_vote != total_bits || no_vote != no_vote_count {
+    return None;
   }
 
   // All checks passed!
-  true
+  Some(count_votes(&chunks, num_candidates as usize))
 }
 
 /// Convert the integer voting vector into a vector of bits
@@ -82,4 +81,26 @@ fn verify_chunks(input: &Vec<Vec<bool>>) -> Option<(usize, usize)> {
   }
 
   Some((voted, no_vote))
+}
+
+/// Total up the votes for each candidate
+///
+/// This function assumes that the chunk input has already been validated by verify_chunks
+fn count_votes(input: &Vec<Vec<bool>>, num_candidates: usize) -> Vec<i64> {
+  let mut votes = vec![0; num_candidates];
+
+  for chunk in input {
+    // Searches for the first candidate bit set in the chunk
+    if let Some(candidate) = chunk
+      .into_iter()
+      .rev()
+      .enumerate()
+      .filter_map(|(i, c)| (*c).then(|| i))
+      .next()
+    {
+      votes[candidate] += 1;
+    }
+  }
+
+  votes
 }

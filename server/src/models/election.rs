@@ -76,8 +76,11 @@ impl Election {
     )
   }
 
-  /// Get the questions and the candidates
-  pub fn get_questions_candidates(&self, conn: &DbConnection) -> Result<Vec<(Question, Vec<Candidate>)>, ServiceError> {
+  /// Get the questions and the candidates, ordered by question number
+  pub fn get_questions_candidates_ordered(
+    &self,
+    conn: &DbConnection,
+  ) -> Result<Vec<(Question, Vec<Candidate>)>, ServiceError> {
     let questions = self.get_questions_ordered(conn)?;
     let candidates = Candidate::belonging_to(&questions)
       .get_results::<Candidate>(conn.get())?
