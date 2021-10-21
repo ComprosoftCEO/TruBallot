@@ -1,9 +1,7 @@
 use actix_web::client::Client;
 use actix_web::{web, HttpResponse};
-use aes::cipher::{generic_array::GenericArray, BlockEncrypt, NewBlockCipher};
-use aes::{Aes256, Block, BLOCK_SIZE};
 use curv_kzen::BigInt;
-use diesel::prelude::*;
+use kzen_paillier::*;
 use num::Zero;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
@@ -16,7 +14,7 @@ use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus, Registration};
 use crate::notifications::{notify_registration_closed, notify_voting_opened};
-use crate::protocol::generator_prime_pair;
+use crate::protocol::{generator_prime_pair, stpm};
 use crate::utils::ConvertBigInt;
 use crate::Collector;
 
@@ -83,16 +81,18 @@ pub async fn initialize_voting(
     log::debug!("Picked g = {} and p = {}", generator, prime);
   }
 
-  // Encrypt the locations 0 to N using AES
-  let key = GenericArray::from_slice(election.encryption_key.as_slice());
-  let cipher = Aes256::new(&key);
+  // Generate the STPM Paillier cryptosystem key pair
+  // Should have enough bits to store our locations without any modulus
+  let num_bits = 512;
+  log::debug!("Generate Paillier keypair with {} bits", num_bits);
+  let (encryption_key, decryption_key) = Paillier::keypair_safe_primes_with_modulus_size(512).keys();
 
-  log::debug!("Encrypting locations 0 .. {}", registrations.len());
-  let mut encrypted_locations: Vec<Block> = (0u128..(registrations.len() as u128))
+  // Encrypt the locations 0 to N using STPM (Step 1)
+  log::debug!("Encrypting locations 0 .. {} using STPM", registrations.len());
+  let mut encrypted_locations: Vec<BigInt> = (0u64..(registrations.len() as u64))
     .into_iter()
-    .map(|i| Block::from(i.to_be_bytes()))
+    .map(|i| stpm::step_1(&BigInt::from(i), &encryption_key.n))
     .collect();
-  cipher.encrypt_blocks(&mut encrypted_locations);
 
   // Then shuffle the list
   log::debug!("Shuffle encrypted locations");
@@ -112,7 +112,8 @@ pub async fn initialize_voting(
       })
       .collect(),
     registered_users: registrations.iter().map(|r| r.user_id).collect(),
-    encrypted_locations: encrypted_locations.into_iter().map(|e| *e.as_ref()).collect(),
+    encrypted_locations,
+    n: Some(encryption_key.n.clone()),
   };
 
   // Register the election with the first collector
@@ -130,7 +131,7 @@ pub async fn initialize_voting(
   log::debug!("Got success response from collector 1");
 
   // Make sure collector 1 returned the correct number of encrypted locations
-  let encrypted_locations = collector1_response.encrypted_locations;
+  let mut encrypted_locations = collector1_response.encryption_result;
   if encrypted_locations.len() != registrations.len() {
     return Err(ServiceError::WrongNumberOfEncryptedLocations {
       collector: Collector::Two,
@@ -139,9 +140,16 @@ pub async fn initialize_voting(
     });
   }
 
+  // Perform step 3 of STPM to get the encrypted locations for collector 2
+  log::debug!("Decrypt locations using STPM to get r1");
+  encrypted_locations
+    .iter_mut()
+    .for_each(|l| *l = stpm::step_3(l, &decryption_key.p, &decryption_key.q, true));
+
   // Register the election with the second collector
   log::debug!("Send election parameters to collector 2");
   create_elections_data.encrypted_locations = encrypted_locations;
+  create_elections_data.n = None;
   let collector2_request = Client::builder()
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
@@ -149,35 +157,19 @@ pub async fn initialize_voting(
     .post(Collector::Two.api_url("/elections")?)
     .send_json(&create_elections_data);
 
-  let collector2_response: CreateElectionResponse = ClientRequestError::handle(collector2_request)
+  let _: CreateElectionResponse = ClientRequestError::handle(collector2_request)
     .await
     .map_err(|e| ServiceError::RegisterElectionError(Collector::Two, e))?;
   log::debug!("Got success response from collector 2");
 
-  // Make sure collector 2 returned the correct number of encrypted locations
-  let encrypted_locations = collector2_response.encrypted_locations;
-  if encrypted_locations.len() != registrations.len() {
-    return Err(ServiceError::WrongNumberOfEncryptedLocations {
-      collector: Collector::Two,
-      given: encrypted_locations.len(),
-      expected: registrations.len(),
-    });
-  }
+  // Note:
+  //   Collector 2 won't return any encryption result, so we don't need to check here...
+  //   Both collectors now have r1 + r2 = Encrypted location
 
-  // Give an encrypted location to each registered user
-  log::debug!("Giving an encrypted location to each registered user");
-  conn.get().transaction::<(), ServiceError, _>(|| {
-    for (mut registration, location) in registrations.into_iter().zip(encrypted_locations.into_iter()) {
-      registration.encrypted_location = location.to_vec();
-      registration.update(&conn)?;
-    }
-
-    // Election is now FULLY INITIALIZED!!!
-    election.status = ElectionStatus::Voting;
-    election.update(&conn)?;
-
-    Ok(())
-  })?;
+  // Election is now FULLY INITIALIZED!!!
+  log::debug!("Marking election as fully initialized...");
+  election.status = ElectionStatus::Voting;
+  election.update(&conn)?;
 
   notify_voting_opened(&election, &jwt_key).await;
   log::info!(
@@ -204,7 +196,13 @@ struct CreateElectionData {
 
   questions: Vec<CreateElectionQuestion>,
   registered_users: Vec<Uuid>,
-  encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
+
+  /// Use secure two-party multiplication to store location
+  /// If n is provided, then this is on step 2, otherwise it is on step 3
+  #[serde(with = "kzen_paillier::serialize::vecbigint")]
+  encrypted_locations: Vec<BigInt>,
+  #[serde(with = "crate::utils::serialize_option_bigint")]
+  n: Option<BigInt>,
 }
 
 #[derive(Debug, Serialize)]
@@ -216,5 +214,7 @@ struct CreateElectionQuestion {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreateElectionResponse {
-  encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
+  // Vector might be empty when returning from the second collector
+  #[serde(with = "kzen_paillier::serialize::vecbigint")]
+  encryption_result: Vec<BigInt>,
 }

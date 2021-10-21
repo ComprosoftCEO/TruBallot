@@ -1,17 +1,22 @@
-use aes::BLOCK_SIZE;
 use curv_kzen::BigInt;
 use serde::Serialize;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateElectionResponse {
-  pub encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
+  // Vector might be empty when returning from the second collector
+  #[serde(with = "kzen_paillier::serialize::vecbigint")]
+  pub encryption_result: Vec<BigInt>,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElectionParameters {
-  pub encryption_key: String,
+  #[serde(
+    skip_serializing_if = "Option::is_none",
+    with = "crate::utils::serialize_option_bigint"
+  )]
+  pub encrypted_location: Option<BigInt>,
 }
 
 #[derive(Debug, Serialize)]

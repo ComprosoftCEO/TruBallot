@@ -3,6 +3,7 @@
 //
 mod count_ballot_votes;
 mod generator;
+pub mod stpm;
 
 pub use count_ballot_votes::count_ballot_votes;
 pub use generator::generator_prime_pair;

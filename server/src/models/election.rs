@@ -1,7 +1,7 @@
 use bigdecimal::BigDecimal;
 use diesel::prelude::*;
 use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use rand::Rng;
 use serde::Serialize;
 use std::iter;
 use uuid_b64::UuidB64 as Uuid;
@@ -29,8 +29,6 @@ pub struct Election {
 
   pub generator: BigDecimal,
   pub prime: BigDecimal,
-
-  pub encryption_key: Vec<u8>,
 }
 
 impl Election {
@@ -43,9 +41,6 @@ impl Election {
   has_many!(Commitment);
 
   pub fn new(name: impl Into<String>, created_by: Uuid, is_public: bool) -> Self {
-    // Generate a random AES encryption key
-    let encryption_key = thread_rng().gen::<[u8; 32]>().to_vec();
-
     Self {
       id: new_safe_uuid_v4(),
       name: name.into(),
@@ -55,7 +50,6 @@ impl Election {
       access_code: None,
       generator: BigDecimal::default(),
       prime: BigDecimal::default(),
-      encryption_key,
     }
   }
 
@@ -101,6 +95,24 @@ impl Election {
     conn: &DbConnection,
   ) -> Result<Option<Registration>, ServiceError> {
     Ok(Registration::find_optional((&user_id, &self.id), conn)?)
+  }
+
+  /// Test if a user has voted for every question in the election
+  pub fn has_user_voted(&self, user_id: &Uuid, conn: &DbConnection) -> Result<bool, ServiceError> {
+    Ok(self.count_user_commitments(user_id, conn)? == self.count_questions(conn)?)
+  }
+
+  /// Count the number of commitments that a user has submitted
+  fn count_user_commitments(&self, user_id: &Uuid, conn: &DbConnection) -> Result<i64, ServiceError> {
+    use crate::schema::commitments::dsl::{commitments, election_id, user_id as commitment_user_id};
+
+    Ok(
+      commitments
+        .filter(election_id.eq(&self.id))
+        .filter(commitment_user_id.eq(user_id))
+        .count()
+        .get_result(conn.get())?,
+    )
   }
 
   /// Test if a user is currently registered for an election

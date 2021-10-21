@@ -11,10 +11,7 @@ CREATE TABLE elections (
   -- g^x (mod p) is a cyclic group of order p-1
   --   These values are not generated until the election is closed
   generator NUMERIC NOT NULL,
-  prime NUMERIC NOT NULL,
-
-  -- Used as part of the encryption for the location
-  encryption_key BYTEA NOT NULL
+  prime NUMERIC NOT NULL
 );
 
 
@@ -54,14 +51,7 @@ CREATE TABLE candidates (
 CREATE TABLE registrations (
   user_id UUID NOT NULL REFERENCES users (id),
   election_id UUID NOT NULL REFERENCES elections (id),
-  PRIMARY KEY (user_id, election_id),
-
-  -- User voting location
-  -- Encrypted using AES keys from the server, collector 1, and collector 2
-  encrypted_location BYTEA NOT NULL,
-
-  -- Cached value that is updated once all user votes have been cast
-  has_voted BOOLEAN NOT NULL
+  PRIMARY KEY (user_id, election_id)
 );
 
 

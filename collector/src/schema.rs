@@ -5,7 +5,14 @@ table! {
         prime -> Numeric,
         paillier_p -> Numeric,
         paillier_q -> Numeric,
-        encryption_key -> Bytea,
+    }
+}
+
+table! {
+    encrypted_locations (user_id, election_id) {
+        user_id -> Uuid,
+        election_id -> Uuid,
+        location -> Numeric,
     }
 }
 
@@ -29,8 +36,14 @@ table! {
     }
 }
 
+joinable!(encrypted_locations -> elections (election_id));
 joinable!(questions -> elections (election_id));
 joinable!(registrations -> elections (election_id));
 joinable!(registrations -> questions (question_id));
 
-allow_tables_to_appear_in_same_query!(elections, questions, registrations,);
+allow_tables_to_appear_in_same_query!(
+    elections,
+    encrypted_locations,
+    questions,
+    registrations,
+);

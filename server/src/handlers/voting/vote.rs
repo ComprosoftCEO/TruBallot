@@ -2,9 +2,8 @@ use actix_web::client::Client;
 use actix_web::{web, HttpResponse};
 use curv_kzen::BigInt;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
-
 use uuid_b64::UuidB64 as Uuid;
+use validator::Validate;
 
 use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;

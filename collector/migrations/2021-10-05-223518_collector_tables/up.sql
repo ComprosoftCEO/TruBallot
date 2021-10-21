@@ -11,10 +11,7 @@ CREATE TABLE elections (
 
   -- Private key used by Paillier Cryptosystem for secure, two-party multiplication (STPM)
   paillier_p NUMERIC NOT NULL,
-  paillier_q NUMERIC NOT NULL,
-
-  -- Used as part of the encryption for the location
-  encryption_key BYTEA NOT NULL
+  paillier_q NUMERIC NOT NULL
 );
 
 
@@ -23,6 +20,16 @@ CREATE TABLE questions (
   id UUID NOT NULL PRIMARY KEY,
   election_id UUID NOT NULL REFERENCES elections (id),
   num_candidates BIGINT NOT NULL
+);
+
+
+-- List of encrypted locations for users registered in the election
+CREATE TABLE encrypted_locations (
+  user_id UUID NOT NULL,
+  election_id UUID NOT NULL REFERENCES elections (id),
+  PRIMARY KEY (user_id, election_id),
+
+  location NUMERIC NOT NULL
 );
 
 

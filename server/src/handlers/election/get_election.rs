@@ -41,7 +41,7 @@ pub async fn get_election(
   let created_by_details = UserDetails::new(election.get_user(&conn)?);
   let registration = election.get_user_registration(&current_user_id, &conn)?;
   let is_registered = registration.is_some();
-  let has_voted = registration.map(|r| r.has_voted).unwrap_or(false);
+  let has_voted = election.has_user_voted(&current_user_id, &conn)?;
 
   // Get users registered in the election
   let registrations = election

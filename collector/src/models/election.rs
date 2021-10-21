@@ -1,14 +1,12 @@
 use bigdecimal::BigDecimal;
 use curv_kzen::BigInt;
-use diesel::prelude::*;
 use kzen_paillier::DecryptionKey;
-use rand::{thread_rng, Rng};
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError};
-use crate::models::Registration;
+use crate::models::{EncryptedLocation, Registration};
 use crate::schema::elections;
 use crate::utils::ConvertBigInt;
 
@@ -21,13 +19,13 @@ pub struct Election {
   pub prime: BigDecimal,
   pub paillier_p: BigDecimal,
   pub paillier_q: BigDecimal,
-  pub encryption_key: Vec<u8>,
 }
 
 impl Election {
   model_base!();
 
   has_many!(Registration);
+  has_many!(EncryptedLocation);
 
   pub fn new(id: Uuid, generator: &BigInt, prime: &BigInt, paillier: &DecryptionKey) -> Self {
     // Convert from BigInt to BigDecimal
@@ -37,16 +35,12 @@ impl Election {
     let paillier_p = paillier.p.to_bigdecimal();
     let paillier_q = paillier.q.to_bigdecimal();
 
-    // Generate a random AES encryption key
-    let encryption_key = thread_rng().gen::<[u8; 32]>().to_vec();
-
     Self {
       id,
       generator,
       prime,
       paillier_p,
       paillier_q,
-      encryption_key,
     }
   }
 
@@ -65,18 +59,12 @@ impl Election {
     Ok(Registration::find_optional((user_id, &self.id, &question_id), conn)?)
   }
 
-  /// Test if a user is registered for an election
-  pub fn is_user_registered(&self, user_id: &Uuid, conn: &DbConnection) -> Result<bool, ServiceError> {
-    use crate::schema::registrations::dsl::{election_id, registrations, user_id as registration_user_id};
-    use diesel::dsl::{exists, select};
-
-    Ok(
-      select(exists(
-        registrations
-          .filter(election_id.eq(&self.id))
-          .filter(registration_user_id.eq(user_id)),
-      ))
-      .get_result(conn.get())?,
-    )
+  /// Get the encrypted location for a given user
+  pub fn get_user_encrypted_location(
+    &self,
+    user_id: &Uuid,
+    conn: &DbConnection,
+  ) -> Result<Option<EncryptedLocation>, ServiceError> {
+    Ok(EncryptedLocation::find_optional((user_id, &self.id), conn)?)
   }
 }

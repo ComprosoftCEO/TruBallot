@@ -49,9 +49,6 @@ pub async fn get_election_parameters(
 
     generator: election.generator.to_bigint(),
     prime: election.prime.to_bigint(),
-
-    encryption_key: registration.is_some().then(|| base64::encode(&election.encryption_key)),
-    encrypted_location: registration.map(|r| base64::encode(&r.encrypted_location)),
   };
 
   Ok(HttpResponse::Ok().json(result))

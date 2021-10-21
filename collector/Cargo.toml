@@ -12,7 +12,6 @@ actix-http = "2.2.1"
 actix-web = { version = "3", features = ["openssl"] }
 actix-web-actors = "3.0.0"
 actix-web-httpauth = "0.5.1"
-aes = "0.7.5"
 anyhow = "1.0.44"
 awc = "2.0.3"
 base64 = "0.13.0"

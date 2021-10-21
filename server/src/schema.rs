@@ -33,7 +33,6 @@ table! {
         access_code -> Nullable<Varchar>,
         generator -> Numeric,
         prime -> Numeric,
-        encryption_key -> Bytea,
     }
 }
 
@@ -56,8 +55,6 @@ table! {
     registrations (user_id, election_id) {
         user_id -> Uuid,
         election_id -> Uuid,
-        encrypted_location -> Bytea,
-        has_voted -> Bool,
     }
 }
 

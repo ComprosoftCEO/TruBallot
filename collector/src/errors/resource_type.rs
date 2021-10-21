@@ -6,6 +6,7 @@ pub enum ResourceType {
   User,
   Election,
   Question,
+  EncryptedLocation,
 }
 
 impl ResourceType {
@@ -14,6 +15,7 @@ impl ResourceType {
       ResourceType::User => "User",
       ResourceType::Election => "Election",
       ResourceType::Question => "Question",
+      ResourceType::EncryptedLocation => "Encrypted location",
     }
   }
 }

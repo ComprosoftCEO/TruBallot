@@ -1,6 +1,4 @@
 use actix_web::{web, HttpResponse};
-use aes::cipher::{generic_array::GenericArray, BlockEncrypt, NewBlockCipher};
-use aes::{Aes256, Block, BLOCK_SIZE};
 use curv_kzen::{arithmetic::BitManipulation, BigInt};
 use diesel::prelude::*;
 use kzen_paillier::*;
@@ -12,8 +10,8 @@ use validator::{Validate, ValidationError};
 use crate::auth::ServerToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
-use crate::models::{Election, Question, Registration};
-use crate::protocol::SharesMatrix;
+use crate::models::{Election, EncryptedLocation, Question, Registration};
+use crate::protocol::{stpm, SharesMatrix};
 use crate::utils::ConvertBigInt;
 use crate::views::election::CreateElectionResponse;
 use crate::Collector;
@@ -36,7 +34,12 @@ pub struct CreateElectionData {
   #[validate(length(min = 2))]
   registered_users: Vec<Uuid>,
 
-  encrypted_locations: Vec<[u8; BLOCK_SIZE]>,
+  /// Use secure two-party multiplication to store location
+  /// If n is provided, then this is on step 2, otherwise it is on step 3
+  #[serde(with = "kzen_paillier::serialize::vecbigint")]
+  encrypted_locations: Vec<BigInt>,
+  #[serde(with = "crate::utils::serialize_option_bigint")]
+  n: Option<BigInt>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -69,36 +72,58 @@ pub async fn create_and_initialize_election(
   token.test_can_create_election()?;
   data.validate()?;
 
-  let data = data.into_inner();
+  let mut data = data.into_inner();
+
+  // Handle STPM for the encrypted locations
+  log::debug!("Computing value r2 for encrypted locations");
+  let (encrypted_locations, encryption_result) =
+    handle_encrypted_location(data.encrypted_locations.drain(..).collect(), &data.n);
 
   // Create the election if it does not already exist
-  //  Otherwise, we don't do anything...
-  let election = match Election::find_optional(&data.id, &conn)? {
-    Some(election) => election,
-    None => create_new_election(&data, *collector.get_ref(), &conn)?,
-  };
-
-  // Perform the encryption
-  let key = GenericArray::from_slice(election.encryption_key.as_slice());
-  let cipher = Aes256::new(&key);
-  let mut encrypted_locations: Vec<_> = data.encrypted_locations.into_iter().map(Block::from).collect();
-  cipher.encrypt_blocks(&mut encrypted_locations);
-
-  // And shuffle the blocks
-  encrypted_locations.shuffle(&mut thread_rng());
+  //  Otherwise, we update the locations on the existing election
+  if let Some(election) = Election::find_optional(&data.id, &conn)? {
+    update_encrypted_locations(&data, &election, &encrypted_locations, &conn)?;
+  } else {
+    create_new_election(&data, &encrypted_locations, *collector.get_ref(), &conn)?;
+  }
 
   // Done!
-  Ok(HttpResponse::Ok().json(CreateElectionResponse {
-    encrypted_locations: encrypted_locations.into_iter().map(|p| *p.as_ref()).collect(),
-  }))
+  Ok(HttpResponse::Ok().json(CreateElectionResponse { encryption_result }))
+}
+
+/// Handle the secure two-party multiplication for storing the encrypted location
+///
+/// If n is provided, then we are at step 2 of STPM.
+/// Otherwise, we are at step 3 and don't need to do any more encryption.
+///
+/// Returns: (r1 or r2, results)
+///   -"results" is an empty vector if we are at step 3
+fn handle_encrypted_location(encrypted_locations: Vec<BigInt>, n: &Option<BigInt>) -> (Vec<BigInt>, Vec<BigInt>) {
+  if let Some(ref n) = n {
+    // Perform step 2 on all locations
+    let one = BigInt::from(1);
+    let mut encrypted_locations: Vec<_> = encrypted_locations
+      .into_iter()
+      .map(|l| stpm::step_2(&l, &one, n, true))
+      .collect();
+
+    // Then shuffle the order of the locations
+    encrypted_locations.shuffle(&mut thread_rng());
+    encrypted_locations.into_iter().unzip()
+  } else {
+    // We are at step 3, do nothing
+    (encrypted_locations, Vec::new())
+  }
 }
 
 ///
 /// Create a new election since one does not currently exist in the database
 /// This initializes all shares and parameters within the collector
+/// It also initializes the user locations
 ///
 fn create_new_election(
   data: &CreateElectionData,
+  encrypted_locations: &[BigInt],
   collector: Collector,
   conn: &DbConnection,
 ) -> Result<Election, ServiceError> {
@@ -118,6 +143,14 @@ fn create_new_election(
       .iter()
       .map(|question| Question::new(question.id, election.id, question.num_candidates).insert(&conn))
       .collect::<Result<Vec<Question>, _>>()?;
+
+    // Create all of the encrypted locations
+    data
+      .registered_users
+      .iter()
+      .zip(encrypted_locations.iter())
+      .map(|(user_id, location)| EncryptedLocation::new(*user_id, election.id, location).insert(&conn))
+      .collect::<Result<Vec<_>, _>>()?;
 
     // Finally, create all of the registrations with the user shares
     for (question, question_number) in questions.into_iter().zip(1usize..) {
@@ -163,4 +196,30 @@ fn create_new_election(
 
     Ok(election)
   })?)
+}
+
+///
+/// Update the encrypted locations with the new values
+///
+fn update_encrypted_locations(
+  data: &CreateElectionData,
+  election: &Election,
+  encrypted_locations: &[BigInt],
+  conn: &DbConnection,
+) -> Result<(), ServiceError> {
+  conn.get().transaction::<_, ServiceError, _>(|| {
+    data
+      .registered_users
+      .iter()
+      .zip(encrypted_locations.iter())
+      .map(|(user_id, encrypted_location)| {
+        // Update each individual encrypted locations
+        let mut location = EncryptedLocation::find_resource(user_id, &election.id, conn)?;
+        location.location = encrypted_location.to_bigdecimal();
+        Ok(location.update(conn)?)
+      })
+      .collect::<Result<Vec<_>, ServiceError>>()?;
+
+    Ok(())
+  })
 }

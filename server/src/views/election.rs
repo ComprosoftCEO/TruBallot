@@ -80,12 +80,6 @@ pub struct ElectionParameters {
   pub generator: BigInt,
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub prime: BigInt,
-
-  // These two values are only sent if the user is registered for the election
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub encryption_key: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub encrypted_location: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

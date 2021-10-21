@@ -5,6 +5,7 @@ use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::Election;
+use crate::utils::ConvertBigInt;
 use crate::views::election::ElectionParameters;
 
 pub async fn get_election_parameters(
@@ -14,19 +15,13 @@ pub async fn get_election_parameters(
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_view_elections()?;
 
-  // Make sure the election exists and user is registered
+  // Make sure the election exists
   let election = Election::find_resource(&*path, &conn)?;
-  if !election.is_user_registered(&token.get_user_id(), &conn)? {
-    return Err(ServiceError::UserNotRegistered {
-      user_id: token.get_user_id(),
-      election_id: election.id,
-      question_id: None,
-    });
-  }
+  let encrypted_location = election.get_user_encrypted_location(&token.get_user_id(), &conn)?;
 
   // Build the final result
   let result = ElectionParameters {
-    encryption_key: base64::encode(&election.encryption_key),
+    encrypted_location: encrypted_location.map(|l| l.location.to_bigint()),
   };
 
   Ok(HttpResponse::Ok().json(result))

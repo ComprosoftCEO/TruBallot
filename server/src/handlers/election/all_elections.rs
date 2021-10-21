@@ -57,7 +57,7 @@ fn elections_into_list(
 
       let registration = election.get_user_registration(user_id, conn)?;
       let is_registered = registration.is_some();
-      let has_voted = registration.map(|r| r.has_voted).unwrap_or(false);
+      let has_voted = election.has_user_voted(user_id, &conn)?;
 
       Ok(PublicElectionList::new(
         election,

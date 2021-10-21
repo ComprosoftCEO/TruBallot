@@ -5,21 +5,18 @@ use crate::db::ManyToManyConstructor;
 use crate::models::{Election, User};
 use crate::schema::registrations;
 
-#[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, AsChangeset, Associations)]
+#[derive(Debug, Clone, Serialize, Queryable, Insertable, Identifiable, Associations)]
 #[primary_key(user_id, election_id)]
 #[belongs_to(User)]
 #[belongs_to(Election)]
-#[changeset_options(treat_none_as_null = "true")]
 #[serde(rename_all = "camelCase")]
 pub struct Registration {
   pub user_id: Uuid,
   pub election_id: Uuid,
-  pub encrypted_location: Vec<u8>,
-  pub has_voted: bool,
 }
 
 impl Registration {
-  model_base!();
+  model_base!(no update);
 
   belongs_to!(User);
   belongs_to!(Election);
@@ -28,12 +25,7 @@ impl Registration {
   // has_many!(Commitment);
 
   pub fn new(user_id: Uuid, election_id: Uuid) -> Self {
-    Self {
-      user_id,
-      election_id,
-      encrypted_location: Vec::new(),
-      has_voted: false,
-    }
+    Self { user_id, election_id }
   }
 }
 
