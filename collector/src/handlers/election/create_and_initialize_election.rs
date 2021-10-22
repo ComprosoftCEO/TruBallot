@@ -100,7 +100,7 @@ pub async fn create_and_initialize_election(
 ///   -"results" is an empty vector if we are at step 3
 fn handle_encrypted_location(encrypted_locations: Vec<BigInt>, n: &Option<BigInt>) -> (Vec<BigInt>, Vec<BigInt>) {
   if let Some(ref n) = n {
-    // Perform step 2 on all locations
+    // Perform STPM step 2 on all locations
     let one = BigInt::from(1);
     let mut encrypted_locations: Vec<_> = encrypted_locations
       .into_iter()

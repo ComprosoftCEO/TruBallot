@@ -88,7 +88,7 @@ pub async fn initialize_voting(
   let (encryption_key, decryption_key) = Paillier::keypair_safe_primes_with_modulus_size(512).keys();
 
   // Encrypt the locations 0 to N using STPM (Step 1)
-  log::debug!("Encrypting locations 0 .. {} using STPM", registrations.len());
+  log::debug!("Encrypting locations 0 .. {} using STPM", registrations.len() - 1);
   let mut encrypted_locations: Vec<BigInt> = (0u64..(registrations.len() as u64))
     .into_iter()
     .map(|i| stpm::step_1(&BigInt::from(i), &encryption_key.n))
