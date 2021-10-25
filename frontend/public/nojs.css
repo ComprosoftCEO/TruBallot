@@ -1,0 +1,21 @@
+/** CSS for when JavaScript is not enabled **/
+
+body {
+  margin: 0;
+}
+
+div.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+img.logo {
+  max-height: 40vmin;
+}
+
+h1.header {
+  margin-top: 50px;
+}
