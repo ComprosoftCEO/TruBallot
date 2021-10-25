@@ -1,10 +1,12 @@
 {
   "extends": ["airbnb", "airbnb-typescript", "prettier"],
   "plugins": ["prettier"],
-  "rules": {
-    "prettier/prettier": ["error"]
-  },
   "parserOptions": {
     "project": "./tsconfig.json"
+  },
+  "rules": {
+    "prettier/prettier": "error",
+    "react/react-in-jsx-scope": "off",
+    "@typescript-eslint/no-unused-vars": "warn"
   }
 }
