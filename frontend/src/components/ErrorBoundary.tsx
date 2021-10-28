@@ -1,15 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { useState as useHookState } from '@hookstate/core';
-import { Dimmer, Button, Segment, Message, Divider, Icon } from 'semantic-ui-react';
-import { store } from 'state/store';
-import { history } from 'App';
-import { getErrorInformation, GlobalErrorCode } from 'api/error';
+import { store } from 'store';
+import { history } from 'index';
+import { getErrorInformation, GlobalErrorCode } from 'api';
+import { ErrorOccured, SessionExpired } from 'components/errorDialogs';
 
 export interface ErrorBoundaryProps {
   children?: React.ReactNode;
 }
 
-const MISSING_ERROR = 'Error swallowed during propagation.';
+/// Error codes that indicate the JWT token has expired
 const LOGIN_EXPIRED_CODES: (GlobalErrorCode | null)[] = [GlobalErrorCode.InvalidJWTToken];
 
 interface ErrorBoundaryComponentProps {
@@ -34,7 +34,9 @@ class ErrorBoundaryComponent extends React.Component<ErrorBoundaryComponentProps
     }
   }
 
-  // Set an error flag if an error has been set in redux
+  //
+  // Set an error flag if an error has been set in the state
+  //
   static getDerivedStateFromProps(nextProps: ErrorBoundaryComponentProps, prevState: ErrorBoundaryComponentState) {
     if (nextProps.globalError !== null) {
       return { ...prevState, hasError: true, lastError: nextProps.globalError };
@@ -44,26 +46,31 @@ class ErrorBoundaryComponent extends React.Component<ErrorBoundaryComponentProps
   }
 
   static getDerivedStateFromError(error: Error | null) {
-    return { hasError: true, lastError: error || new Error(MISSING_ERROR) };
+    return { hasError: true, lastError: error || new Error('Error swallowed during propagation.') };
   }
 
+  //
+  // Method called when an error is thrown
+  //
   componentDidCatch(error: Error | null, errorInfo: object) {
-    // You can also log the error to an error reporting service
+    // We could also log the error to an error reporting service
     // eslint-disable-next-line no-console
     console.error(error, errorInfo);
   }
 
-  loginRedirect = () => {
+  //
+  // Clear the error and redraw the error boundary
+  //
+  clearError = () => {
     const { forceRerender } = this.props;
 
-    // Clear the error and set the redirect
     store.globals.merge({ globalError: null, redirect: history.location.pathname });
-
-    // Redirect to the login page and re-render the component to clear the error
-    history.push('/login?redirect');
     forceRerender();
   };
 
+  //
+  // Render the component
+  //
   render() {
     const { children } = this.props;
     const { hasError, lastError } = this.state;
@@ -73,50 +80,14 @@ class ErrorBoundaryComponent extends React.Component<ErrorBoundaryComponentProps
 
       if (LOGIN_EXPIRED_CODES.includes(errorInformation.errorCode)) {
         // Session timeout
-        return (
-          <Dimmer active>
-            <Segment>
-              <Message info>
-                <Message.Header>
-                  Oops! It looks like your login session has expired due to inactivity.
-                  <br />
-                  Please log back in to continue using the system.
-                </Message.Header>
-              </Message>
-              <Divider horizontal />
-              <Button fluid color="orange" onClick={this.loginRedirect}>
-                <Icon name="sign in" />
-                Log Back In
-                <i> (Redirect)</i>
-              </Button>
-
-              <div style={{ height: '20px' }} />
-              <Button fluid icon="redo" content="Reload Page" onClick={window.location.reload} />
-
-              <div style={{ height: '10px' }} />
-              <Button primary fluid icon="home" content="Go Home" as="a" href="/" />
-            </Segment>
-          </Dimmer>
-        );
+        return <SessionExpired clearError={this.clearError} />;
       }
 
       // Normal error
-      return (
-        <Dimmer active>
-          <Segment>
-            <Message negative>
-              <Message.Header>Oops! Looks like something went wrong.</Message.Header>
-              <b>Error: </b>
-              {errorInformation.description}
-            </Message>
-            <Button fluid icon="redo" content="Reload Page" onClick={window.location.reload} />
-            <div style={{ height: '10px' }} />
-            <Button primary fluid icon="home" content="Go Home" as="a" href="/" />
-          </Segment>
-        </Dimmer>
-      );
+      return <ErrorOccured message={errorInformation.description} />;
     }
 
+    // Render the coponent as normal
     return children;
   }
 }

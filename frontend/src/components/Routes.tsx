@@ -1,13 +1,15 @@
+/**
+ * Handles all of the front-end routing for the application
+ */
 /* eslint-disable react/jsx-props-no-spreading */
 /* eslint-disable react/no-array-index-key */
 import { Switch, Route, Redirect, RouteProps } from 'react-router-dom';
 import { useState } from '@hookstate/core';
 import { isLoggedIn } from 'axios-jwt';
 import { Permission } from 'models/auth';
-import { store } from 'state/store';
+import { store } from 'store';
 
-import { NotFound } from './routes/NotFound/NotFound';
-import { PleaseLogIn } from './routes/PleaseLogIn/PleaseLogIn';
+import { NotFound, PleaseLogIn } from 'components/errorDialogs';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -18,7 +20,6 @@ interface RouterEntry extends RouteProps {
 const LOGGED_OUT_ENTRIES: RouterEntry[] = [
   { path: '/', exact: true, redirect: '/login' },
   { path: '/dashboard', redirect: '/login' },
-  { path: '/login', component: PleaseLogIn },
 ];
 
 /// Rotues that only appear when the user IS logged in
@@ -75,6 +76,9 @@ const LoggedInSwitch = (permissions: Set<Permission>) => (
   </Switch>
 );
 
+//
+// Main component for front-end routing
+//
 export const Routes = () => {
   const permissions = useState(store.globals.permissions);
   return isLoggedIn() ? LoggedInSwitch(permissions.get()) : LoggedOutSwitch;

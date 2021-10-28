@@ -1,3 +1,7 @@
+/*
+ * Global state shared by all screens
+ *  (Things like permissions, errors, or login redirection)
+ */
 import { Permission } from 'models/auth';
 
 export interface GlobalsState {
@@ -6,7 +10,7 @@ export interface GlobalsState {
   redirect: string | null;
 }
 
-export const INITIAL_GLOBALS_STATE: GlobalsState = {
+export const initialGlobalsState: GlobalsState = {
   permissions: new Set(),
   globalError: null,
   redirect: null,

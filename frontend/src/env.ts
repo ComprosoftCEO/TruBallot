@@ -14,7 +14,8 @@ export const C2_BASE_URL: string = process.env.REACT_APP_C2_BASE_URL ?? 'http://
 export const NOTIFICATIONS_BASE_URL: string =
   process.env.REACT_APP_NOTIFICATIONS_BASE_URL ?? 'ws://localhost:3005/api/v1/notifications';
 
-// Must be set
+// reCAPTCHA site key must be set
+//   https://www.google.com/recaptcha/about/
 export const RECAPTCHA_SITE_KEY: string = process.env.REACT_APP_RECAPTCHA_SITE_KEY ?? '';
 if (RECAPTCHA_SITE_KEY === '') {
   throw new Error('Recaptcha site key must be set');

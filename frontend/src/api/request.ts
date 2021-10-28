@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import { applyAuthTokenInterceptor, TokenRefreshRequest } from 'axios-jwt';
 import { LoginResult } from 'models/auth';
 import { ErrorResponse } from 'api/error';
-import { store } from 'state/store';
+import { store } from 'store';
 
 /**
  * A type that is either loading or a success

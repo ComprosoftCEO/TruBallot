@@ -1,3 +1,6 @@
+/**
+ * Dialog shown for a route that does not exist
+ */
 import { Button, Dimmer, Divider, Segment, Image, Message } from 'semantic-ui-react';
 
 export interface NotFoundProps {
@@ -11,7 +14,7 @@ export const NotFound = ({ noPermission }: NotFoundProps) => (
         <Message.Header>Oops! Looks like there is nothing here.</Message.Header>
         {noPermission ? "You don't have permission to access this page" : 'Page Not Found'}
       </Message>
-      <Image src={noPermission ? '/secret.png' : '/404.png'} spaced size="medium" centered />
+      <Image src={noPermission ? '/secret.png' : '/404.png'} spaced size="large" centered />
       <Divider horizontal />
       <Button primary fluid icon="home" content="Go Home" as="a" href="/" />
     </Segment>
