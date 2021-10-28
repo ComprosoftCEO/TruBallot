@@ -6,3 +6,7 @@ export const loginRedirect = () => {
   store.globals.redirect.set(history.location.pathname);
   history.push('/login?redirect');
 };
+
+export const goHome = () => {
+  history.push('/');
+};

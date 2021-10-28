@@ -2,6 +2,7 @@
  * Dialog shown when an unexpected error occurs in the web application
  */
 import { Dimmer, Message, Segment, Button, Divider, Image } from 'semantic-ui-react';
+import { goHome } from './errorDialogActions';
 
 export interface ErrorOccuredProps {
   message: string;
@@ -21,7 +22,7 @@ export const ErrorOccured = ({ message }: ErrorOccuredProps) => (
       <Button fluid icon="redo" content="Reload Page" onClick={window.location.reload} />
 
       <div style={{ height: 10 }} />
-      <Button primary fluid icon="home" content="Go Home" as="a" href="/" />
+      <Button primary fluid icon="home" content="Go Home" onClick={goHome} />
     </Segment>
   </Dimmer>
 );

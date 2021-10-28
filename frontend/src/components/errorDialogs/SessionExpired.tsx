@@ -3,7 +3,7 @@
  */
 import { useCallback } from 'react';
 import { Image, Dimmer, Button, Icon, Divider, Segment, Message } from 'semantic-ui-react';
-import { loginRedirect } from './errorDialogActions';
+import { loginRedirect, goHome } from './errorDialogActions';
 
 export interface SessionExpiredProps {
   clearError: () => void;
@@ -35,7 +35,7 @@ export const SessionExpired = ({ clearError }: SessionExpiredProps) => {
         <Button fluid icon="redo" content="Reload Page" onClick={window.location.reload} />
 
         <div style={{ height: 10 }} />
-        <Button color="violet" fluid icon="home" content="Go Home" as="a" href="/" />
+        <Button primary fluid icon="home" content="Go Home" onClick={goHome} />
       </Segment>
     </Dimmer>
   );

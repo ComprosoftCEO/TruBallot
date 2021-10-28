@@ -9,7 +9,8 @@ import { isLoggedIn } from 'axios-jwt';
 import { Permission } from 'models/auth';
 import { store } from 'store';
 
-import { NotFound, PleaseLogIn } from 'components/errorDialogs';
+import { NotFound, PleaseLogIn } from './errorDialogs';
+import { LoginForm } from './routes/LoginForm';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -20,6 +21,7 @@ interface RouterEntry extends RouteProps {
 const LOGGED_OUT_ENTRIES: RouterEntry[] = [
   { path: '/', exact: true, redirect: '/login' },
   { path: '/dashboard', redirect: '/login' },
+  { path: '/login', exact: true, component: LoginForm },
 ];
 
 /// Rotues that only appear when the user IS logged in
