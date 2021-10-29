@@ -5,15 +5,18 @@ import { isDev } from 'env';
 // List of all nested states
 import { GlobalsState, initialGlobalsState } from './nested/globals';
 import { ConfirmState, initialConfirmState } from './nested/confirm';
+import { LoginState, initialLoginState } from './nested/login';
 
 export interface State {
   globals: GlobalsState;
   confirm: ConfirmState;
+  login: LoginState;
 }
 
 export const initialState: State = {
   globals: initialGlobalsState,
   confirm: initialConfirmState,
+  login: initialLoginState,
 };
 
 //

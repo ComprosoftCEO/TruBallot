@@ -1,11 +1,28 @@
-import { Grid, Transition, Image, Segment, Form, Message, Button } from 'semantic-ui-react';
+import { useCallback, useRef } from 'react';
 import { useState } from '@hookstate/core';
-import { StringInput } from 'components/input';
 import { Link } from 'react-router-dom';
+import { Grid, Transition, Image, Segment, Form, Message, Button } from 'semantic-ui-react';
+import { StringInput } from 'components/input';
+import { RECAPTCHA_SITE_KEY } from 'env';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { store } from 'store';
+import { apiLoading, getErrorInformation } from 'api';
+import { isFormValid, logInUser } from './loginFormActions';
 
 export const LoginForm = () => {
-  const username = useState('');
-  const password = useState('');
+  const login = useState(store.login);
+
+  const { username, password } = login.get();
+  const { loginError } = login;
+  const formValid = isFormValid(username, password);
+
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
+  const onSubmit = useCallback(() => {
+    if (!loginError.loading.value && recaptchaRef.current !== null) {
+      store.login.loginError.set(apiLoading);
+      logInUser(recaptchaRef.current, username, password);
+    }
+  }, [loginError.loading, password, username]);
 
   return (
     <Grid textAlign="center" style={{ height: '100vh' }} verticalAlign="middle">
@@ -24,8 +41,8 @@ export const LoginForm = () => {
                   icon="user"
                   iconPosition="left"
                   placeholder="Email"
-                  value={username.get()}
-                  onChangeValue={username.set}
+                  value={username}
+                  onChangeValue={login.username.set}
                 />
               </Form.Field>
               <Form.Field>
@@ -36,12 +53,28 @@ export const LoginForm = () => {
                   iconPosition="left"
                   placeholder="Password"
                   type="password"
-                  value={password.get()}
-                  onChangeValue={password.set}
+                  value={password}
+                  onChangeValue={login.password.set}
                 />
               </Form.Field>
 
-              <Button primary fluid size="large" icon="sign in" content="Login" />
+              {!loginError.value.loading && !loginError.value.success && (
+                <Message negative>
+                  <b>Error: </b>
+                  {getErrorInformation(loginError.value.error).description}
+                </Message>
+              )}
+
+              <Button
+                primary
+                fluid
+                size="large"
+                icon="sign in"
+                content="Login"
+                onClick={onSubmit}
+                disabled={!formValid || loginError.value.loading}
+                loading={loginError.value.loading}
+              />
             </Form>
           </Segment>
 
@@ -49,6 +82,8 @@ export const LoginForm = () => {
             Don&apos;t have an account yet?
             <Link to="/register"> Register</Link>
           </Message>
+
+          <ReCAPTCHA ref={recaptchaRef} sitekey={RECAPTCHA_SITE_KEY} size="invisible" />
         </Grid.Column>
       </Transition>
     </Grid>

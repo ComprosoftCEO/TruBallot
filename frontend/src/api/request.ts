@@ -9,11 +9,13 @@ import { store } from 'store';
  *  Any errors throw a nasty React error
  */
 export type APIOption<T> = APILoading | APISome<T>;
+export type APIOptionUnwrapped<T> = APISome<T>;
 
 /**
  * Errors that are stored and can be handled
  */
 export type APIResult<T> = APILoading | APISuccess<T> | APIError;
+export type APIResultUnwrapped<T> = APISuccess<T> | APIError;
 
 export interface APILoading {
   loading: true;
@@ -33,10 +35,18 @@ export interface APISuccess<T> {
 export interface APIError {
   loading: false;
   success: false;
-  error: AxiosError<ErrorResponse>;
+  error: RequestError;
 }
 
+export type RequestError = AxiosError<ErrorResponse>;
+
+// Functions to construct the different types
 export const API_LOADING: APILoading = { loading: true };
+
+export const apiLoading = (): APILoading => API_LOADING;
+export const apiSome = <T>(data: T): APISome<T> => ({ loading: false, data });
+export const apiSuccess = <T>(data: T): APISuccess<T> => ({ loading: false, success: true, data });
+export const apiError = (error: RequestError): APIError => ({ loading: false, success: false, error });
 
 /**
  * Export Axios instances to access the API server and the collectors
@@ -78,7 +88,11 @@ function resolveSome<T>(resp: AxiosResponse<T>): APISome<T> {
   return { loading: false, data: resp.data };
 }
 
-function resolveNone(error: AxiosError<ErrorResponse>): APISome<any> {
+function resolveSomeUnwrapped<T>(resp: AxiosResponse<T>): T {
+  return resp.data;
+}
+
+function resolveNone(error: AxiosError<ErrorResponse>): any {
   store.globals.error.set(error);
   throw error;
 }
@@ -93,3 +107,9 @@ function resolveError(error: AxiosError<ErrorResponse>): APIError {
 
 export const resolveOption: [typeof resolveSome, typeof resolveNone] = [resolveSome, resolveNone];
 export const resolveResult: [typeof resolveSuccess, typeof resolveError] = [resolveSuccess, resolveError];
+
+// Very similar to "resolveOption", but returns T instead of APISome<T>
+export const resolveOptionUnwrapped: [typeof resolveSomeUnwrapped, typeof resolveNone] = [
+  resolveSomeUnwrapped,
+  resolveNone,
+];

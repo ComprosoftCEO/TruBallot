@@ -9,6 +9,7 @@ import { isLoggedIn } from 'axios-jwt';
 import { Permission } from 'models/auth';
 import { store } from 'store';
 
+import { useEffect, useLayoutEffect } from 'react';
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
 
@@ -83,5 +84,8 @@ const LoggedInSwitch = (permissions: Set<Permission>) => (
 //
 export const Routes = () => {
   const permissions = useState(store.globals.permissions);
-  return isLoggedIn() ? LoggedInSwitch(permissions.get()) : LoggedOutSwitch;
+
+  // Test if the page is logged in when it first loads
+  const loggedIn = useState(isLoggedIn);
+  return loggedIn.get() ? LoggedInSwitch(permissions.get()) : LoggedOutSwitch;
 };

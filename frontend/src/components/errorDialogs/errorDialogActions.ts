@@ -1,9 +1,12 @@
 import { history } from 'index';
 import { store } from 'store';
+import { clearAuthTokens } from 'axios-jwt';
 
 /// Redirect to log-in form before going back to this route
 export const loginRedirect = () => {
-  store.globals.redirect.set(history.location.pathname);
+  clearAuthTokens();
+
+  store.globals.merge({ redirect: history.location.pathname, isLoggedIn: false });
   history.push('/login?redirect');
 };
 
