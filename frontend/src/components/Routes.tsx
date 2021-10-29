@@ -3,13 +3,12 @@
  */
 /* eslint-disable react/jsx-props-no-spreading */
 /* eslint-disable react/no-array-index-key */
+import { useLayoutEffect } from 'react';
 import { Switch, Route, Redirect, RouteProps } from 'react-router-dom';
-import { useState } from '@hookstate/core';
 import { isLoggedIn } from 'axios-jwt';
 import { Permission } from 'models/auth';
-import { store } from 'store';
+import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 
-import { useEffect, useLayoutEffect } from 'react';
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
 
@@ -79,13 +78,18 @@ const LoggedInSwitch = (permissions: Set<Permission>) => (
   </Switch>
 );
 
+const useSelector = nestedSelectorHook('globals');
+const mergeState = mergeNestedState('globals');
+
 //
 // Main component for front-end routing
 //
 export const Routes = () => {
-  const permissions = useState(store.globals.permissions);
+  const permissions = useSelector((store) => store.permissions);
+  const loggedIn = useSelector((store) => store.isLoggedIn);
 
   // Test if the page is logged in when it first loads
-  const loggedIn = useState(isLoggedIn);
-  return loggedIn.get() ? LoggedInSwitch(permissions.get()) : LoggedOutSwitch;
+  useLayoutEffect(() => mergeState({ isLoggedIn: isLoggedIn() }), []);
+
+  return loggedIn ? LoggedInSwitch(permissions) : LoggedOutSwitch;
 };

@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useState as useHookState } from '@hookstate/core';
-import { store } from 'store';
+import { nestedSelectorHook, mergeNestedState } from 'redux/helpers';
 import { history } from 'index';
 import { getErrorInformation, GlobalErrorCode } from 'api';
 import { ErrorOccured, SessionExpired } from 'components/errorDialogs';
@@ -11,6 +10,9 @@ export interface ErrorBoundaryProps {
 
 /// Error codes that indicate the JWT token has expired
 const LOGIN_EXPIRED_CODES: (GlobalErrorCode | null)[] = [GlobalErrorCode.InvalidJWTToken];
+
+const useSelector = nestedSelectorHook('globals');
+const mergeState = mergeNestedState('globals');
 
 interface ErrorBoundaryComponentProps {
   globalError: Error | null;
@@ -64,7 +66,7 @@ class ErrorBoundaryComponent extends React.Component<ErrorBoundaryComponentProps
   clearError = () => {
     const { forceRerender } = this.props;
 
-    store.globals.merge({ globalError: null, redirect: history.location.pathname });
+    mergeState({ globalError: null, redirect: history.location.pathname });
     forceRerender();
   };
 
@@ -97,12 +99,13 @@ class ErrorBoundaryComponent extends React.Component<ErrorBoundaryComponentProps
 //
 // The example code is from: https://github.com/bvaughn/react-error-boundary/issues/23
 export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
-  const globalError = useHookState(store.globals.globalError);
+  const globalError = useSelector((state) => state.globalError);
+
   const [key, setKey] = useState<number>(0);
   const updateKey = useCallback(() => setKey(key + 1), [key]);
 
   return (
-    <ErrorBoundaryComponent key={key} forceRerender={updateKey} globalError={globalError.get()}>
+    <ErrorBoundaryComponent key={key} forceRerender={updateKey} globalError={globalError}>
       {children}
     </ErrorBoundaryComponent>
   );

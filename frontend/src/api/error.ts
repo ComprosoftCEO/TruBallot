@@ -72,8 +72,6 @@ export interface ErrorInformation {
 export const getErrorInformation = (
   e: AxiosError<ErrorResponse> | ErrorResponse | Error | null | undefined,
 ): ErrorInformation => {
-  console.log(e);
-
   // Handle null and undefined inputs
   if (e === null || e === undefined) {
     return {

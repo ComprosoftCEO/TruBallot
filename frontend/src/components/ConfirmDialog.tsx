@@ -1,12 +1,14 @@
 /**
  * Global "Yes/No" confirmation dialog
  */
-import { useState } from '@hookstate/core';
 import { Confirm } from 'semantic-ui-react';
-import { store } from 'store';
+import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
+
+const useSelector = nestedSelectorHook('confirm');
+const mergeState = mergeNestedState('confirm');
 
 const hideDialog = () => {
-  store.confirm.open.set(false);
+  mergeState({ open: false });
 };
 
 const onConfirmAction = (action: () => void) => () => {
@@ -24,9 +26,7 @@ function testUndefined<T>(value?: T): T | undefined {
 }
 
 export const ConfirmDialog = () => {
-  const { open, message, header, confirmButton, cancelButton, onConfirm, onCancel, size } = useState(
-    store.confirm,
-  ).get();
+  const { open, message, header, confirmButton, cancelButton, onConfirm, onCancel, size } = useSelector((s) => s);
 
   return (
     <Confirm

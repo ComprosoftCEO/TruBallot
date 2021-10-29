@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 import { applyAuthTokenInterceptor, TokenRefreshRequest } from 'axios-jwt';
 import { LoginResult } from 'models/auth';
 import { ErrorResponse } from 'api/error';
-import { store } from 'store';
+import { mergeNestedState } from 'redux/helpers';
 
 /**
  * A type that is either loading or a success
@@ -93,7 +93,7 @@ function resolveSomeUnwrapped<T>(resp: AxiosResponse<T>): T {
 }
 
 function resolveNone(error: AxiosError<ErrorResponse>): any {
-  store.globals.error.set(error);
+  mergeNestedState('globals', { globalError: error });
   throw error;
 }
 

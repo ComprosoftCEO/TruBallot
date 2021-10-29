@@ -1,4 +1,7 @@
-import { store, ConfirmState } from 'store';
+import { ConfirmState } from 'redux/state';
+import { mergeNestedState } from 'redux/helpers';
+
+const mergeState = mergeNestedState('confirm');
 
 export type ConfirmProperties = {
   [P in keyof Omit<ConfirmState, 'open'>]?: ConfirmState[P];
@@ -14,6 +17,6 @@ export const showConfirm = ({ override, ...props }: ConfirmProperties) => {
       action();
     }
   } else {
-    store.confirm.merge({ ...props, open: true });
+    mergeState({ ...props, open: true });
   }
 };

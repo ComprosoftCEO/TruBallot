@@ -1,11 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
 import { Router } from 'react-router-dom';
 import { createBrowserHistory } from 'history';
 
 import { ErrorBoundary } from 'components/ErrorBoundary';
 import { ConfirmDialog } from 'components/ConfirmDialog';
 import { Routes } from 'components/Routes';
+import { store } from 'redux/store';
 
 // Import our styles
 import './index.scss';
@@ -19,12 +21,14 @@ export const history = createBrowserHistory();
 
 ReactDOM.render(
   <React.StrictMode>
-    <Router history={history}>
-      <ErrorBoundary>
-        <ConfirmDialog />
-        <Routes />
-      </ErrorBoundary>
-    </Router>
+    <Provider store={store}>
+      <Router history={history}>
+        <ErrorBoundary>
+          <ConfirmDialog />
+          <Routes />
+        </ErrorBoundary>
+      </Router>
+    </Provider>
   </React.StrictMode>,
   document.getElementById('root'),
 );
