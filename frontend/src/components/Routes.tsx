@@ -11,6 +11,7 @@ import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
+import { Register } from './routes/Register';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -22,6 +23,7 @@ const LOGGED_OUT_ENTRIES: RouterEntry[] = [
   { path: '/', exact: true, redirect: '/login' },
   { path: '/dashboard', redirect: '/login' },
   { path: '/login', exact: true, component: LoginForm },
+  { path: '/register', exact: true, component: Register },
 ];
 
 /// Rotues that only appear when the user IS logged in

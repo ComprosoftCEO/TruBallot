@@ -4,9 +4,8 @@ import { Grid, Transition, Image, Segment, Form, Message, Button } from 'semanti
 import { StringInput } from 'components/input';
 import { RECAPTCHA_SITE_KEY } from 'env';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { apiLoading, getErrorInformation } from 'api';
+import { apiLoading, getErrorInformation, useReCAPTCHARef } from 'api';
 import { mergeNestedState, nestedSelectorHook, setNestedProperty } from 'redux/helpers';
-import { useReCAPTCHARef } from 'api/recaptcha';
 import { isFormValid, logInUser, recaptchaCanceled, useClearState } from './loginFormActions';
 
 const useSelector = nestedSelectorHook('login');
@@ -49,7 +48,9 @@ export const LoginForm = () => {
                     iconPosition="left"
                     placeholder="Email"
                     value={email}
+                    maxLength={255}
                     onChangeValue={setProperty('email')}
+                    disabled={loginError.loading}
                   />
                 </Form.Field>
                 <Form.Field>
@@ -61,7 +62,9 @@ export const LoginForm = () => {
                     placeholder="Password"
                     type="password"
                     value={password}
+                    maxLength={255}
                     onChangeValue={setProperty('password')}
+                    disabled={loginError.loading}
                   />
                 </Form.Field>
 

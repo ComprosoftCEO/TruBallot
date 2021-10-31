@@ -14,9 +14,7 @@ const mergeGlobalsStore = mergeNestedState('globals');
 const mergeLoginState = mergeNestedState('login');
 
 export const useClearState = () => {
-  useLayoutEffect(() => {
-    clearNestedState('login');
-  }, []);
+  useLayoutEffect(() => clearNestedState('login'), []);
 };
 
 export const isFormValid = (email: string, password: string): boolean =>

@@ -1,6 +1,7 @@
 import { initialState, RootState } from 'redux/state';
 import { useSelector } from 'react-redux';
 import { store } from 'redux/store';
+import { isDev } from 'env';
 import { updateNestedState, dynamicUpdateNestedState, replaceNestedState, dynamicReplaceNestedState } from './actions';
 
 /// Can either set from a plain JavaScript object, function, or promise
@@ -202,6 +203,13 @@ function setProperty<NestedState extends keyof RootState, Property extends keyof
 export function clearNestedState<NestedState extends keyof RootState>(
   nestedState: NestedState,
   initial: RootState[NestedState] = initialState[nestedState],
-) {
+): void {
   store.dispatch(updateNestedState(nestedState, initial));
+}
+
+//
+// Export the helper functions on development
+//
+if (isDev()) {
+  Object.assign(window, { getNestedState, mergeNestedState, setNestedState, setNestedProperty, clearNestedState });
 }
