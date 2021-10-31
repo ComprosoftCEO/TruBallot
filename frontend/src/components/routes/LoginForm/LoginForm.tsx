@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Grid, Transition, Image, Segment, Form, Message, Button } from 'semantic-ui-react';
 import { StringInput } from 'components/input';
@@ -6,7 +6,8 @@ import { RECAPTCHA_SITE_KEY } from 'env';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { apiLoading, getErrorInformation } from 'api';
 import { mergeNestedState, nestedSelectorHook, setNestedProperty } from 'redux/helpers';
-import { isFormValid, logInUser, useClearState } from './loginFormActions';
+import { useReCAPTCHARef } from 'api/recaptcha';
+import { isFormValid, logInUser, recaptchaCanceled, useClearState } from './loginFormActions';
 
 const useSelector = nestedSelectorHook('login');
 const mergeState = mergeNestedState('login');
@@ -15,19 +16,19 @@ const setProperty = setNestedProperty('login');
 export const LoginForm = () => {
   useClearState();
 
-  const username = useSelector((state) => state.username);
+  const email = useSelector((state) => state.email);
   const password = useSelector((state) => state.password);
   const loginError = useSelector((state) => state.loginError);
-  const formValid = isFormValid(username, password);
+  const formValid = isFormValid(email, password);
 
   // Handle reCAPTCHA component
-  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
+  const recaptchaRef = useReCAPTCHARef(recaptchaCanceled);
   const onSubmit = useCallback(() => {
     if (!loginError.loading && recaptchaRef.current !== null) {
       mergeState({ loginError: apiLoading() });
-      logInUser(recaptchaRef.current, username, password);
+      logInUser(recaptchaRef.current, email, password);
     }
-  }, [loginError.loading, password, username]);
+  }, [email, loginError.loading, password, recaptchaRef]);
 
   return (
     <>
@@ -47,8 +48,8 @@ export const LoginForm = () => {
                     icon="user"
                     iconPosition="left"
                     placeholder="Email"
-                    value={username}
-                    onChangeValue={setProperty('username')}
+                    value={email}
+                    onChangeValue={setProperty('email')}
                   />
                 </Form.Field>
                 <Form.Field>

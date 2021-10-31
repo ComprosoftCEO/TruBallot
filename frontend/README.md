@@ -29,3 +29,20 @@ See the section about [deployment](https://facebook.github.io/create-react-app/d
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+<br />
+
+# Development Proxy
+
+The development proxy is configured in `package.json`. By default, it assumes it can access the API servers and collectors under `localhost:3010`.
+The API then uses `/api/v1` as a replacement for `localhost:3010/api/v1`. This can be changed by updating:
+
+```json
+{
+  // ...
+
+  "proxy": "http://localhost:3010"
+
+  // ...
+}
+```
