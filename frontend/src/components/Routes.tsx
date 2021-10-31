@@ -5,9 +5,10 @@
 /* eslint-disable react/no-array-index-key */
 import { useLayoutEffect } from 'react';
 import { Switch, Route, Redirect, RouteProps } from 'react-router-dom';
-import { isLoggedIn } from 'axios-jwt';
-import { Permission } from 'models/auth';
+import { getAccessToken } from 'axios-jwt';
+import { Permission, ClientToken } from 'models/auth';
 import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
+import jwt from 'jsonwebtoken';
 
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
@@ -91,7 +92,29 @@ export const Routes = () => {
   const loggedIn = useSelector((store) => store.isLoggedIn);
 
   // Test if the page is logged in when it first loads
-  useLayoutEffect(() => mergeState({ isLoggedIn: isLoggedIn() }), []);
+  useLayoutEffect(loadAccessToken, []);
 
   return loggedIn ? LoggedInSwitch(permissions) : LoggedOutSwitch;
 };
+
+/**
+ * Load the access token and the permissions when the page first loads
+ */
+function loadAccessToken(): void {
+  // Parse the access token if the user is currently logged in
+  const accessToken = getAccessToken();
+  if (accessToken !== undefined) {
+    const clientToken: ClientToken = jwt.decode(accessToken) as ClientToken;
+
+    // User is logged in
+    mergeState({
+      isLoggedIn: true,
+      name: clientToken.name,
+      email: clientToken.email,
+      permissions: new Set(clientToken.permissions),
+    });
+  } else {
+    // User is logged out
+    mergeState({ isLoggedIn: false });
+  }
+}

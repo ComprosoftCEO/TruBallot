@@ -2,7 +2,7 @@
  * Dialog shown if the user needs to log in before they can access a route
  */
 import { Image, Dimmer, Button, Segment, Message, Divider, Icon } from 'semantic-ui-react';
-import { loginRedirect, goHome } from './errorDialogActions';
+import { loginRedirect, goHomeLogin } from './errorDialogActions';
 
 export const PleaseLogIn = () => (
   <Dimmer active>
@@ -20,7 +20,7 @@ export const PleaseLogIn = () => (
       </Button>
 
       <div style={{ height: 10 }} />
-      <Button primary fluid icon="home" content="Go Home" onClick={goHome} />
+      <Button primary fluid icon="home" content="Go Home" onClick={goHomeLogin} />
     </Segment>
   </Dimmer>
 );

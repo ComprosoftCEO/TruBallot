@@ -1,27 +1,26 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import zxcvbn from 'zxcvbn';
 import * as EmailValidator from 'email-validator';
-import { apiLoading, getErrorInformation, useReCAPTCHARef } from 'api';
+import { getErrorInformation } from 'api';
 import { StringInput } from 'components/input';
 import { RECAPTCHA_SITE_KEY } from 'env';
-import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
+import { nestedSelectorHook } from 'redux/helpers';
 import { Grid, Image, Transition, Segment, Form, Message, Button, Header, Popup, Divider } from 'semantic-ui-react';
 import { MINIMUM_PASSWORD_COMPLEXITY, SITE_SPECIFIC_WORDS } from 'helpers/passwordComplexity';
 import { PasswordError } from 'components/shared';
 import {
   useClearState,
-  recaptchaCanceled,
   goBack,
   setEmail,
   setName,
   setPassword,
   setConfirm,
   registerUser,
+  handleRecaptchaError,
 } from './registerActions';
 
 const useSelector = nestedSelectorHook('register');
-const mergeState = mergeNestedState('register');
 
 export const Register = () => {
   useClearState();
@@ -51,13 +50,12 @@ export const Register = () => {
     passwordStrength.score >= MINIMUM_PASSWORD_COMPLEXITY;
 
   // Handle reCAPTCHA component
-  const recaptchaRef = useReCAPTCHARef(recaptchaCanceled);
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
   const onSubmit = useCallback(() => {
     if (!registerError.loading && recaptchaRef.current !== null) {
-      mergeState({ registrationError: apiLoading() });
-      registerUser(recaptchaRef.current, name, email, password);
+      recaptchaRef.current.execute();
     }
-  }, [email, name, password, recaptchaRef, registerError.loading]);
+  }, [recaptchaRef, registerError.loading]);
 
   return (
     <>
@@ -166,7 +164,13 @@ export const Register = () => {
           </Grid.Column>
         </Transition>
       </Grid>
-      <ReCAPTCHA ref={recaptchaRef} sitekey={RECAPTCHA_SITE_KEY} size="invisible" />
+      <ReCAPTCHA
+        ref={recaptchaRef}
+        sitekey={RECAPTCHA_SITE_KEY}
+        size="invisible"
+        onChange={() => registerUser(recaptchaRef.current!, name, email, password)}
+        onErrored={() => handleRecaptchaError(recaptchaRef.current!)}
+      />
     </>
   );
 };

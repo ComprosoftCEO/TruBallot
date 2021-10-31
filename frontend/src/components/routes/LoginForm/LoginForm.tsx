@@ -1,16 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Grid, Transition, Image, Segment, Form, Message, Button } from 'semantic-ui-react';
 import { StringInput } from 'components/input';
 import { RECAPTCHA_SITE_KEY } from 'env';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { apiLoading, getErrorInformation, useReCAPTCHARef } from 'api';
-import { mergeNestedState, nestedSelectorHook, setNestedProperty } from 'redux/helpers';
-import { isFormValid, logInUser, recaptchaCanceled, useClearState } from './loginFormActions';
+import { getErrorInformation } from 'api';
+import { nestedSelectorHook } from 'redux/helpers';
+import { handleRecaptchaError, isFormValid, logInUser, setEmail, setPassword, useClearState } from './loginFormActions';
 
 const useSelector = nestedSelectorHook('login');
-const mergeState = mergeNestedState('login');
-const setProperty = setNestedProperty('login');
 
 export const LoginForm = () => {
   useClearState();
@@ -21,13 +19,12 @@ export const LoginForm = () => {
   const formValid = isFormValid(email, password);
 
   // Handle reCAPTCHA component
-  const recaptchaRef = useReCAPTCHARef(recaptchaCanceled);
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
   const onSubmit = useCallback(() => {
     if (!loginError.loading && recaptchaRef.current !== null) {
-      mergeState({ loginError: apiLoading() });
-      logInUser(recaptchaRef.current, email, password);
+      recaptchaRef.current.execute();
     }
-  }, [email, loginError.loading, password, recaptchaRef]);
+  }, [loginError.loading, recaptchaRef]);
 
   return (
     <>
@@ -49,7 +46,7 @@ export const LoginForm = () => {
                     placeholder="Email"
                     value={email}
                     maxLength={255}
-                    onChangeValue={setProperty('email')}
+                    onChangeValue={setEmail}
                     disabled={loginError.loading}
                   />
                 </Form.Field>
@@ -63,7 +60,7 @@ export const LoginForm = () => {
                     type="password"
                     value={password}
                     maxLength={255}
-                    onChangeValue={setProperty('password')}
+                    onChangeValue={setPassword}
                     disabled={loginError.loading}
                   />
                 </Form.Field>
@@ -82,7 +79,7 @@ export const LoginForm = () => {
                   icon="sign in"
                   content="Login"
                   onClick={onSubmit}
-                  disabled={!formValid || loginError.loading}
+                  disabled={!formValid || !recaptchaRef.current || loginError.loading}
                   loading={loginError.loading}
                 />
               </Form>
@@ -95,7 +92,13 @@ export const LoginForm = () => {
           </Grid.Column>
         </Transition>
       </Grid>
-      <ReCAPTCHA ref={recaptchaRef} sitekey={RECAPTCHA_SITE_KEY} size="invisible" />
+      <ReCAPTCHA
+        ref={recaptchaRef}
+        sitekey={RECAPTCHA_SITE_KEY}
+        size="invisible"
+        onChange={() => logInUser(recaptchaRef.current!, email, password)}
+        onErrored={() => handleRecaptchaError(recaptchaRef.current!)}
+      />
     </>
   );
 };

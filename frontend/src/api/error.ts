@@ -116,7 +116,7 @@ export const getErrorInformation = (
 
   // Treat as a normal error object
   return {
-    description: (e as Error).toString(),
+    description: (e as Error).message,
     statusCode: null,
     errorCode: null,
   };

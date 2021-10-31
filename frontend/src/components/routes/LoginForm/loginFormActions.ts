@@ -1,40 +1,41 @@
 import { useLayoutEffect } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import { setAuthTokens } from 'axios-jwt';
 import * as EmailValidator from 'email-validator';
 import { API_BASE_URL } from 'env';
-import { apiError, apiSuccess, resolveResult } from 'api';
-import { LoginResult } from 'models/auth';
+import { apiError, apiLoading, apiSuccess, resolveResult } from 'api';
+import { ClientToken, LoginResult } from 'models/auth';
 import { history } from 'index';
 import { clearNestedState, getNestedState, mergeNestedState } from 'redux/helpers';
 
 const getGlobalsState = getNestedState('globals');
-const mergeGlobalsStore = mergeNestedState('globals');
+const mergeGlobalsState = mergeNestedState('globals');
 const mergeLoginState = mergeNestedState('login');
 
 export const useClearState = () => {
   useLayoutEffect(() => clearNestedState('login'), []);
 };
 
+export const setEmail = (email: string): void => mergeLoginState({ email, loginError: apiSuccess({}) });
+
+export const setPassword = (password: string): void => mergeLoginState({ password, loginError: apiSuccess({}) });
+
 export const isFormValid = (email: string, password: string): boolean =>
   email.length > 0 && password.length > 0 && EmailValidator.validate(email);
 
 export const logInUser = async (recaptcha: ReCAPTCHA, email: string, password: string) => {
-  // Make the reCAPTCHA request, and handle any errors
-  let captcha: string | null = null;
-  try {
-    captcha = await recaptcha.executeAsync();
-    if (captcha === null) {
-      mergeLoginState({ password: '', loginError: apiError(new Error('reCAPTCHA Token Expired')) });
-      recaptcha.reset();
-    }
-  } catch (e) {
-    mergeLoginState({ password: '', loginError: apiError(e as Error) });
+  // Get the reCAPTCHA token, and handle any errors
+  const captcha = recaptcha.getValue();
+  if (captcha === null) {
+    mergeLoginState({ password: '', loginError: apiError(new Error('reCAPTCHA token expired, please try again')) });
     recaptcha.reset();
+    return;
   }
 
   // Attempt to log in with the API server
+  mergeLoginState({ loginError: apiLoading() });
   const result = await axios
     .post<LoginResult>(`${API_BASE_URL}/auth/login`, { email, password, captcha })
     .then(...resolveResult);
@@ -48,8 +49,9 @@ export const logInUser = async (recaptcha: ReCAPTCHA, email: string, password: s
   }
 };
 
-export const recaptchaCanceled = () => {
-  mergeLoginState({ loginError: apiSuccess({}) });
+export const handleRecaptchaError = (recaptcha: ReCAPTCHA): void => {
+  mergeLoginState({ password: '', loginError: apiError(new Error('reCAPTCHA error, please try again')) });
+  recaptcha.reset();
 };
 
 /**
@@ -68,7 +70,13 @@ function handleLogin(loginResult: LoginResult) {
   });
 
   // Indiate that the user has logged in
-  mergeGlobalsStore({ isLoggedIn: true });
+  const clientToken: ClientToken = jwt.decode(loginResult.clientToken) as ClientToken;
+  mergeGlobalsState({
+    isLoggedIn: true,
+    name: clientToken.name,
+    email: clientToken.email,
+    permissions: new Set(clientToken.permissions),
+  });
 
   // Should the login redirect somewhere else?
   const { redirect } = getGlobalsState();

@@ -12,6 +12,11 @@ export const loginRedirect = () => {
   history.push('/login?redirect');
 };
 
+export const goHomeLogin = () => {
+  mergeGlobalsState({ isLoggedIn: false });
+  history.push('/');
+};
+
 export const goHome = () => {
   history.push('/');
 };
