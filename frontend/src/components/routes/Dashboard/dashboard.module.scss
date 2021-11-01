@@ -1,0 +1,11 @@
+.create-election {
+  box-shadow: none !important;
+}
+
+.create-election-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(173, 235, 173, 0.2) !important;
+  outline: 5px dashed rgba(173, 235, 173, 0.7);
+}

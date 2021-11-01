@@ -60,7 +60,7 @@ export const Register = () => {
   return (
     <>
       <Grid textAlign="center" style={{ height: '100vh' }} verticalAlign="middle">
-        <Transition animation="fade down" transitionOnMount>
+        <Transition animation="fade left" transitionOnMount>
           <Grid.Column style={{ maxWidth: 450 }}>
             <Image src="/truballot-logo.svg" />
 

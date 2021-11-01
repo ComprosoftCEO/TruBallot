@@ -1,5 +1,5 @@
 /*
- * Login form state
+ * Registration form state
  */
 import { APIResult, apiSuccess } from 'api';
 

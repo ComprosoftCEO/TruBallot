@@ -6,6 +6,7 @@
 
 // Override the TruBallot colors
 @red            : #a8272d;
+@yellow         : #ccad00;
 @violet         : #1b1464;
 @olive          : #385723;
 

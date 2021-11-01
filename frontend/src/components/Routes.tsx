@@ -13,6 +13,7 @@ import jwt from 'jsonwebtoken';
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
 import { Register } from './routes/Register';
+import { Dashboard } from './routes/Dashboard';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -28,7 +29,11 @@ const LOGGED_OUT_ENTRIES: RouterEntry[] = [
 ];
 
 /// Rotues that only appear when the user IS logged in
-const LOGGED_IN_ENTRIES: RouterEntry[] = [];
+const LOGGED_IN_ENTRIES: RouterEntry[] = [
+  { path: '/', exact: true, redirect: '/dashboard' },
+  { path: '/login', redirect: '/dashboard' },
+  { path: '/dashboard', exact: true, component: Dashboard },
+];
 
 /// Routes that always appear
 const BOTH_ENTRIES: RouterEntry[] = [];
