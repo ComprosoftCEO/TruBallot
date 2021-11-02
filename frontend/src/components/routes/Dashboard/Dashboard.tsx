@@ -1,15 +1,16 @@
+import { useTitle } from 'helpers/title';
 import { DashboardMenu } from './DashboardMenu';
 import { DashboardHome } from './DashboardHome';
 import { ElectionsList } from './ElectionsList';
-import { DashboardFilter, useClearState, useFetchAllElections } from './dashboardActions';
+import { DashboardFilter, getDashboardTitle, useClearState } from './dashboardActions';
 
 export interface DashboardProps {
   filter?: DashboardFilter;
 }
 
 export const Dashboard = ({ filter }: DashboardProps) => {
+  useTitle(getDashboardTitle(filter));
   useClearState();
-  useFetchAllElections();
 
   return (
     <>

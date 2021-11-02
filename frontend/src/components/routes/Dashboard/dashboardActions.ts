@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect } from 'react';
 import { clearAuthTokens } from 'axios-jwt';
 import pluralize from 'pluralize';
 import { clearNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
-import { apiLoading, APIOption, apiSome, axiosApi, resolveOption } from 'api';
+import { apiError, apiLoading, APIResult, apiSuccess, axiosApi, resolveResult } from 'api';
 import { AllElectionsResult, ElectionStatus, PublicElectionList } from 'models/election';
 import { history } from 'index';
 
@@ -19,10 +19,20 @@ export const useFetchAllElections = () => {
     mergeDashboardState(
       axiosApi
         .get<AllElectionsResult>('/elections')
-        .then(...resolveOption)
+        .then(...resolveResult)
         .then((data) => ({ data })),
     );
   }, []);
+};
+
+export const reloadAllElections = () => {
+  mergeDashboardState({ data: apiLoading() });
+  mergeDashboardState(
+    axiosApi
+      .get<AllElectionsResult>('/elections')
+      .then(...resolveResult)
+      .then((data) => ({ data })),
+  );
 };
 
 //
@@ -103,17 +113,21 @@ const ALL_FILTERS: Record<DashboardFilter, FilterFunction> = {
  * @param filter Filter to apply to the list
  * @returns List of elections
  */
-export const useFilteredElections = (filter?: DashboardFilter): APIOption<PublicElectionList[]> => {
+export const useFilteredElections = (filter?: DashboardFilter): APIResult<PublicElectionList[]> => {
   const publicElections = useDashboardSelector((state) => state.data);
   if (publicElections.loading) {
     return apiLoading();
+  }
+
+  if (!publicElections.success) {
+    return apiError(publicElections.error);
   }
 
   // Apply the filter
   const filteredList: PublicElectionList[] =
     filter && ALL_FILTERS[filter] ? ALL_FILTERS[filter](publicElections.data) : [];
 
-  return apiSome(filteredList);
+  return apiSuccess(filteredList);
 };
 
 /**
@@ -145,6 +159,9 @@ const ALL_TITLES: Record<DashboardFilter, string> = {
   [DashboardFilter.RegistrationsVoting]: 'Registered Elections (Voting)',
   [DashboardFilter.RegistrationsClosed]: 'Registered Elections (Closed)',
 };
+
+export const getDashboardTitle = (filter?: DashboardFilter): string =>
+  filter !== undefined ? ALL_TITLES[filter] : 'Dashboard';
 
 export const getListHeader = (filter: DashboardFilter): string => ALL_TITLES[filter];
 

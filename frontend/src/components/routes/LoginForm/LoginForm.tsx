@@ -6,11 +6,13 @@ import { RECAPTCHA_SITE_KEY } from 'env';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { getErrorInformation } from 'api';
 import { nestedSelectorHook } from 'redux/helpers';
+import { useTitle } from 'helpers/title';
 import { handleRecaptchaError, isFormValid, logInUser, setEmail, setPassword, useClearState } from './loginFormActions';
 
 const useSelector = nestedSelectorHook('login');
 
 export const LoginForm = () => {
+  useTitle('Login');
   useClearState();
 
   const email = useSelector((state) => state.email);

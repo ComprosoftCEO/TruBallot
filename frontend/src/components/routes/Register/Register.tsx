@@ -6,6 +6,7 @@ import { getErrorInformation } from 'api';
 import { StringInput } from 'components/input';
 import { RECAPTCHA_SITE_KEY } from 'env';
 import { nestedSelectorHook } from 'redux/helpers';
+import { useTitle } from 'helpers/title';
 import { Grid, Image, Transition, Segment, Form, Message, Button, Header, Popup, Divider } from 'semantic-ui-react';
 import { MINIMUM_PASSWORD_COMPLEXITY, SITE_SPECIFIC_WORDS } from 'helpers/passwordComplexity';
 import { PasswordError } from 'components/shared';
@@ -23,6 +24,7 @@ import {
 const useSelector = nestedSelectorHook('register');
 
 export const Register = () => {
+  useTitle('Register');
   useClearState();
 
   const name = useSelector((state) => state.name);
