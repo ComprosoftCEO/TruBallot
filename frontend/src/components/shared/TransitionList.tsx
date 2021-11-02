@@ -22,6 +22,9 @@ export const TransitionList = ({
   maxDelay = totalDuration,
 }: TransitionListProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  if (children === null) {
+    return null;
+  }
 
   const numberOfChildren = React.Children.count(children);
   if (numberOfChildren <= 0) {
@@ -35,6 +38,7 @@ export const TransitionList = ({
       {React.Children.map(
         children,
         (child, index) =>
+          child &&
           index <= currentIndex && (
             <Transition
               animation={animation}

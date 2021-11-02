@@ -19,7 +19,7 @@ export const ErrorOccured = ({ message }: ErrorOccuredProps) => (
       <Image src="/truballot-logo.svg" spaced size="large" centered style={{ padding: '20px 0' }} />
 
       <Divider horizontal />
-      <Button fluid icon="redo" content="Reload Page" onClick={window.location.reload} />
+      <Button fluid icon="redo" content="Reload Page" onClick={() => window.location.reload()} />
 
       <div style={{ height: 10 }} />
       <Button primary fluid icon="home" content="Go Home" onClick={goHome} />

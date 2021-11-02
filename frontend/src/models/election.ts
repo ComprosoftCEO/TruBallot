@@ -22,6 +22,7 @@ export interface PublicElectionList {
   name: string;
   status: ElectionStatus;
   isPublic: boolean;
+  createdBy: UserDetails;
 
   isRegistered: boolean;
   hasVoted: boolean;
@@ -38,7 +39,7 @@ export interface PublicElectionDetails {
   status: ElectionStatus;
 
   isPublic: boolean;
-  access_code?: string;
+  accessCode?: string;
 
   isRegistered: boolean;
   hasVoted: boolean;

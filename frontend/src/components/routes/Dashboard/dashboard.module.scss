@@ -1,11 +1,22 @@
-.create-election {
-  box-shadow: none !important;
-}
-
-.create-election-content {
+.card-container-content {
   display: flex;
   justify-content: center;
   align-items: center;
+
+  min-height: 140px;
+  height: 100%;
+}
+
+.create-election-container {
+  box-shadow: none !important;
+}
+
+.create-election {
   background-color: rgba(173, 235, 173, 0.2) !important;
   outline: 5px dashed rgba(173, 235, 173, 0.7);
+}
+
+.my-elections {
+  background-color: rgba(204, 173, 0, 0.2) !important;
+  // outline: 5px solid rgba(204, 173, 0, 0.7);
 }

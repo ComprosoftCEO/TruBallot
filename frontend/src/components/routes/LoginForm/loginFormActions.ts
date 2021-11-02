@@ -69,6 +69,11 @@ function handleLogin(loginResult: LoginResult) {
     refreshToken: loginResult.refreshToken,
   });
 
+  // Should the login redirect somewhere else?
+  //   Fetch this before updating the location after the user logs in
+  const { redirect } = getGlobalsState();
+  const redirectQuery = new URLSearchParams(history.location.search).get('redirect');
+
   // Indiate that the user has logged in
   const clientToken: ClientToken = jwt.decode(loginResult.clientToken) as ClientToken;
   mergeGlobalsState({
@@ -78,9 +83,7 @@ function handleLogin(loginResult: LoginResult) {
     permissions: new Set(clientToken.permissions),
   });
 
-  // Should the login redirect somewhere else?
-  const { redirect } = getGlobalsState();
-  const redirectQuery = new URLSearchParams(history.location.search).get('redirect');
+  // Go to the dashboard or redirect somewhere else
   if (redirectQuery !== null && redirect !== null) {
     // Go to the redirect URL
     history.push(redirect);

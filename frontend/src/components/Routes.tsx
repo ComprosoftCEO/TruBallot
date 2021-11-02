@@ -13,7 +13,7 @@ import jwt from 'jsonwebtoken';
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
 import { Register } from './routes/Register';
-import { Dashboard } from './routes/Dashboard';
+import { Dashboard, DashboardFilter } from './routes/Dashboard';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -23,7 +23,6 @@ interface RouterEntry extends RouteProps {
 /// Routes that only appear when the user is NOT logged in
 const LOGGED_OUT_ENTRIES: RouterEntry[] = [
   { path: '/', exact: true, redirect: '/login' },
-  { path: '/dashboard', redirect: '/login' },
   { path: '/login', exact: true, component: LoginForm },
   { path: '/register', exact: true, component: Register },
 ];
@@ -32,7 +31,76 @@ const LOGGED_OUT_ENTRIES: RouterEntry[] = [
 const LOGGED_IN_ENTRIES: RouterEntry[] = [
   { path: '/', exact: true, redirect: '/dashboard' },
   { path: '/login', redirect: '/dashboard' },
+
+  // Dashboard routes
   { path: '/dashboard', exact: true, component: Dashboard },
+
+  // Dashboard my elections
+  { path: '/dashboard/my-elections', exact: true, children: <Dashboard filter={DashboardFilter.MyElectionsAll} /> },
+  {
+    path: '/dashboard/my-elections/drafts',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.MyElectionsDraft} />,
+  },
+  {
+    path: '/dashboard/my-elections/open',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.MyElectionsOpen} />,
+  },
+  {
+    path: '/dashboard/my-elections/voting',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.MyElectionsVoting} />,
+  },
+  {
+    path: '/dashboard/my-elections/closed',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.MyElectionsClosed} />,
+  },
+
+  // Dashboard public elections
+  {
+    path: '/dashboard/public-elections',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.PublicElectionsAll} />,
+  },
+  {
+    path: '/dashboard/public-elections/open',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.PublicElectionsOpen} />,
+  },
+  {
+    path: '/dashboard/public-elections/voting',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.PublicElectionsVoting} />,
+  },
+  {
+    path: '/dashboard/public-elections/closed',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.PublicElectionsClosed} />,
+  },
+
+  // Dashboard registrations
+  {
+    path: '/dashboard/registrations',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.RegistrationsAll} />,
+  },
+  {
+    path: '/dashboard/registrations/open',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.RegistrationsOpen} />,
+  },
+  {
+    path: '/dashboard/registrations/voting',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.RegistrationsVoting} />,
+  },
+  {
+    path: '/dashboard/registrations/closed',
+    exact: true,
+    children: <Dashboard filter={DashboardFilter.RegistrationsClosed} />,
+  },
 ];
 
 /// Routes that always appear

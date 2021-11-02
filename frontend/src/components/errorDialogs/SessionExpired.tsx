@@ -32,7 +32,7 @@ export const SessionExpired = ({ clearError }: SessionExpiredProps) => {
         </Button>
 
         <div style={{ height: 20 }} />
-        <Button fluid icon="redo" content="Reload Page" onClick={window.location.reload} />
+        <Button fluid icon="redo" content="Reload Page" onClick={() => window.location.reload()} />
 
         <div style={{ height: 10 }} />
         <Button primary fluid icon="home" content="Go Home" onClick={goHomeLogin} />
