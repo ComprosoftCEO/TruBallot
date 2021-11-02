@@ -1,17 +1,16 @@
 import { useLayoutEffect } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
 import { setAuthTokens } from 'axios-jwt';
 import * as EmailValidator from 'email-validator';
 import { API_BASE_URL } from 'env';
 import { apiError, apiLoading, apiSuccess, resolveResult } from 'api';
-import { ClientToken, LoginResult } from 'models/auth';
+import { LoginResult } from 'models/auth';
 import { history } from 'index';
 import { clearNestedState, getNestedState, mergeNestedState } from 'redux/helpers';
+import { logInStore } from 'redux/auth';
 
 const getGlobalsState = getNestedState('globals');
-const mergeGlobalsState = mergeNestedState('globals');
 const mergeLoginState = mergeNestedState('login');
 
 export const useClearState = () => {
@@ -85,13 +84,7 @@ function handleLogin(loginResult: LoginResult) {
   const redirectQuery = new URLSearchParams(history.location.search).get('redirect');
 
   // Indiate that the user has logged in
-  const clientToken: ClientToken = jwt.decode(loginResult.clientToken) as ClientToken;
-  mergeGlobalsState({
-    isLoggedIn: true,
-    name: clientToken.name,
-    email: clientToken.email,
-    permissions: new Set(clientToken.permissions),
-  });
+  logInStore(loginResult.clientToken);
 
   // Go to the dashboard or redirect somewhere else
   if (redirectQuery !== null && redirect !== null) {

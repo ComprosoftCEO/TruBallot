@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { Router } from 'react-router-dom';
+import { LastLocationProvider } from 'react-router-last-location';
 import { createBrowserHistory } from 'history';
 
 import { ErrorBoundary } from 'components/ErrorBoundary';
@@ -23,10 +24,12 @@ ReactDOM.render(
   <React.StrictMode>
     <Provider store={store}>
       <Router history={history}>
-        <ErrorBoundary>
-          <ConfirmDialog />
-          <Routes />
-        </ErrorBoundary>
+        <LastLocationProvider>
+          <ErrorBoundary>
+            <ConfirmDialog />
+            <Routes />
+          </ErrorBoundary>
+        </LastLocationProvider>
       </Router>
     </Provider>
   </React.StrictMode>,

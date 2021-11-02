@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Prompt } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import zxcvbn from 'zxcvbn';
@@ -27,6 +27,8 @@ const useSelector = nestedSelectorHook('register');
 export const Register = () => {
   useTitle('Register');
   useClearState();
+
+  const [hover, setHover] = useState(false);
 
   const name = useSelector((state) => state.name);
   const email = useSelector((state) => state.email);
@@ -104,10 +106,12 @@ export const Register = () => {
 
                 <Popup
                   wide
+                  on="hover"
                   content={<PasswordError passwordsMatch={passwordsMatch} passwordStrength={passwordStrength} />}
                   position="right center"
-                  open={showPasswordError}
-                  style={{ zIndex: 900 }}
+                  open={hover && showPasswordError}
+                  onOpen={() => setHover(true)}
+                  onClose={() => setHover(false)}
                   trigger={
                     <div>
                       <Form.Field required error={showPasswordError}>

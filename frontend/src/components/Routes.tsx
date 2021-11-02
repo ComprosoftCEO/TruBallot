@@ -6,15 +6,15 @@
 import { useLayoutEffect } from 'react';
 import { Switch, Route, Redirect, RouteProps } from 'react-router-dom';
 import { getAccessToken } from 'axios-jwt';
-import { Permission, ClientToken } from 'models/auth';
-import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
-import jwt from 'jsonwebtoken';
+import { Permission } from 'models/auth';
+import { nestedSelectorHook } from 'redux/helpers';
 
+import { logInStore, logOutStore } from 'redux/auth';
 import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
 import { Register } from './routes/Register';
 import { Dashboard, DashboardFilter } from './routes/Dashboard';
-import { Editor } from './routes/Editor';
+import { CreateElection } from './routes/Editor';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -104,7 +104,7 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
   },
 
   // Editor
-  { path: '/elections/create', exact: true, component: Editor },
+  { path: '/elections/create', exact: true, component: CreateElection },
 ];
 
 /// Routes that always appear
@@ -114,7 +114,7 @@ const LoggedOutSwitch = (
   <Switch>
     {LOGGED_OUT_ENTRIES.map(({ redirect, children, ...entry }, index) => (
       <Route key={index} {...entry}>
-        {redirect ? <Redirect to={redirect} /> : children}
+        {redirect ? <Redirect to={{ pathname: redirect, state: { preventLastLocation: true } }} /> : children}
       </Route>
     ))}
     {LOGGED_IN_ENTRIES.filter((entry) => typeof entry.redirect === 'undefined').map((entry, index) => (
@@ -159,7 +159,6 @@ const LoggedInSwitch = (permissions: Set<Permission>) => (
 );
 
 const useSelector = nestedSelectorHook('globals');
-const mergeState = mergeNestedState('globals');
 
 //
 // Main component for front-end routing
@@ -181,17 +180,8 @@ function loadAccessToken(): void {
   // Parse the access token if the user is currently logged in
   const accessToken = getAccessToken();
   if (accessToken !== undefined) {
-    const clientToken: ClientToken = jwt.decode(accessToken) as ClientToken;
-
-    // User is logged in
-    mergeState({
-      isLoggedIn: true,
-      name: clientToken.name,
-      email: clientToken.email,
-      permissions: new Set(clientToken.permissions),
-    });
+    logInStore(accessToken);
   } else {
-    // User is logged out
-    mergeState({ isLoggedIn: false });
+    logOutStore();
   }
 }

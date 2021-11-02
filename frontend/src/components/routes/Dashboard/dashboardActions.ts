@@ -125,7 +125,7 @@ export const useFilteredElections = (filter?: DashboardFilter): APIResult<Public
 
   // Apply the filter
   const filteredList: PublicElectionList[] =
-    filter && ALL_FILTERS[filter] ? ALL_FILTERS[filter](publicElections.data) : [];
+    filter !== undefined && ALL_FILTERS[filter] ? ALL_FILTERS[filter](publicElections.data) : [];
 
   return apiSuccess(filteredList);
 };

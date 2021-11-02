@@ -4,12 +4,11 @@ import { clearNestedState, mergeNestedState } from 'redux/helpers';
 import { history } from 'index';
 import { ReCAPTCHA } from 'react-google-recaptcha';
 import { API_BASE_URL } from 'env';
-import { ClientToken, LoginResult } from 'models/auth';
+import { LoginResult } from 'models/auth';
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
 import { setAuthTokens } from 'axios-jwt';
+import { logInStore } from 'redux/auth';
 
-const mergeGlobalsState = mergeNestedState('globals');
 const mergeRegisterState = mergeNestedState('register');
 
 export const useClearState = () => {
@@ -77,14 +76,9 @@ function handleLogin(loginResult: LoginResult) {
   });
 
   // Indiate that the user has logged in
-  const clientToken: ClientToken = jwt.decode(loginResult.clientToken) as ClientToken;
-  mergeGlobalsState({
-    isLoggedIn: true,
-    name: clientToken.name,
-    email: clientToken.email,
-    permissions: new Set(clientToken.permissions),
-  });
+  logInStore(loginResult.clientToken);
 
   // Go to the dashboard
+  mergeRegisterState({ modified: false });
   history.push('/');
 }

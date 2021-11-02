@@ -1,20 +1,18 @@
 import { history } from 'index';
 import { clearAuthTokens } from 'axios-jwt';
-import { mergeNestedState } from 'redux/helpers';
-
-const mergeGlobalsState = mergeNestedState('globals');
+import { logOutStore } from 'redux/auth';
 
 /// Redirect to log-in form before going back to this route
 export const loginRedirect = () => {
   clearAuthTokens();
 
-  mergeGlobalsState({ redirect: history.location.pathname, isLoggedIn: false });
+  logOutStore(history.location.pathname);
   history.push('/login?redirect');
 };
 
 export const goHomeLogin = () => {
   clearAuthTokens();
 
-  mergeGlobalsState({ isLoggedIn: false });
+  logOutStore();
   window.location.href = '/';
 };

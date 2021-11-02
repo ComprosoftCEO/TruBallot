@@ -1,17 +1,14 @@
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
 import { applyAuthTokenInterceptor, TokenRefreshRequest, clearAuthTokens } from 'axios-jwt';
-import { ClientToken, LoginResult } from 'models/auth';
+import { LoginResult } from 'models/auth';
 import { API_BASE_URL } from 'env';
-import { mergeNestedState } from 'redux/helpers';
+import { logInStore, logOutStore } from 'redux/auth';
 import { resolveOptionUnwrapped } from 'api';
 
 /**
  * Export Axios instances to access the API server and the collectors
  */
 export const axiosApi = axios.create({ baseURL: API_BASE_URL });
-
-const mergeState = mergeNestedState('globals');
 
 // Define the refresh function
 const requestRefresh: TokenRefreshRequest = async (refreshToken) => {
@@ -25,13 +22,7 @@ const requestRefresh: TokenRefreshRequest = async (refreshToken) => {
       .then(...resolveOptionUnwrapped);
 
     // Update the store with the new JWT token
-    const clientToken: ClientToken = jwt.decode(response.data.clientToken) as ClientToken;
-    mergeState({
-      isLoggedIn: true,
-      name: clientToken.name,
-      email: clientToken.email,
-      permissions: new Set(clientToken.permissions),
-    });
+    logInStore(response.data.clientToken);
 
     return {
       accessToken: response.data.clientToken,
@@ -41,9 +32,7 @@ const requestRefresh: TokenRefreshRequest = async (refreshToken) => {
     // Log out the user if some sort of refresh error occurs
     //   This prevents a nasty infinite loop if the API server ever goes down
     clearAuthTokens();
-    mergeState({
-      isLoggedIn: false,
-    });
+    logOutStore();
 
     throw error;
   }
