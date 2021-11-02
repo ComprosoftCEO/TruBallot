@@ -1,9 +1,13 @@
 import { Container, Menu, Image, Dropdown } from 'semantic-ui-react';
 import { useHistory } from 'react-router-dom';
+import { nestedSelectorHook } from 'redux/helpers';
 import { logOut } from './dashboardActions';
+
+const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const DashboardMenu = () => {
   const history = useHistory();
+  const name = useGlobalsSelector((state) => state.name);
 
   return (
     <Menu fixed="top">
@@ -114,7 +118,7 @@ export const DashboardMenu = () => {
         </Dropdown>
 
         <Menu.Menu position="right">
-          <Dropdown item simple text="Bryan McClain">
+          <Dropdown item simple text={name}>
             <Dropdown.Menu>
               <Dropdown.Header content="Account" />
               <Dropdown.Item icon="cog" text="Preferences" onClick={() => history.push('/preferences')} />

@@ -149,10 +149,12 @@ export const Register = () => {
                 <Divider />
 
                 {!registerError.loading && !registerError.success && (
-                  <Message negative>
-                    <b>Error: </b>
-                    {getErrorInformation(registerError.error).description}
-                  </Message>
+                  <Transition animation="fade down" duration={500} transitionOnMount>
+                    <Message negative>
+                      <b>Error: </b>
+                      {getErrorInformation(registerError.error).description}
+                    </Message>
+                  </Transition>
                 )}
 
                 <Button

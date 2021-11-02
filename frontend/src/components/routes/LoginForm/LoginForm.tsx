@@ -68,10 +68,12 @@ export const LoginForm = () => {
                 </Form.Field>
 
                 {!loginError.loading && !loginError.success && (
-                  <Message negative>
-                    <b>Error: </b>
-                    {getErrorInformation(loginError.error).description}
-                  </Message>
+                  <Transition animation="fade down" duration={500} transitionOnMount>
+                    <Message negative>
+                      <b>Error: </b>
+                      {getErrorInformation(loginError.error).description}
+                    </Message>
+                  </Transition>
                 )}
 
                 <Button

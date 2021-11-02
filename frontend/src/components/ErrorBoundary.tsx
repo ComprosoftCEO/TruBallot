@@ -80,13 +80,13 @@ class ErrorBoundaryComponent extends React.Component<ErrorBoundaryComponentProps
     if (hasError) {
       const errorInformation = getErrorInformation(lastError);
 
-      if (LOGIN_EXPIRED_CODES.includes(errorInformation.errorCode)) {
+      if (LOGIN_EXPIRED_CODES.includes(errorInformation.globalErrorCode)) {
         // Session timeout
         return <SessionExpired clearError={this.clearError} />;
       }
 
       // Normal error
-      return <ErrorOccured message={errorInformation.description} />;
+      return <ErrorOccured message={errorInformation.description} allowReload />;
     }
 
     // Render the coponent as normal

@@ -60,7 +60,7 @@ export enum GlobalErrorCode {
 export interface ErrorInformation {
   description: string;
   statusCode: number | null;
-  errorCode: GlobalErrorCode | null;
+  globalErrorCode: GlobalErrorCode | null;
 }
 
 /**
@@ -77,7 +77,7 @@ export const getErrorInformation = (
     return {
       description: 'Unknown Error',
       statusCode: null,
-      errorCode: null,
+      globalErrorCode: null,
     };
   }
 
@@ -88,7 +88,7 @@ export const getErrorInformation = (
       return {
         description: response.description,
         statusCode: response?.statusCode ?? null,
-        errorCode: response?.errorCode ?? null,
+        globalErrorCode: response?.errorCode ?? null,
       };
     }
   }
@@ -102,7 +102,7 @@ export const getErrorInformation = (
       return {
         description: data.description,
         statusCode: response.status,
-        errorCode: data?.errorCode ?? null,
+        globalErrorCode: data?.errorCode ?? null,
       };
     }
 
@@ -110,7 +110,7 @@ export const getErrorInformation = (
     return {
       description: `${response.status} ${response.statusText}`,
       statusCode: response.status,
-      errorCode: null,
+      globalErrorCode: null,
     };
   }
 
@@ -118,6 +118,6 @@ export const getErrorInformation = (
   return {
     description: (e as Error).message,
     statusCode: null,
-    errorCode: null,
+    globalErrorCode: null,
   };
 };
