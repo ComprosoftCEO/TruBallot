@@ -1,9 +1,12 @@
-import { useLayoutEffect } from 'react';
-import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
+import { useEffect, useLayoutEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { LastLocationType } from 'react-router-last-location';
+import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { history } from 'index';
-import { apiLoading, axiosApi, resolveResult } from 'api';
-import { NewElectionResult } from 'models/election';
+import { APIError, apiLoading, APISuccess, apiSuccess, axiosApi, resolveResult } from 'api';
+import { NewElectionResult, PublicElectionDetails, PublicElectionQuestion } from 'models/election';
+import { EditorState } from 'redux/state';
+import { showConfirm } from 'showConfirm';
 
 const mergeState = mergeNestedState('editor');
 const useSelector = nestedSelectorHook('editor');
@@ -20,6 +23,38 @@ Question 2
 export const useClearState = () => {
   useLayoutEffect(() => clearNestedState('editor'), []);
 };
+
+export const useElectionId = (): string => useParams<{ electionId: string }>().electionId;
+
+export const useFetchElection = (electionId: string): void => {
+  useEffect(() => {
+    mergeState(
+      axiosApi
+        .get<PublicElectionDetails>(`/elections/${electionId}`)
+        .then(...resolveResult)
+        .then(setElection),
+    );
+  }, [electionId]);
+};
+
+/**
+ * Generate the Redux partial state to update the election
+ *
+ * @param electionDetails APIResult for the election
+ * @returns Partial state
+ */
+function setElection(electionDetails: APISuccess<PublicElectionDetails> | APIError): Partial<EditorState> {
+  if (!electionDetails.success) {
+    return { electionDetails };
+  }
+
+  return {
+    electionDetails,
+    name: electionDetails.data.name,
+    isPublic: electionDetails.data.isPublic,
+    questions: questionsToListString(electionDetails.data.questions),
+  };
+}
 
 //
 // Setters
@@ -82,6 +117,16 @@ export const parseListString = (inputText: string, placeholder = PLACEHOLDER_TEX
 
   return items;
 };
+
+/**
+ * Convert a list of questions into the string
+ *
+ * @param input Questions
+ * @return String
+ */
+function questionsToListString(input: PublicElectionQuestion[]): string {
+  return input.map(({ name, candidates }) => `${name}\n${candidates.join('\n')}`).join('\n\n');
+}
 
 /**
  * Validate the list of questions for any errors
@@ -150,4 +195,46 @@ export const createElection = async () => {
   } else {
     mergeState({ submitting: result });
   }
+};
+
+/**
+ * Save the election
+ */
+export const saveElection = async (electionId: string) => {
+  const { name, isPublic, questions: questionString } = getState();
+  const questions = parseListString(questionString).map(([question, candidates]) => ({ name: question, candidates }));
+
+  mergeState({ submitting: apiLoading() });
+
+  const result = await axiosApi.patch(`/elections/${electionId}`, { name, isPublic, questions }).then(...resolveResult);
+  if (result.success) {
+    mergeState({ modified: false, submitting: apiSuccess({}) });
+  } else {
+    mergeState({ submitting: result });
+  }
+};
+
+/**
+ * Reload the election
+ */
+export const reloadElection = (electionId: string) => {
+  const { modified } = getState();
+  showConfirm({
+    message: 'Drop changes and reload election?',
+    override: !modified || undefined,
+    onConfirm: async () => {
+      mergeState({ reloading: apiLoading() });
+
+      const result = await axiosApi.get<PublicElectionDetails>(`/elections/${electionId}`).then(...resolveResult);
+      if (result.success) {
+        mergeState({ modified: false, reloading: apiSuccess({}), ...setElection(result) });
+      } else {
+        mergeState({ reloading: result });
+      }
+    },
+  });
+};
+
+export const clearReloadError = (): void => {
+  mergeState({ reloading: apiSuccess({}) });
 };

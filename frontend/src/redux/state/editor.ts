@@ -5,8 +5,6 @@ import { apiLoading, APIResult, apiSuccess } from 'api/types';
 import { PublicElectionDetails } from 'models/election';
 
 export interface EditorState {
-  electionDetails: APIResult<PublicElectionDetails>;
-
   // Values used by the editor
   name: string;
   isPublic: boolean;
@@ -14,13 +12,20 @@ export interface EditorState {
   modified: boolean;
 
   submitting: APIResult<{}>;
+
+  // Values used when editing an existing election
+  electionDetails: APIResult<PublicElectionDetails>;
+  reloading: APIResult<{}>;
 }
 
 export const initialEditorState: EditorState = {
-  electionDetails: apiLoading(),
   name: '',
   isPublic: false,
   questions: '',
   modified: false,
+
   submitting: apiSuccess({}),
+
+  electionDetails: apiLoading(),
+  reloading: apiSuccess({}),
 };

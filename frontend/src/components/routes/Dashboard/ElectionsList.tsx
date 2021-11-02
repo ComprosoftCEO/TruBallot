@@ -1,4 +1,4 @@
-import { Container, Header, Divider, Icon, Card, Transition, Message } from 'semantic-ui-react';
+import { Container, Header, Divider, Icon, Card, Transition } from 'semantic-ui-react';
 import { ElectionStatusLabel, TransitionList, ErrorPortal } from 'components/shared';
 import { useHistory } from 'react-router-dom';
 import { getErrorInformation } from 'api';
@@ -78,15 +78,12 @@ export const ElectionsList = ({ filter }: ElectionListProps) => {
       </Card.Group>
 
       {!filteredElections.loading && !filteredElections.success && (
-        <ErrorPortal onReload={reloadAllElections}>
-          <Message
-            negative
-            icon="exclamation triangle"
-            header="Failed to load elections"
-            content={getErrorInformation(filteredElections.error).description}
-            style={{ width: 'unset' }}
-          />
-        </ErrorPortal>
+        <ErrorPortal
+          negative
+          header="Failed to load elections"
+          content={getErrorInformation(filteredElections.error).description}
+          onReload={reloadAllElections}
+        />
       )}
     </Container>
   );

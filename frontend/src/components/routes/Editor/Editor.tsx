@@ -62,6 +62,7 @@ export const Editor = ({ disabled }: EditorProps) => {
             on="hover"
             wide="very"
             position="right center"
+            style={{ zIndex: 900 }}
             open={publicHover && !disabled}
             onOpen={() => setPublicHover(true)}
             onClose={() => setPublicHover(false)}
@@ -89,6 +90,7 @@ export const Editor = ({ disabled }: EditorProps) => {
                 on="hover"
                 wide="very"
                 position="left center"
+                style={{ zIndex: 900 }}
                 open={hasQuestionError && questionsHover && !disabled}
                 onOpen={() => setQuestionsHover(true)}
                 onClose={() => setQuestionsHover(false)}
