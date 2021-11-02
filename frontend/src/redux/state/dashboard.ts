@@ -1,11 +1,11 @@
 /*
  * Dashboard state
  */
-import { apiLoading, APIOption } from 'api';
+import { apiLoading, APIResult } from 'api';
 import { AllElectionsResult } from 'models/election';
 
 export interface DashboardState {
-  data: APIOption<AllElectionsResult>;
+  data: APIResult<AllElectionsResult>;
 }
 
 export const initialDashboardState: DashboardState = {

@@ -1,11 +1,14 @@
-import { Container, Header, Divider, Icon, Card, Transition } from 'semantic-ui-react';
-import { ElectionStatusLabel, TransitionList } from 'components/shared';
+import { Container, Header, Divider, Icon, Card, Transition, Message } from 'semantic-ui-react';
+import { ElectionStatusLabel, TransitionList, ErrorPortal } from 'components/shared';
 import { useHistory } from 'react-router-dom';
+import { getErrorInformation } from 'api';
 import {
   DashboardFilter,
   getCardMetaText,
   getListHeader,
+  reloadAllElections,
   showCreateCard,
+  useFetchAllElections,
   useFilteredElections,
 } from './dashboardActions';
 import { CardPopup } from './CardPopup';
@@ -16,6 +19,8 @@ export interface ElectionListProps {
 }
 
 export const ElectionsList = ({ filter }: ElectionListProps) => {
+  useFetchAllElections();
+
   const filteredElections = useFilteredElections(filter);
   const history = useHistory();
 
@@ -45,7 +50,7 @@ export const ElectionsList = ({ filter }: ElectionListProps) => {
           </Transition>
         )}
 
-        {!filteredElections.loading && (
+        {!filteredElections.loading && filteredElections.success && (
           <TransitionList animation="fade down" totalDuration={1000}>
             {filteredElections.data.map((election) => (
               <Card as="a" key={election.id} onClick={() => history.push(`/elections/${election.id}`)}>
@@ -67,6 +72,18 @@ export const ElectionsList = ({ filter }: ElectionListProps) => {
           </TransitionList>
         )}
       </Card.Group>
+
+      {!filteredElections.loading && !filteredElections.success && (
+        <ErrorPortal onReload={reloadAllElections}>
+          <Message
+            negative
+            icon="exclamation triangle"
+            header="Failed to load elections"
+            content={getErrorInformation(filteredElections.error).description}
+            style={{ width: 'unset' }}
+          />
+        </ErrorPortal>
+      )}
     </Container>
   );
 };

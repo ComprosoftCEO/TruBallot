@@ -1,0 +1,15 @@
+// Container that covers the bottom of the screen
+.container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+// Flexbox that is centered inside the container
+.flexbox {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+}
