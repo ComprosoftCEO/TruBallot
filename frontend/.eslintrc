@@ -10,6 +10,7 @@
     "@typescript-eslint/no-unused-vars": "warn",
     "import/prefer-default-export": "off",
     "jsx-a11y/label-has-associated-control": "off",
-    "react/jsx-key": "error"
+    "react/jsx-key": "error",
+    "no-continue": "off"
   }
 }

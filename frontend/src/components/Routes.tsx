@@ -14,6 +14,7 @@ import { NotFound, PleaseLogIn } from './errorDialogs';
 import { LoginForm } from './routes/LoginForm';
 import { Register } from './routes/Register';
 import { Dashboard, DashboardFilter } from './routes/Dashboard';
+import { Editor } from './routes/Editor';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -101,6 +102,9 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
     exact: true,
     children: <Dashboard filter={DashboardFilter.RegistrationsClosed} />,
   },
+
+  // Editor
+  { path: '/elections/create', exact: true, component: Editor },
 ];
 
 /// Routes that always appear
