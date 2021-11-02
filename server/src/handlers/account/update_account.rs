@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::auth::{ClientToken, JWTSecret, RefreshToken, DEFAULT_PERMISSIONS};
+use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::views::auth::LoginResult;
@@ -33,21 +33,13 @@ pub async fn update_account(
 
   user.update(&conn)?;
 
-  // Generate the JWT tokens since the name may have changed
-  let refresh_token = RefreshToken::new(user.id);
-  let client_token = ClientToken::new(user, DEFAULT_PERMISSIONS);
-
-  // Encode the tokens
-  let encoding_key = secret.get_encoding_key();
-  let result = LoginResult {
-    client_token: client_token.encode(&encoding_key)?,
-    refresh_token: refresh_token.encode(&encoding_key)?,
-  };
+  // Generate the JWT tokens
+  let result = LoginResult::build(user, &*secret)?;
 
   log::info!(
     "Updated account details for {} <{}>",
-    client_token.get_name(),
-    client_token.get_email()
+    result.get_name(),
+    result.get_email()
   );
 
   Ok(HttpResponse::Ok().json(result))

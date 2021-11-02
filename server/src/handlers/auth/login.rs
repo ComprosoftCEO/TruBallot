@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::auth::{verify_recaptcha, ClientToken, JWTSecret, RefreshToken, DEFAULT_PERMISSIONS};
+use crate::auth::{verify_recaptcha, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::User;
@@ -51,20 +51,12 @@ pub async fn login(
 
   // Generate the JWT tokens
   let user = user.unwrap(); // Will not fail
-  let refresh_token = RefreshToken::new(user.id);
-  let client_token = ClientToken::new(user, DEFAULT_PERMISSIONS);
-
-  // Encode the tokens
-  let encoding_key = secret.get_encoding_key();
-  let result = LoginResult {
-    client_token: client_token.encode(&encoding_key)?,
-    refresh_token: refresh_token.encode(&encoding_key)?,
-  };
+  let result = LoginResult::build(user, &*secret)?;
 
   log::info!(
     "User {} <{}> has logged into the system",
-    client_token.get_name(),
-    client_token.get_email()
+    result.get_name(),
+    result.get_email()
   );
 
   Ok(HttpResponse::Ok().json(result))

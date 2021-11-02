@@ -3,7 +3,7 @@ use actix_web_httpauth::extractors::bearer::BearerAuth;
 use chrono::{offset::Utc, Duration};
 use futures::executor::block_on;
 use futures::future::{ready, Ready};
-use jsonwebtoken::{dangerous_insecure_decode, decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{dangerous_insecure_decode, decode, encode, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -67,10 +67,10 @@ impl FromRequest for RefreshToken {
       let insecure_token = dangerous_insecure_decode::<Self>(bearer_token.token())?;
       let user_id = insecure_token.claims.get_user_id();
 
-      // Secret key is based on the user ID (Stored in the users table)
+      // Refresh secret key is specific to the user (Stored in the users table)
       let conn = get_connection_from_request(req)?;
       let user: User = User::find_optional(&user_id, &conn)?.ok_or_else(|| ServiceError::JWTNoSuchUser { user_id })?;
-      let decoding_key = DecodingKey::from_secret(user.refresh_secret.as_bytes());
+      let decoding_key = user.get_refresh_decoding_key();
 
       // Validation parameters,
       let validation = Validation {

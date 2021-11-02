@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse};
 
-use crate::auth::{ClientToken, JWTSecret, RefreshToken, DEFAULT_PERMISSIONS};
+use crate::auth::{JWTSecret, RefreshToken};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::User;
@@ -20,15 +20,6 @@ pub async fn refresh(
   };
 
   // Generate the JWT tokens
-  let refresh_token = RefreshToken::new(user.id);
-  let client_token = ClientToken::new(user, DEFAULT_PERMISSIONS);
-
-  // Encode the tokens
-  let encoding_key = secret.get_encoding_key();
-  let result = LoginResult {
-    client_token: client_token.encode(&encoding_key)?,
-    refresh_token: refresh_token.encode(&encoding_key)?,
-  };
-
+  let result = LoginResult::build(user, &*secret)?;
   Ok(HttpResponse::Ok().json(result))
 }

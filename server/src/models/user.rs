@@ -1,4 +1,5 @@
 use diesel::prelude::*;
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
@@ -85,5 +86,15 @@ impl User {
     let hashed_password = bcrypt::hash(new_password, bcrypt::DEFAULT_COST)?;
     self.hashed_password = hashed_password;
     Ok(())
+  }
+
+  /// Get the encoding key used for JWT refresh tokens
+  pub fn get_refresh_encoding_key(&self) -> EncodingKey {
+    EncodingKey::from_secret(self.refresh_secret.as_bytes())
+  }
+
+  /// Get the decoding key used for JWT refresh tokens
+  pub fn get_refresh_decoding_key<'a>(&'a self) -> DecodingKey<'a> {
+    DecodingKey::from_secret(self.refresh_secret.as_bytes())
   }
 }
