@@ -6,7 +6,7 @@ use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::{Election, ElectionStatus};
-use crate::views::election::{AllElectionsResult, PublicElectionList};
+use crate::views::election::{AllElectionsResult, PublicElectionList, UserDetails};
 
 pub async fn all_elections(token: ClientToken, conn: DbConnection) -> Result<HttpResponse, ServiceError> {
   token.test_can_view_elections()?;
@@ -55,12 +55,14 @@ fn elections_into_list(
       let num_registered = election.count_registrations(conn)?;
       let num_questions = election.count_questions(conn)?;
 
+      let created_by_details = UserDetails::new(election.get_user(conn)?);
       let registration = election.get_user_registration(user_id, conn)?;
       let is_registered = registration.is_some();
       let has_voted = election.has_user_voted(user_id, &conn)?;
 
       Ok(PublicElectionList::new(
         election,
+        created_by_details,
         is_registered,
         has_voted,
         num_registered,

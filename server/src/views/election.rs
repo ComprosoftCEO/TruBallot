@@ -27,6 +27,7 @@ pub struct PublicElectionList {
   pub name: String,
   pub status: ElectionStatus,
   pub is_public: bool,
+  pub created_by: UserDetails,
 
   pub is_registered: bool,
   pub has_voted: bool,
@@ -142,6 +143,7 @@ pub struct CandidateResult {
 impl PublicElectionList {
   pub fn new(
     election: Election,
+    created_by: UserDetails,
     is_registered: bool,
     has_voted: bool,
     num_registered: i64,
@@ -152,6 +154,7 @@ impl PublicElectionList {
       name: election.name,
       status: election.status,
       is_public: election.is_public,
+      created_by,
       is_registered,
       has_voted,
       num_registered,
