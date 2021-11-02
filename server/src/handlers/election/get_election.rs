@@ -29,10 +29,14 @@ pub async fn get_election(
   }
 
   // Otherwise, if the election is private, then can only be read if:
-  //   1. Election is in registration phase, or
-  //   2. The user is registered for the election
+  //   1. Election is owned by current user, or
+  //   2. Election is in registration phase, or
+  //   3. The user is registered for the election
   if !election.is_public {
-    if !(election.status == ElectionStatus::Registration || election.is_user_registered(&current_user_id, &conn)?) {
+    if !(election.created_by == current_user_id
+      || election.status == ElectionStatus::Registration
+      || election.is_user_registered(&current_user_id, &conn)?)
+    {
       return Err(NamedResourceType::election(election.id).into_error());
     }
   }

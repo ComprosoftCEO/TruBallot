@@ -19,10 +19,14 @@ pub async fn get_election_parameters(
   // Make sure the election exists
   let election = Election::find_resource(&*path, &conn)?;
 
-  // If the election is private, then can only be read if user is registered
-  let registration = election.get_user_registration(&token.get_user_id(), &conn)?;
-  if !election.is_public && registration.is_none() {
-    return Err(NamedResourceType::election(election.id).into_error());
+  // If the election is private, then the parameters can only be read if:
+  //   1. Election is owned by current user, or
+  //   2. The user is registered for the election
+  if !election.is_public {
+    let registration = election.get_user_registration(&token.get_user_id(), &conn)?;
+    if !(election.created_by == token.get_user_id() || registration.is_some()) {
+      return Err(NamedResourceType::election(election.id).into_error());
+    }
   }
 
   // Election must have already closed voting
