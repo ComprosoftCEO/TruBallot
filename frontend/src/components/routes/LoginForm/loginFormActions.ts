@@ -25,7 +25,14 @@ export const setPassword = (password: string): void => mergeLoginState({ passwor
 export const isFormValid = (email: string, password: string): boolean =>
   email.length > 0 && password.length > 0 && EmailValidator.validate(email);
 
-export const logInUser = async (recaptcha: ReCAPTCHA, email: string, password: string) => {
+/**
+ * Make the request to log the user into the system
+ *
+ * @param recaptcha Google reCAPTCHA component instance
+ * @param email User email
+ * @param password user passowrd
+ */
+export const logInUser = async (recaptcha: ReCAPTCHA, email: string, password: string): Promise<void> => {
   // Get the reCAPTCHA token, and handle any errors
   const captcha = recaptcha.getValue();
   if (captcha === null) {
@@ -49,14 +56,17 @@ export const logInUser = async (recaptcha: ReCAPTCHA, email: string, password: s
   }
 };
 
+/**
+ * Handle the reCAPTCHA error in the store
+ * @param recaptcha Google reCAPTCHA component instance
+ */
 export const handleRecaptchaError = (recaptcha: ReCAPTCHA): void => {
   mergeLoginState({ password: '', loginError: apiError(new Error('reCAPTCHA error, please try again')) });
   recaptcha.reset();
 };
 
 /**
- * Log in the user and update the JWT storage
- *
+ * Log in the user in the store and update the JWT storage
  * @param loginResult JWT tokens from the server
  */
 function handleLogin(loginResult: LoginResult) {

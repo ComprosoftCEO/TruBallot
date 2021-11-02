@@ -13,10 +13,8 @@ export const loginRedirect = () => {
 };
 
 export const goHomeLogin = () => {
-  mergeGlobalsState({ isLoggedIn: false });
-  history.push('/');
-};
+  clearAuthTokens();
 
-export const goHome = () => {
-  history.push('/');
+  mergeGlobalsState({ isLoggedIn: false });
+  window.location.href = '/';
 };

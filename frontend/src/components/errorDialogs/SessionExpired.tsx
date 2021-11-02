@@ -19,7 +19,7 @@ export const SessionExpired = ({ clearError }: SessionExpiredProps) => {
     <Dimmer active>
       <Segment>
         <Message info>
-          <Message.Header>Oops! It looks like your login session has expired due to inactivity.</Message.Header>
+          <Message.Header>Oops! It looks like your login session has expired.</Message.Header>
           Please log back in to continue using the system.
         </Message>
 
