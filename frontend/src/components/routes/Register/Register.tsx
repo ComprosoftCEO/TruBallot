@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { Prompt } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
 import zxcvbn from 'zxcvbn';
 import * as EmailValidator from 'email-validator';
@@ -31,6 +32,7 @@ export const Register = () => {
   const email = useSelector((state) => state.email);
   const password = useSelector((state) => state.password);
   const confirm = useSelector((state) => state.confirm);
+  const modified = useSelector((state) => state.modified);
   const registerError = useSelector((state) => state.registrationError);
 
   // Form validation
@@ -166,6 +168,7 @@ export const Register = () => {
           </Grid.Column>
         </Transition>
       </Grid>
+
       <ReCAPTCHA
         ref={recaptchaRef}
         sitekey={RECAPTCHA_SITE_KEY}
@@ -173,6 +176,8 @@ export const Register = () => {
         onChange={() => registerUser(recaptchaRef.current!, name, email, password)}
         onErrored={() => handleRecaptchaError(recaptchaRef.current!)}
       />
+
+      <Prompt message="Discard changes to the registration form?" when={modified} />
     </>
   );
 };

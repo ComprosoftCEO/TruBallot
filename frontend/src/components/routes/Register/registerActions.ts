@@ -1,7 +1,6 @@
 import { apiError, apiLoading, apiSuccess, resolveResult } from 'api';
 import { useLayoutEffect } from 'react';
-import { clearNestedState, getNestedState, mergeNestedState } from 'redux/helpers';
-import { showConfirm } from 'showConfirm';
+import { clearNestedState, mergeNestedState } from 'redux/helpers';
 import { history } from 'index';
 import { ReCAPTCHA } from 'react-google-recaptcha';
 import { API_BASE_URL } from 'env';
@@ -10,7 +9,6 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { setAuthTokens } from 'axios-jwt';
 
-const getRegisterState = getNestedState('register');
 const mergeGlobalsState = mergeNestedState('globals');
 const mergeRegisterState = mergeNestedState('register');
 
@@ -31,15 +29,7 @@ export const setConfirm = (confirm: string): void =>
   mergeRegisterState({ confirm, modified: true, registrationError: apiSuccess({}) });
 
 export const goBack = () => {
-  const { modified } = getRegisterState();
-
-  showConfirm({
-    message: 'Discard changes?',
-    override: !modified || undefined,
-    onConfirm: () => {
-      history.push('/');
-    },
-  });
+  history.push('/');
 };
 
 export const registerUser = async (recaptcha: ReCAPTCHA, name: string, email: string, password: string) => {
