@@ -7,6 +7,7 @@ import { LoginState, initialLoginState } from './login';
 import { RegisterState, initialRegisterState } from './register';
 import { DashboardState, initialDashboardState } from './dashboard';
 import { EditorState, initialEditorState } from './editor';
+import { PreferencesState, initialPreferencesState } from './preferences';
 
 export interface RootState {
   globals: GlobalsState;
@@ -15,6 +16,7 @@ export interface RootState {
   register: RegisterState;
   dashboard: DashboardState;
   editor: EditorState;
+  preferences: PreferencesState;
 }
 
 export const initialState: RootState = {
@@ -24,4 +26,5 @@ export const initialState: RootState = {
   register: initialRegisterState,
   dashboard: initialDashboardState,
   editor: initialEditorState,
+  preferences: initialPreferencesState,
 };

@@ -5,8 +5,9 @@ import { useTitle } from 'helpers/title';
 import { Message, Button, Container, Divider, Form, Segment, Header, Transition } from 'semantic-ui-react';
 import { DashboardMenu } from 'components/shared';
 import { getErrorInformation } from 'api';
+import { goBack } from 'helpers/goBack';
 import { Editor } from './Editor';
-import { useClearState, useIsFormValid, goBack, createElection } from './editorActions';
+import { useClearState, useIsFormValid, createElection } from './editorActions';
 
 const useSelector = nestedSelectorHook('editor');
 

@@ -6,8 +6,7 @@ export interface QuestionErrorsProps {
 
 export const QuestionErrors = ({ errors }: QuestionErrorsProps) => (
   <Message negative>
-    <Message.Header>Question Errors:</Message.Header>
-    <List as="ul" style={{ marginTop: 8 }}>
+    <List as="ul">
       {errors.map((error) => (
         <List.Item as="li" key={error}>
           {error}

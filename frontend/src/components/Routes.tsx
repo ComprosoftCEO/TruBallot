@@ -15,6 +15,7 @@ import { LoginForm } from './routes/LoginForm';
 import { Register } from './routes/Register';
 import { Dashboard, DashboardFilter } from './routes/Dashboard';
 import { CreateElection, EditElection } from './routes/Editor';
+import { Preferences } from './routes/Preferences';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -106,6 +107,9 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
   // Editor
   { path: '/elections/create', exact: true, component: CreateElection },
   { path: '/elections/:electionId/edit', exact: true, component: EditElection },
+
+  // User preferences
+  { path: '/preferences', exact: true, component: Preferences },
 ];
 
 /// Routes that always appear

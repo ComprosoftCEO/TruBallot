@@ -4,13 +4,13 @@ import { nestedSelectorHook } from 'redux/helpers';
 import { useTitle } from 'helpers/title';
 import { Message, Button, Container, Divider, Form, Segment, Header, Transition } from 'semantic-ui-react';
 import { getErrorInformation } from 'api';
+import { goBack } from 'helpers/goBack';
 import { DashboardMenu, ErrorPortal } from 'components/shared';
 import { ErrorOccured } from 'components/errorDialogs';
 import { Editor } from './Editor';
 import {
   useClearState,
   useIsFormValid,
-  goBack,
   useFetchElection,
   useElectionId,
   saveElection,

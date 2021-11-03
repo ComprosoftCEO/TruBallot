@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { LastLocationType } from 'react-router-last-location';
 import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { history } from 'index';
 import {
@@ -216,14 +215,6 @@ export const useIsFormValid = (): boolean =>
     const questions = parseListString(state.questions, '');
     return state.name.length > 0 && questions.length > 0 && validateQuestionList(questions).length === 0;
   });
-
-export const goBack = (lastLocation: LastLocationType): void => {
-  if (lastLocation === null) {
-    history.push('/');
-  } else {
-    history.goBack();
-  }
-};
 
 /**
  * Create the election
