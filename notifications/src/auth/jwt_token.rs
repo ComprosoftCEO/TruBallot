@@ -168,6 +168,7 @@ where
       // Validation parameters,
       let validation = Validation {
         validate_exp: true,
+        leeway: 15,
         aud: Some(A::accepts()),
         iss: Some(JWT_ISSUER.into()),
         ..Default::default()

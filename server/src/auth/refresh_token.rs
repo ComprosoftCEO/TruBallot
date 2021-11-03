@@ -83,6 +83,7 @@ impl FromRequest for RefreshToken {
       // Validation parameters,
       let validation = Validation {
         validate_exp: true,
+        leeway: 15,
         aud: Some(HashSet::from_iter([JWT_REFRESH_AUDIENCE.into()])),
         iss: Some(JWT_ISSUER.into()),
 
