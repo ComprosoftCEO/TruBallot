@@ -1,10 +1,10 @@
 import { apiLoading, apiSuccess, axiosApi, resolveResult } from 'api';
+import { setAuthTokens } from 'axios-jwt';
 import { LoginResult } from 'models/auth';
 import { useLayoutEffect } from 'react';
 import { logInStore } from 'redux/auth';
 import { getNestedState, mergeNestedState } from 'redux/helpers';
 import { initialPreferencesState } from 'redux/state/preferences';
-import { showConfirm } from 'showConfirm';
 
 const mergeState = mergeNestedState('preferences');
 const getState = getNestedState('preferences');
@@ -43,6 +43,8 @@ export const updatePreferences = async (): Promise<void> => {
   const result = await axiosApi.patch<LoginResult>('/account', { name }).then(...resolveResult);
 
   if (result.success) {
+    // Update the tokens to match the user preferences
+    setAuthTokens({ accessToken: result.data.clientToken, refreshToken: result.data.refreshToken });
     logInStore(result.data.clientToken);
     mergeState({ preferencesModified: false, updatingPreferences: apiSuccess(true) });
   } else {
@@ -51,16 +53,8 @@ export const updatePreferences = async (): Promise<void> => {
 };
 
 export const cancelUpdatePreferences = (): void => {
-  const { preferencesModified } = getState();
   const { name } = getGlobalsState();
-
-  showConfirm({
-    message: 'Discard changes to account preferences?',
-    override: !preferencesModified || undefined,
-    onConfirm: () => {
-      mergeState({ updatingPreferences: apiSuccess(false), newName: name, preferencesModified: false });
-    },
-  });
+  mergeState({ updatingPreferences: apiSuccess(false), newName: name, preferencesModified: false });
 };
 
 export const clearUpdatePreferencesSuccess = (): void => {
@@ -91,20 +85,12 @@ export const updatePassword = async (): Promise<void> => {
 };
 
 export const cancelUpdatingPassword = (): void => {
-  const { passwordModified } = getState();
-
-  showConfirm({
-    message: 'Discard changes to password?',
-    override: !passwordModified || undefined,
-    onConfirm: () => {
-      mergeState({
-        updatingPassword: apiSuccess(false),
-        passwordModified: false,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      });
-    },
+  mergeState({
+    updatingPassword: apiSuccess(false),
+    passwordModified: false,
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 };
 
