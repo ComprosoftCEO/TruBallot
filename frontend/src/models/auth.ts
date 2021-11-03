@@ -29,3 +29,5 @@ export interface ClientToken {
   email: string;
   permissions: Permission[];
 }
+
+export type RefreshToken = ClientToken;

@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::{JWT_ISSUER, JWT_REFRESH_AUDIENCE, JWT_REFRESH_EXPIRATION_MIN};
+use crate::auth::{Permission, JWT_ISSUER, JWT_REFRESH_AUDIENCE, JWT_REFRESH_EXPIRATION_MIN};
 use crate::db::get_connection_from_request;
 use crate::errors::ServiceError;
 use crate::models::User;
@@ -23,20 +23,28 @@ pub struct RefreshToken {
   aud: String, // Audience (whom the token is intended for)
   iat: i64,    // Issued at (as UTC timestamp)
   exp: i64,    // Expiration time (as UTC timestamp)
+
+  name: String,
+  email: String,
+  permissions: HashSet<Permission>,
 }
 
 impl RefreshToken {
   /// Create a new refresh token
-  pub fn new(user_id: Uuid) -> Self {
+  pub fn new(user: User, permissions: &[Permission]) -> Self {
     let now = Utc::now();
     let expiration = now + Duration::minutes(JWT_REFRESH_EXPIRATION_MIN);
 
     Self {
       iss: JWT_ISSUER.to_string(),
-      sub: user_id,
+      sub: user.id,
       aud: JWT_REFRESH_AUDIENCE.to_string(),
       iat: now.timestamp(),
       exp: expiration.timestamp(),
+
+      name: user.name,
+      email: user.email,
+      permissions: HashSet::from_iter(permissions.into_iter().cloned()),
     }
   }
 
@@ -77,6 +85,7 @@ impl FromRequest for RefreshToken {
         validate_exp: true,
         aud: Some(HashSet::from_iter([JWT_REFRESH_AUDIENCE.into()])),
         iss: Some(JWT_ISSUER.into()),
+
         ..Default::default()
       };
 

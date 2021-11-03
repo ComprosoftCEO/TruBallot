@@ -38,8 +38,8 @@ impl LoginResult {
     let refresh_encoding_key = user.get_refresh_encoding_key();
 
     // Generate the JWT tokens
-    let refresh_token = RefreshToken::new(user.id);
-    let client_token = ClientToken::new(user, DEFAULT_PERMISSIONS);
+    let client_token = ClientToken::new(user.clone(), DEFAULT_PERMISSIONS);
+    let refresh_token = RefreshToken::new(user, DEFAULT_PERMISSIONS);
 
     // Encode the tokens
     Ok(Self {
