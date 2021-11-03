@@ -62,7 +62,7 @@ function resolveSomeUnwrapped<T>(resp: AxiosResponse<T>): T {
   return resp.data;
 }
 
-function resolveNone(error: AxiosError<ErrorResponse>): any {
+function resolveNone(error: AxiosError<ErrorResponse>): never {
   mergeNestedState('globals', { globalError: error });
   throw error;
 }

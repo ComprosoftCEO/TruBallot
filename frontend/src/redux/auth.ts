@@ -7,7 +7,10 @@ const mergeState = mergeNestedState('globals');
 /**
  * Mark the store as being logged in from the access token
  *
- * @param accessToken Access token
+ * Note: We are also allowed to pass a refresh token, since it
+ *   contains the SAME FIELDS as the access token
+ *
+ * @param accessToken Access token (or refresh token) JWT string
  */
 export const logInStore = (accessToken: string): void => {
   const clientToken: ClientToken = jwt.decode(accessToken) as ClientToken;

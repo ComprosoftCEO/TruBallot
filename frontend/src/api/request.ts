@@ -13,7 +13,7 @@ export const axiosApi = axios.create({ baseURL: API_BASE_URL });
 // Define the refresh function
 const requestRefresh: TokenRefreshRequest = async (refreshToken) => {
   try {
-    const response = await axios
+    const response: LoginResult = await axios
       .post<LoginResult>(`${API_BASE_URL}/auth/refresh`, undefined, {
         headers: {
           Authorization: `Bearer ${refreshToken}`,
@@ -22,11 +22,11 @@ const requestRefresh: TokenRefreshRequest = async (refreshToken) => {
       .then(...resolveOptionUnwrapped);
 
     // Update the store with the new JWT token
-    logInStore(response.data.clientToken);
+    logInStore(response.clientToken);
 
     return {
-      accessToken: response.data.clientToken,
-      refreshToken: response.data.refreshToken,
+      accessToken: response.clientToken,
+      refreshToken: response.refreshToken,
     };
   } catch (error) {
     // Log out the user if some sort of refresh error occurs

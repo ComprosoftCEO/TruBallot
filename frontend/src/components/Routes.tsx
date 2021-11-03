@@ -5,7 +5,7 @@
 /* eslint-disable react/no-array-index-key */
 import { useLayoutEffect } from 'react';
 import { Switch, Route, Redirect, RouteProps } from 'react-router-dom';
-import { getAccessToken } from 'axios-jwt';
+import { getRefreshToken } from 'axios-jwt';
 import { Permission } from 'models/auth';
 import { nestedSelectorHook } from 'redux/helpers';
 
@@ -105,8 +105,8 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
   },
 
   // Editor
-  { path: '/elections/create', exact: true, component: CreateElection },
-  { path: '/elections/:electionId/edit', exact: true, component: EditElection },
+  { path: '/elections/create', exact: true, component: CreateElection, permission: Permission.CreateElection },
+  { path: '/elections/:electionId/edit', exact: true, component: EditElection, permission: Permission.CreateElection },
 
   // User preferences
   { path: '/preferences', exact: true, component: Preferences },
@@ -173,20 +173,14 @@ export const Routes = () => {
   const loggedIn = useSelector((store) => store.isLoggedIn);
 
   // Test if the page is logged in when it first loads
-  useLayoutEffect(loadAccessToken, []);
+  useLayoutEffect(() => {
+    const refreshToken = getRefreshToken();
+    if (refreshToken !== undefined) {
+      logInStore(refreshToken);
+    } else {
+      logOutStore();
+    }
+  }, []);
 
   return loggedIn ? LoggedInSwitch(permissions) : LoggedOutSwitch;
 };
-
-/**
- * Load the access token and the permissions when the page first loads
- */
-function loadAccessToken(): void {
-  // Parse the access token if the user is currently logged in
-  const accessToken = getAccessToken();
-  if (accessToken !== undefined) {
-    logInStore(accessToken);
-  } else {
-    logOutStore();
-  }
-}
