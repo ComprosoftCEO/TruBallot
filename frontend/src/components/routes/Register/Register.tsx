@@ -170,7 +170,13 @@ export const Register = () => {
               </Form>
             </Segment>
 
-            <Button icon="arrow left" content="Go Back" onClick={goBack} disabled={registerError.loading} />
+            <Button
+              icon="arrow left"
+              content="Go Back"
+              style={{ marginTop: '2em' }}
+              onClick={goBack}
+              disabled={registerError.loading}
+            />
           </Grid.Column>
         </Transition>
       </Grid>

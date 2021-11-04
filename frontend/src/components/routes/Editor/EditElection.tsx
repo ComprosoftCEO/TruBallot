@@ -69,6 +69,7 @@ export const EditElection = () => {
             <Button
               icon="arrow left"
               content="Go Back"
+              style={{ marginTop: '2em' }}
               onClick={() => goBack(lastLocation)}
               disabled={updatingElection.loading}
             />
@@ -134,6 +135,7 @@ export const EditElection = () => {
           <Button
             icon="arrow left"
             content="Go Back"
+            style={{ marginTop: '2em' }}
             onClick={() => goBack(lastLocation)}
             disabled={updatingElection.loading || reloadingElection.loading}
           />

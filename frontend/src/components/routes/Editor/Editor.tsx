@@ -79,7 +79,7 @@ export const Editor = ({ disabled }: EditorProps) => {
         <label style={{ textAlign: 'left' }}>Questions</label>
         <Grid columns={2} stackable textAlign="center" divided>
           <Grid.Row stretched>
-            <Grid.Column width="10">
+            <Grid.Column width="9">
               <Popup
                 on="hover"
                 wide="very"
@@ -101,25 +101,28 @@ export const Editor = ({ disabled }: EditorProps) => {
               />
             </Grid.Column>
 
-            <Grid.Column width="6" textAlign="left">
-              <List ordered>
-                {questionItems.map(([question, candidates], i) => (
-                  // This is intended for the preview to work correctly
-                  // eslint-disable-next-line react/no-array-index-key
-                  <List.Item key={`${i}-${question}`} className={styles['question-item']}>
-                    {question}
-                    <List.List as="ul" className={styles.candidate}>
-                      {candidates.map((candidate, j) => (
-                        // This is intended for the preview to work correctly:
-                        // eslint-disable-next-line react/no-array-index-key
-                        <List.Item as="li" key={`${j}-${candidate}`}>
-                          {candidate}
-                        </List.Item>
-                      ))}
-                    </List.List>
-                  </List.Item>
-                ))}
-              </List>
+            <Grid.Column width="7" textAlign="left">
+              <div className={styles['question-container']}>
+                <div className={styles['push-up']} />
+                <List ordered>
+                  {questionItems.map(([question, candidates], i) => (
+                    // This is intended for the preview to work correctly
+                    // eslint-disable-next-line react/no-array-index-key
+                    <List.Item key={`${i}-${question}`} className={styles['question-item']}>
+                      {question}
+                      <List.List as="ul" className={styles.candidate}>
+                        {candidates.map((candidate, j) => (
+                          // This is intended for the preview to work correctly:
+                          // eslint-disable-next-line react/no-array-index-key
+                          <List.Item as="li" key={`${j}-${candidate}`}>
+                            {candidate}
+                          </List.Item>
+                        ))}
+                      </List.List>
+                    </List.Item>
+                  ))}
+                </List>
+              </div>
             </Grid.Column>
           </Grid.Row>
         </Grid>

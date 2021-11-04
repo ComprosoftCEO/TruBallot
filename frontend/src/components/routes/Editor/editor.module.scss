@@ -1,8 +1,33 @@
+// Maximum height for the text input
+$max-height: 35vh;
+
 .textarea {
-  min-height: 200px;
   font-family: monospace;
+
+  min-height: $max-height;
+  max-height: $max-height;
+  overflow-y: auto;
 }
 
+/**
+  Nifty hack: We want the questions to stay scrolled to the bottom.
+    So set the flex direction to column-reverse.
+
+  Unfortunately, this also means we need an extra <div> with flexGrow 1
+    to push the list to the top of the container.
+**/
+.question-container {
+  display: flex;
+  flex-direction: column-reverse;
+  max-height: $max-height;
+  overflow-y: auto;
+}
+
+.push-up {
+  flex-grow: 1;
+}
+
+// Fix word-wrap problems with the questions
 .question-item {
   overflow-wrap: break-word;
   hyphens: auto;

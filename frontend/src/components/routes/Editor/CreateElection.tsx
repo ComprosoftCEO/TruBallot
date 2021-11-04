@@ -58,6 +58,7 @@ export const CreateElection = () => {
           <Button
             icon="arrow left"
             content="Go Back"
+            style={{ marginTop: '2em' }}
             onClick={() => goBack(lastLocation)}
             disabled={creatingElection.loading}
           />

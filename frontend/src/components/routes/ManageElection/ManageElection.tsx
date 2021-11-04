@@ -61,9 +61,14 @@ export const ManageElection = () => {
           <Container textAlign="center" text style={{ marginTop: '8em' }}>
             <Header size="large">Loading Election...</Header>
 
-            <Segment raised padded loading style={{ minHeight: 400 }} />
+            <Segment raised padded loading style={{ minHeight: 200 }} />
 
-            <Button icon="arrow left" content="Go Back" onClick={() => goBack(lastLocation)} />
+            <Button
+              icon="arrow left"
+              content="Go Back"
+              style={{ marginTop: '2em' }}
+              onClick={() => goBack(lastLocation)}
+            />
           </Container>
         </Transition>
 
@@ -79,6 +84,7 @@ export const ManageElection = () => {
     );
   }
 
+  // Render the form as normal
   const election = electionDetails.data;
   return (
     <>
@@ -86,13 +92,9 @@ export const ManageElection = () => {
 
       <Container text style={{ marginTop: '8em' }} textAlign="center">
         <TransitionList animation="fade down" duration={500} totalDuration={300}>
+          <Header size="large">{election.name}</Header>
+
           <Segment raised padded>
-            <Header textAlign="center" size="huge">
-              {election.name}
-            </Header>
-
-            <Divider />
-
             <Grid columns={2} stackable textAlign="center" divided>
               <Grid.Row>
                 <Grid.Column width="8">

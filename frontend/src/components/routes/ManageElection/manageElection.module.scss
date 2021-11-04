@@ -2,6 +2,7 @@
   font-weight: bolder;
 }
 
+// Make sure the list doesn't grow too tall
 .outer-scroll-list {
   display: flex;
   flex-direction: column;
@@ -14,11 +15,7 @@
   overflow-y: auto;
 }
 
-.textarea {
-  min-height: 200px;
-  font-family: monospace;
-}
-
+// Handle text overflow in the questions
 .question-item {
   overflow-wrap: break-word;
   hyphens: auto;
