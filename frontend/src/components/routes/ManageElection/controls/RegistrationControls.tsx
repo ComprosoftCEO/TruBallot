@@ -5,6 +5,7 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { Permission } from 'models/auth';
 import {
   clearRequests,
   openVoting,
@@ -14,6 +15,7 @@ import {
   useIsLoading,
   useUserId,
   MIN_REGISTERED_FOR_VOTING,
+  usePermissions,
 } from './controlsActions';
 import { GeneratingModal } from './GeneratingModal';
 
@@ -29,10 +31,17 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
   const publishingElection = useSelector((state) => state.publishingElection);
   const registering = useSelector((state) => state.registering);
   const openingVoting = useSelector((state) => state.openingVoting);
+
   const userId = useUserId();
+  const permissions = usePermissions();
 
   const loading = useIsLoading();
   const electionError = useElectionError();
+
+  // Render nothing if permissions hide all controls
+  if (!(permissions.has(Permission.CreateElection) || permissions.has(Permission.Register))) {
+    return null;
+  }
 
   return (
     <Transition animation="zoom" duration={400} transitionOnMount>
@@ -65,29 +74,30 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
         )}
 
         <Flex justify="space-around">
-          {election.isRegistered ? (
-            <Button
-              negative
-              size="large"
-              icon="cancel"
-              content="Unregister"
-              onClick={() => unregister(election.id)}
-              disabled={loading}
-              loading={registering.loading}
-            />
-          ) : (
-            <Button
-              primary
-              size="large"
-              icon="check square outline"
-              content="Register"
-              onClick={() => register(election.id)}
-              disabled={loading}
-              loading={registering.loading}
-            />
-          )}
+          {permissions.has(Permission.Register) &&
+            (election.isRegistered ? (
+              <Button
+                negative
+                size="large"
+                icon="cancel"
+                content="Unregister"
+                onClick={() => unregister(election.id)}
+                disabled={loading}
+                loading={registering.loading}
+              />
+            ) : (
+              <Button
+                primary
+                size="large"
+                icon="check square outline"
+                content="Register"
+                onClick={() => register(election.id)}
+                disabled={loading}
+                loading={registering.loading}
+              />
+            ))}
 
-          {election.createdBy.id === userId && (
+          {election.createdBy.id === userId && permissions.has(Permission.CreateElection) && (
             <Popup
               on="hover"
               wide

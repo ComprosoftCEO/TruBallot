@@ -10,6 +10,7 @@ import {
   PublishElectionResult,
 } from 'models/election';
 import { ManageElectionState } from 'redux/state';
+import { Permission } from 'models/auth';
 
 const getState = getNestedState('manageElection');
 const useSelector = nestedSelectorHook('manageElection');
@@ -39,6 +40,9 @@ export const useIsLoading = (): boolean =>
 
 /// Get the current user ID
 export const useUserId = (): string => useGlobalsSelector((state) => state.userId);
+
+// Get permissions
+export const usePermissions = (): Set<Permission> => useGlobalsSelector((state) => state.permissions);
 
 /**
  * Get the current request that errored.

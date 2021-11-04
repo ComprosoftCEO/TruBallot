@@ -3,7 +3,15 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
-import { clearRequests, openVoting, useElectionError, useIsLoading, useUserId } from './controlsActions';
+import { Permission } from 'models/auth';
+import {
+  clearRequests,
+  openVoting,
+  useElectionError,
+  useIsLoading,
+  usePermissions,
+  useUserId,
+} from './controlsActions';
 import { GeneratingModal } from './GeneratingModal';
 
 export interface InitFailedControlsProps {
@@ -15,12 +23,14 @@ const useSelector = nestedSelectorHook('manageElection');
 export const InitFailedControls = ({ election }: InitFailedControlsProps) => {
   const openingVoting = useSelector((state) => state.openingVoting);
   const userId = useUserId();
+  const permissions = usePermissions();
 
   const loading = useIsLoading();
   const electionError = useElectionError();
 
   // Disable the controls if this election is not created by the current user
-  if (userId !== election.createdBy.id) {
+  //  (Or user does not have permission)
+  if (userId !== election.createdBy.id || !permissions.has(Permission.CreateElection)) {
     return null;
   }
 

@@ -4,8 +4,16 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { Permission } from 'models/auth';
 import { FinishingModal } from './FinishingModal';
-import { clearRequests, useElectionError, useIsLoading, useUserId, closeVoting } from './controlsActions';
+import {
+  clearRequests,
+  useElectionError,
+  useIsLoading,
+  useUserId,
+  closeVoting,
+  usePermissions,
+} from './controlsActions';
 
 export interface CollectionFailedControlsProps {
   election: PublicElectionDetails;
@@ -15,7 +23,9 @@ const useSelector = nestedSelectorHook('manageElection');
 
 export const CollectionFailedControls = ({ election }: CollectionFailedControlsProps) => {
   const closingElection = useSelector((state) => state.closingVoting);
+
   const userId = useUserId();
+  const permissions = usePermissions();
 
   const loading = useIsLoading();
   const electionError = useElectionError();
@@ -42,7 +52,7 @@ export const CollectionFailedControls = ({ election }: CollectionFailedControlsP
             disabled={loading}
           />
 
-          {election.createdBy.id === userId && (
+          {election.createdBy.id === userId && permissions.has(Permission.CreateElection) && (
             <Button
               color="blue"
               size="large"

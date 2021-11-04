@@ -1,6 +1,7 @@
 import { Container, Menu, Image, Dropdown } from 'semantic-ui-react';
 import { useHistory } from 'react-router-dom';
 import { nestedSelectorHook } from 'redux/helpers';
+import { Permission } from 'models/auth';
 import { logOut } from './dashboardActions';
 
 const useGlobalsSelector = nestedSelectorHook('globals');
@@ -8,6 +9,7 @@ const useGlobalsSelector = nestedSelectorHook('globals');
 export const DashboardMenu = () => {
   const history = useHistory();
   const name = useGlobalsSelector((state) => state.name);
+  const permissions = useGlobalsSelector((state) => state.permissions);
 
   return (
     <Menu fixed="top">
@@ -51,13 +53,17 @@ export const DashboardMenu = () => {
               onClick={() => history.push('/dashboard/my-elections/closed')}
             />
 
-            <Dropdown.Divider />
+            {permissions.has(Permission.CreateElection) && (
+              <>
+                <Dropdown.Divider />
 
-            <Dropdown.Item
-              icon={{ name: 'plus' }}
-              text="Create Election"
-              onClick={() => history.push('/elections/create')}
-            />
+                <Dropdown.Item
+                  icon={{ name: 'plus' }}
+                  text="Create Election"
+                  onClick={() => history.push('/elections/create')}
+                />
+              </>
+            )}
           </Dropdown.Menu>
         </Dropdown>
 

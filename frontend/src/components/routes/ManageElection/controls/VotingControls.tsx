@@ -6,6 +6,7 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { Permission } from 'models/auth';
 import { FinishingModal } from './FinishingModal';
 import {
   clearRequests,
@@ -15,6 +16,7 @@ import {
   MIN_VOTES_FOR_CLOSING,
   validateNumberOfVotes,
   closeVoting,
+  usePermissions,
 } from './controlsActions';
 
 export interface VotingControlsProps {
@@ -28,7 +30,9 @@ export const VotingControls = ({ election }: VotingControlsProps) => {
 
   const openingVoting = useSelector((state) => state.openingVoting);
   const closingElection = useSelector((state) => state.closingVoting);
+
   const userId = useUserId();
+  const permissions = usePermissions();
 
   const numberOfVotesValid = validateNumberOfVotes(election.questions);
 
@@ -57,7 +61,7 @@ export const VotingControls = ({ election }: VotingControlsProps) => {
         )}
 
         <Flex justify="space-around">
-          {election.isRegistered && (
+          {election.isRegistered && permissions.has(Permission.Vote) && (
             <Button
               primary
               size="large"
@@ -76,7 +80,7 @@ export const VotingControls = ({ election }: VotingControlsProps) => {
             disabled={loading}
           />
 
-          {election.createdBy.id === userId && (
+          {election.createdBy.id === userId && permissions.has(Permission.CreateElection) && (
             <Popup
               on="hover"
               wide

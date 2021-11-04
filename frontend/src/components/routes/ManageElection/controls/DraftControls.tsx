@@ -4,12 +4,14 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { Permission } from 'models/auth';
 import {
   clearRequests,
   deleteElection,
   publishElection,
   useElectionError,
   useIsLoading,
+  usePermissions,
   useUserId,
 } from './controlsActions';
 
@@ -22,7 +24,9 @@ const useSelector = nestedSelectorHook('manageElection');
 export const DraftControls = ({ election }: DraftControlsProps) => {
   const deletingElection = useSelector((state) => state.deletingElection);
   const publishingElection = useSelector((state) => state.publishingElection);
+
   const userId = useUserId();
+  const permissions = usePermissions();
 
   const loading = useIsLoading();
   const electionError = useElectionError();
@@ -31,7 +35,9 @@ export const DraftControls = ({ election }: DraftControlsProps) => {
   // Disable the controls if this election is not created by the current user
   //   In reality, we can ONLY read a draft election if we own it, so this
   //   check is probably unnecessary
-  if (userId !== election.createdBy.id) {
+  //
+  // User also must have permission to create an election
+  if (userId !== election.createdBy.id || !permissions.has(Permission.CreateElection)) {
     return null;
   }
 
