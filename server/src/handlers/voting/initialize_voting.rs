@@ -59,7 +59,9 @@ pub async fn initialize_voting(
   }
 
   // Mark the election as being initialized
+  //   Clear the access code, since it is no longer needed after registration closes
   election.status = ElectionStatus::InitFailed;
+  election.access_code = None;
   election = election.update(&conn)?;
   notify_registration_closed(&election, &jwt_key).await;
 
