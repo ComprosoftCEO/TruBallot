@@ -1,9 +1,9 @@
+import { useHistory } from 'react-router-dom';
+import { Button, Message, Segment, Transition } from 'semantic-ui-react';
 import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
-import { useHistory } from 'react-router-dom';
 import { nestedSelectorHook } from 'redux/helpers';
-import { Button, Message, Segment, Transition } from 'semantic-ui-react';
 import {
   clearRequests,
   deleteElection,

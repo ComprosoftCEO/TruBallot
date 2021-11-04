@@ -2,7 +2,13 @@ import { APIError, apiLoading, apiSuccess, axiosApi, resolveResult } from 'api';
 import { getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { showConfirm } from 'showConfirm';
 import { history } from 'index';
-import { ElectionStatus, HasVotedStatus, PublicElectionDetails, PublishElectionResult } from 'models/election';
+import {
+  ElectionStatus,
+  HasVotedStatus,
+  PublicElectionDetails,
+  PublicElectionQuestion,
+  PublishElectionResult,
+} from 'models/election';
 import { ManageElectionState } from 'redux/state';
 
 const getState = getNestedState('manageElection');
@@ -11,6 +17,12 @@ const mergeState = mergeNestedState('manageElection');
 
 const getGlobalsState = getNestedState('globals');
 const useGlobalsSelector = nestedSelectorHook('globals');
+
+/// Need at least 4 users registered before voting can begin
+export const MIN_REGISTERED_FOR_VOTING = 4;
+
+/// Need at least 2 votes before closing the election
+export const MIN_VOTES_FOR_CLOSING = 2;
 
 /**
  * Test if any of the election requests are loading
@@ -195,25 +207,69 @@ export const unregister = async (electionId: string): Promise<void> => {
 /**
  * Open election voting
  */
-export const openVoting = async (electionId: string): Promise<void> => {
-  mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading() });
+export const openVoting = (electionId: string, override?: true): void => {
+  showConfirm({
+    header: 'Are you sure you want to open voting?',
+    message: 'This will close registration',
+    override,
+    onConfirm: async () => {
+      mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading() });
 
-  const result = await axiosApi.post(`/elections/${electionId}/voting`).then(...resolveResult);
-  if (result.success) {
-    mergeState({
-      openingVoting: apiSuccess(true),
-      ...updateNestedElectionProps({
-        status: ElectionStatus.Voting,
-        accessCode: undefined,
-      }),
-    });
-  } else {
-    mergeState({
-      openingVoting: result,
-      ...updateNestedElectionProps({
-        status: ElectionStatus.InitFailed,
-        accessCode: undefined,
-      }),
-    });
-  }
+      const result = await axiosApi.post(`/elections/${electionId}/voting`).then(...resolveResult);
+      if (result.success) {
+        mergeState({
+          openingVoting: apiSuccess(true),
+          ...updateNestedElectionProps({
+            status: ElectionStatus.Voting,
+            accessCode: undefined,
+          }),
+        });
+      } else {
+        mergeState({
+          openingVoting: result,
+          ...updateNestedElectionProps({
+            status: ElectionStatus.InitFailed,
+            accessCode: undefined,
+          }),
+        });
+      }
+    },
+  });
+};
+
+/**
+ * Makes sure each question has at least 2 votes
+ */
+export const validateNumberOfVotes = (questions: PublicElectionQuestion[]): boolean =>
+  questions.every((question) => question.numVotesReceived > MIN_VOTES_FOR_CLOSING);
+
+/**
+ * Close voting action
+ */
+export const closeVoting = (electionId: string, override?: true) => {
+  showConfirm({
+    header: 'Are you sure you want to close voting?',
+    message: 'This will end the election and compute the final tally',
+    override,
+    onConfirm: async () => {
+      mergeState({ ...CLEAR_REQUESTS, closingVoting: apiLoading() });
+
+      const result = await axiosApi.delete(`/elections/${electionId}/voting`).then(...resolveResult);
+      if (result.success) {
+        mergeState({
+          closingVoting: apiSuccess(true),
+          ...updateNestedElectionProps({
+            status: ElectionStatus.Finished,
+          }),
+        });
+      } else {
+        mergeState({
+          closingVoting: result,
+          ...updateNestedElectionProps({
+            status: ElectionStatus.CollectionFailed,
+          }),
+        });
+      }
+    },
+  });
 };

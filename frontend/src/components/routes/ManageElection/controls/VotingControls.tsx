@@ -1,38 +1,40 @@
 import { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import pluralize from 'pluralize';
 import { Button, Message, Popup, Segment, Transition } from 'semantic-ui-react';
 import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { FinishingModal } from './FinishingModal';
 import {
   clearRequests,
-  openVoting,
-  register,
-  unregister,
   useElectionError,
   useIsLoading,
   useUserId,
-  MIN_REGISTERED_FOR_VOTING,
+  MIN_VOTES_FOR_CLOSING,
+  validateNumberOfVotes,
+  closeVoting,
 } from './controlsActions';
-import { GeneratingModal } from './GeneratingModal';
 
-export interface RegistrationControlsProps {
+export interface VotingControlsProps {
   election: PublicElectionDetails;
 }
 
 const useSelector = nestedSelectorHook('manageElection');
 
-export const RegistrationControls = ({ election }: RegistrationControlsProps) => {
+export const VotingControls = ({ election }: VotingControlsProps) => {
   const [popupOpen, setPopupOpen] = useState(false);
 
-  const publishingElection = useSelector((state) => state.publishingElection);
-  const registering = useSelector((state) => state.registering);
   const openingVoting = useSelector((state) => state.openingVoting);
+  const closingElection = useSelector((state) => state.closingVoting);
   const userId = useUserId();
+
+  const numberOfVotesValid = validateNumberOfVotes(election.questions);
 
   const loading = useIsLoading();
   const electionError = useElectionError();
+  const history = useHistory();
 
   return (
     <Transition animation="zoom" duration={400} transitionOnMount>
@@ -46,64 +48,51 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
           </Transition>
         )}
 
-        {!publishingElection.loading && publishingElection.success && publishingElection.data && (
+        {!openingVoting.loading && openingVoting.success && openingVoting.data && (
           <Transition animation="fade down" duration={500} transitionOnMount>
             <Message positive onDismiss={clearRequests}>
-              Election has been published
-            </Message>
-          </Transition>
-        )}
-
-        {!registering.loading && registering.success && registering.data && (
-          <Transition animation="fade down" duration={500} transitionOnMount>
-            <Message positive onDismiss={clearRequests}>
-              {election.isRegistered
-                ? 'Successfully registered for election'
-                : 'Successfully unregistered from election'}
+              Election is open for voting
             </Message>
           </Transition>
         )}
 
         <Flex justify="space-around">
-          {election.isRegistered ? (
-            <Button
-              negative
-              size="large"
-              icon="cancel"
-              content="Unregister"
-              onClick={() => unregister(election.id)}
-              disabled={loading}
-              loading={registering.loading}
-            />
-          ) : (
+          {election.isRegistered && (
             <Button
               primary
               size="large"
               icon="check square outline"
-              content="Register"
-              onClick={() => register(election.id)}
+              content="Vote"
+              onClick={() => history.push(`/elections/${election.id}/vote`)}
               disabled={loading}
-              loading={registering.loading}
             />
           )}
+
+          <Button
+            size="large"
+            icon="list ordered"
+            content="Results"
+            onClick={() => history.push(`/elections/${election.id}/results`)}
+            disabled={loading}
+          />
 
           {election.createdBy.id === userId && (
             <Popup
               on="hover"
               wide
               position="right center"
-              open={popupOpen && !loading && election.registered.length < MIN_REGISTERED_FOR_VOTING}
+              open={popupOpen && !loading && !numberOfVotesValid}
               onOpen={() => setPopupOpen(true)}
               onClose={() => setPopupOpen(false)}
               content={
                 <Message
                   compact
-                  icon="users"
-                  content={`At least ${pluralize(
-                    'registered user',
-                    MIN_REGISTERED_FOR_VOTING,
+                  icon="check square outline"
+                  content={`Each question must have at least ${pluralize(
+                    'vote',
+                    MIN_VOTES_FOR_CLOSING,
                     true,
-                  )} are needed before voting can begin`}
+                  )} before election can be closed`}
                 />
               }
               trigger={
@@ -111,10 +100,10 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
                   <Button
                     color="blue"
                     size="large"
-                    icon="list ordered"
-                    content="Open Voting"
-                    onClick={() => openVoting(election.id)}
-                    disabled={loading || election.registered.length < MIN_REGISTERED_FOR_VOTING}
+                    icon="table"
+                    content="Close Voting"
+                    onClick={() => closeVoting(election.id)}
+                    disabled={loading || !numberOfVotesValid}
                   />
                 </div>
               }
@@ -122,7 +111,7 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
           )}
         </Flex>
 
-        <GeneratingModal open={openingVoting.loading} />
+        <FinishingModal open={closingElection.loading} />
       </Segment>
     </Transition>
   );

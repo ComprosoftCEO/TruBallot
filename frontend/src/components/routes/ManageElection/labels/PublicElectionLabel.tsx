@@ -6,9 +6,10 @@ import { PublicElectionDetails } from 'models/election';
 export interface PublicElectionLabelProps {
   election: PublicElectionDetails;
   disabled?: boolean;
+  hidePopup?: boolean;
 }
 
-export const PublicElectionLabel = ({ election, disabled }: PublicElectionLabelProps) => {
+export const PublicElectionLabel = ({ election, disabled, hidePopup }: PublicElectionLabelProps) => {
   const [publicHover, setPublicHover] = useState(false);
 
   if (election.accessCode !== undefined) {
@@ -28,7 +29,7 @@ export const PublicElectionLabel = ({ election, disabled }: PublicElectionLabelP
         wide="very"
         position="right center"
         style={{ zIndex: 900 }}
-        open={publicHover && !disabled}
+        open={publicHover && !disabled && !hidePopup}
         onOpen={() => setPublicHover(true)}
         onClose={() => setPublicHover(false)}
         content={<PublicElectionMessge isPublic={election.isPublic} />}

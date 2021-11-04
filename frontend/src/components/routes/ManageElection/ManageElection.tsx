@@ -1,8 +1,8 @@
+import { useLastLocation } from 'react-router-last-location';
 import { getErrorInformation } from 'api';
 import { ErrorOccured } from 'components/errorDialogs';
 import { DashboardMenu, ElectionStatusLabel, ErrorPortal, Flex, TransitionList } from 'components/shared';
 import { goBack } from 'helpers/goBack';
-import { useLastLocation } from 'react-router-last-location';
 import { nestedSelectorHook } from 'redux/helpers';
 import {
   Button,
@@ -18,6 +18,15 @@ import {
   Transition,
 } from 'semantic-ui-react';
 import { ElectionStatus, HasVotedStatus } from 'models/election';
+import { PublicElectionLabel } from './labels/PublicElectionLabel';
+import { RegisteredLabel } from './labels/RegisteredLabel';
+import { VotedLabel } from './labels/VotedLabel';
+import { DraftControls } from './controls/DraftControls';
+import { RegistrationControls } from './controls/RegistrationControls';
+import { InitFailedControls } from './controls/InitFailedControls';
+import { VotingControls } from './controls/VotingControls';
+import { CollectionFailedControls } from './controls/CollectionFailedControls';
+import { FinishedControls } from './controls/FinishedControls';
 import {
   getFatalError,
   tryReFetchElection,
@@ -26,14 +35,8 @@ import {
   useFetchElection,
   useSetElectionTitle,
 } from './manageElectionActions';
-import { PublicElectionLabel } from './labels/PublicElectionLabel';
-import { RegisteredLabel } from './labels/RegisteredLabel';
-import { VotedLabel } from './labels/VotedLabel';
-import { DraftControls } from './controls/DraftControls';
-import { RegistrationControls } from './controls/RegistrationControls';
-import { InitFailedControls } from './controls/InitFailedControls';
-import styles from './manageElection.module.scss';
 import { useIsLoading } from './controls/controlsActions';
+import styles from './manageElection.module.scss';
 
 const useSelector = nestedSelectorHook('manageElection');
 
@@ -115,7 +118,11 @@ export const ManageElection = () => {
                   </Flex>
 
                   <Divider horizontal />
-                  <PublicElectionLabel election={election} disabled={isLoading} />
+                  <PublicElectionLabel
+                    election={election}
+                    disabled={isLoading}
+                    hidePopup={election.status !== ElectionStatus.Draft}
+                  />
 
                   <RegisteredLabel election={election} />
                   <VotedLabel election={election} />
@@ -193,9 +200,9 @@ export const ManageElection = () => {
                 [ElectionStatus.Draft]: <DraftControls election={election} />,
                 [ElectionStatus.Registration]: <RegistrationControls election={election} />,
                 [ElectionStatus.InitFailed]: <InitFailedControls election={election} />,
-                [ElectionStatus.Voting]: null,
-                [ElectionStatus.CollectionFailed]: null,
-                [ElectionStatus.Finished]: null,
+                [ElectionStatus.Voting]: <VotingControls election={election} />,
+                [ElectionStatus.CollectionFailed]: <CollectionFailedControls election={election} />,
+                [ElectionStatus.Finished]: <FinishedControls election={election} />,
               }[election.status]
             }
           </Segment>
