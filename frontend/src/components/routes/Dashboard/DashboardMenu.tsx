@@ -118,7 +118,7 @@ export const DashboardMenu = () => {
         </Dropdown>
 
         <Menu.Menu position="right">
-          <Dropdown item simple text={name}>
+          <Dropdown item simple text={`${name.slice(0, 30)}${name.length > 30 ? '...' : ''}`}>
             <Dropdown.Menu>
               <Dropdown.Header content="Account" />
               <Dropdown.Item icon="cog" text="Preferences" onClick={() => history.push('/preferences')} />
