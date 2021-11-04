@@ -71,6 +71,10 @@ export interface PublicElectionQuestion {
   candidates: string[];
 }
 
+export interface PublishElectionResult {
+  accessCode?: string;
+}
+
 export interface ElectionParameters {
   numRegistered: number;
   questions: QuestionParameters[];

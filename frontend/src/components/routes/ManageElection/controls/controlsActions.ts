@@ -2,13 +2,15 @@ import { APIError, apiLoading, apiSuccess, axiosApi, resolveResult } from 'api';
 import { getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { showConfirm } from 'showConfirm';
 import { history } from 'index';
-import { ElectionStatus, PublicElectionDetails } from 'models/election';
+import { ElectionStatus, HasVotedStatus, PublicElectionDetails, PublishElectionResult } from 'models/election';
 import { ManageElectionState } from 'redux/state';
 
 const getState = getNestedState('manageElection');
 const useSelector = nestedSelectorHook('manageElection');
-const useGlobalsSelector = nestedSelectorHook('globals');
 const mergeState = mergeNestedState('manageElection');
+
+const getGlobalsState = getNestedState('globals');
+const useGlobalsSelector = nestedSelectorHook('globals');
 
 /**
  * Test if any of the election requests are loading
@@ -18,6 +20,7 @@ export const useIsLoading = (): boolean =>
     (state) =>
       state.deletingElection.loading ||
       state.publishingElection.loading ||
+      state.registering.loading ||
       state.openingVoting.loading ||
       state.closingVoting.loading,
   );
@@ -41,6 +44,10 @@ export const useElectionError = (): APIError | undefined =>
       return state.publishingElection;
     }
 
+    if (!state.registering.loading && !state.registering.success) {
+      return state.registering;
+    }
+
     if (!state.openingVoting.loading && !state.openingVoting.success) {
       return state.openingVoting;
     }
@@ -58,6 +65,7 @@ export const useElectionError = (): APIError | undefined =>
 const CLEAR_REQUESTS: Partial<ManageElectionState> = {
   publishingElection: apiSuccess(false),
   deletingElection: apiSuccess(false),
+  registering: apiSuccess(false),
   openingVoting: apiSuccess(false),
   closingVoting: apiSuccess(false),
 };
@@ -125,15 +133,87 @@ export const publishElection = (electionId: string): void => {
     onConfirm: async () => {
       mergeState({ ...CLEAR_REQUESTS, publishingElection: apiLoading() });
 
-      const result = await axiosApi.put(`/elections/${electionId}/registration`).then(...resolveResult);
+      const result = await axiosApi
+        .put<PublishElectionResult>(`/elections/${electionId}/registration`)
+        .then(...resolveResult);
       if (result.success) {
         mergeState({
           publishingElection: apiSuccess(true),
-          ...updateNestedElectionProps({ status: ElectionStatus.Registration }),
+          ...updateNestedElectionProps({ status: ElectionStatus.Registration, accessCode: result.data.accessCode }),
         });
       } else {
         mergeState({ publishingElection: result });
       }
     },
   });
+};
+
+/**
+ * Register for an election
+ */
+export const register = async (electionId: string): Promise<void> => {
+  const { name, userId } = getGlobalsState();
+
+  mergeState({ ...CLEAR_REQUESTS, registering: apiLoading() });
+
+  const result = await axiosApi.post(`/elections/${electionId}/registration`).then(...resolveResult);
+  if (result.success) {
+    mergeState({
+      registering: apiSuccess(true),
+      ...updateNestedElectionProps((props) => ({
+        isRegistered: true,
+        registered: [...props.registered, { id: userId, name, hasVoted: HasVotedStatus.No }],
+      })),
+    });
+  } else {
+    mergeState({ registering: result });
+  }
+};
+
+/**
+ * Unregister from an election
+ */
+export const unregister = async (electionId: string): Promise<void> => {
+  const { userId } = getGlobalsState();
+
+  mergeState({ ...CLEAR_REQUESTS, registering: apiLoading() });
+
+  const result = await axiosApi.delete(`/elections/${electionId}/registration`).then(...resolveResult);
+  if (result.success) {
+    mergeState({
+      registering: apiSuccess(true),
+      ...updateNestedElectionProps((props) => ({
+        isRegistered: false,
+        registered: props.registered.filter(({ id }) => id !== userId),
+      })),
+    });
+  } else {
+    mergeState({ registering: result });
+  }
+};
+
+/**
+ * Open election voting
+ */
+export const openVoting = async (electionId: string): Promise<void> => {
+  mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading() });
+
+  const result = await axiosApi.post(`/elections/${electionId}/voting`).then(...resolveResult);
+  if (result.success) {
+    mergeState({
+      openingVoting: apiSuccess(true),
+      ...updateNestedElectionProps({
+        status: ElectionStatus.Voting,
+        accessCode: undefined,
+      }),
+    });
+  } else {
+    mergeState({
+      openingVoting: result,
+      ...updateNestedElectionProps({
+        status: ElectionStatus.InitFailed,
+        accessCode: undefined,
+      }),
+    });
+  }
 };

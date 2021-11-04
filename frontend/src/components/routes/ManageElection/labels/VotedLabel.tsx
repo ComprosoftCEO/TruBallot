@@ -6,9 +6,15 @@ export interface VotedLabelProps {
   election: PublicElectionDetails;
 }
 
+const HIDE_LABEL_STATUS: ElectionStatus[] = [
+  ElectionStatus.Draft,
+  ElectionStatus.Registration,
+  ElectionStatus.InitFailed,
+];
+
 export const VotedLabel = ({ election }: VotedLabelProps): JSX.Element => (
   <>
-    {election.status !== ElectionStatus.Draft && election.isRegistered && (
+    {!HIDE_LABEL_STATUS.includes(election.status) && election.isRegistered && (
       <>
         <Divider horizontal />
         <Flex justify="space-between">

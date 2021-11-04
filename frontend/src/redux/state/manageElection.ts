@@ -9,6 +9,7 @@ export interface ManageElectionState {
 
   deletingElection: APIResult<boolean>;
   publishingElection: APIResult<boolean>;
+  registering: APIResult<boolean>;
   openingVoting: APIResult<boolean>;
   closingVoting: APIResult<boolean>;
 }
@@ -18,6 +19,7 @@ export const initialManageElectionState: ManageElectionState = {
 
   deletingElection: apiSuccess(false),
   publishingElection: apiSuccess(false),
+  registering: apiSuccess(false),
   openingVoting: apiSuccess(false),
   closingVoting: apiSuccess(false),
 };

@@ -31,6 +31,7 @@ import { RegisteredLabel } from './labels/RegisteredLabel';
 import { VotedLabel } from './labels/VotedLabel';
 import { DraftControls } from './controls/DraftControls';
 import { RegistrationControls } from './controls/RegistrationControls';
+import { InitFailedControls } from './controls/InitFailedControls';
 import styles from './manageElection.module.scss';
 import { useIsLoading } from './controls/controlsActions';
 
@@ -191,7 +192,7 @@ export const ManageElection = () => {
               {
                 [ElectionStatus.Draft]: <DraftControls election={election} />,
                 [ElectionStatus.Registration]: <RegistrationControls election={election} />,
-                [ElectionStatus.InitFailed]: null,
+                [ElectionStatus.InitFailed]: <InitFailedControls election={election} />,
                 [ElectionStatus.Voting]: null,
                 [ElectionStatus.CollectionFailed]: null,
                 [ElectionStatus.Finished]: null,
