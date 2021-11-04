@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::models::{Candidate, Commitment, Election, ElectionStatus, Question, User};
+use crate::models::{Candidate, Commitment, Election, ElectionStatus, HasVotedStatus, Question, User};
 use crate::utils::ConvertBigInt;
 
 #[derive(Debug, Serialize)]
@@ -30,7 +30,7 @@ pub struct PublicElectionList {
   pub created_by: UserDetails,
 
   pub is_registered: bool,
-  pub has_voted: bool,
+  pub has_voted: HasVotedStatus,
   pub num_registered: i64,
   pub num_questions: i64,
 }
@@ -50,8 +50,8 @@ pub struct PublicElectionDetails {
   pub access_code: Option<String>,
 
   pub is_registered: bool,
-  pub has_voted: bool,
-  pub registered: Vec<UserDetails>,
+  pub has_voted: HasVotedStatus,
+  pub registered: Vec<RegisteredUserDetails>,
   pub questions: Vec<PublicElectionQuestion>,
 }
 
@@ -60,6 +60,14 @@ pub struct PublicElectionDetails {
 pub struct UserDetails {
   pub id: Uuid,
   pub name: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisteredUserDetails {
+  pub id: Uuid,
+  pub name: String,
+  pub has_voted: HasVotedStatus,
 }
 
 #[derive(Debug, Serialize)]
@@ -145,7 +153,7 @@ impl PublicElectionList {
     election: Election,
     created_by: UserDetails,
     is_registered: bool,
-    has_voted: bool,
+    has_voted: HasVotedStatus,
     num_registered: i64,
     num_questions: i64,
   ) -> Self {
@@ -168,8 +176,8 @@ impl PublicElectionDetails {
     election: Election,
     created_by: UserDetails,
     is_registered: bool,
-    has_voted: bool,
-    registered: Vec<UserDetails>,
+    has_voted: HasVotedStatus,
+    registered: Vec<RegisteredUserDetails>,
     questions: Vec<PublicElectionQuestion>,
   ) -> Self {
     Self {
@@ -192,6 +200,16 @@ impl UserDetails {
     Self {
       id: user.id,
       name: user.name,
+    }
+  }
+}
+
+impl RegisteredUserDetails {
+  pub fn new(user: User, has_voted: HasVotedStatus) -> Self {
+    Self {
+      id: user.id,
+      name: user.name,
+      has_voted,
     }
   }
 }

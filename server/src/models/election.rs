@@ -3,6 +3,7 @@ use diesel::prelude::*;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde::Serialize;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::iter;
 use uuid_b64::UuidB64 as Uuid;
 
@@ -29,6 +30,15 @@ pub struct Election {
 
   pub generator: BigDecimal,
   pub prime: BigDecimal,
+}
+
+/// Status for the current "voted" status for a user
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
+#[repr(u32)]
+pub enum HasVotedStatus {
+  No = 0,
+  Partial,
+  Yes,
 }
 
 impl Election {
@@ -98,8 +108,18 @@ impl Election {
   }
 
   /// Test if a user has voted for every question in the election
-  pub fn has_user_voted(&self, user_id: &Uuid, conn: &DbConnection) -> Result<bool, ServiceError> {
-    Ok(self.count_user_commitments(user_id, conn)? == self.count_questions(conn)?)
+  pub fn has_user_voted(&self, user_id: &Uuid, conn: &DbConnection) -> Result<HasVotedStatus, ServiceError> {
+    let num_commitments = self.count_user_commitments(user_id, conn)?;
+    if num_commitments == 0 {
+      return Ok(HasVotedStatus::No);
+    }
+
+    let num_questions = self.count_questions(conn)?;
+    if num_commitments < num_questions {
+      Ok(HasVotedStatus::Partial)
+    } else {
+      Ok(HasVotedStatus::Yes)
+    }
   }
 
   /// Count the number of commitments that a user has submitted

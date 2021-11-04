@@ -7,6 +7,12 @@ export enum ElectionStatus {
   Finished,
 }
 
+export enum HasVotedStatus {
+  No = 0,
+  Partial,
+  Yes,
+}
+
 export interface NewElectionResult {
   id: string;
 }
@@ -25,7 +31,7 @@ export interface PublicElectionList {
   createdBy: UserDetails;
 
   isRegistered: boolean;
-  hasVoted: boolean;
+  hasVoted: HasVotedStatus;
   numRegistered: number;
   numQuestions: number;
 }
@@ -42,14 +48,20 @@ export interface PublicElectionDetails {
   accessCode?: string;
 
   isRegistered: boolean;
-  hasVoted: boolean;
-  registered: UserDetails[];
+  hasVoted: HasVotedStatus;
+  registered: RegisteredUserDetails[];
   questions: PublicElectionQuestion[];
 }
 
 export interface UserDetails {
   id: string;
   name: string;
+}
+
+export interface RegisteredUserDetails {
+  id: string;
+  name: string;
+  hasVoted: HasVotedStatus;
 }
 
 export interface PublicElectionQuestion {

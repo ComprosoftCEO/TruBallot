@@ -1,4 +1,4 @@
-import { ElectionStatus, PublicElectionList } from 'models/election';
+import { ElectionStatus, HasVotedStatus, PublicElectionList } from 'models/election';
 import { Label, Popup, IconProps, SemanticShorthandItem, SemanticCOLORS } from 'semantic-ui-react';
 
 export interface CardPopupProps {
@@ -21,20 +21,20 @@ export const CardPopup = ({ election }: CardPopupProps) => {
 
   // Test for voting
   if (VOTING_STATUS.includes(election.status)) {
-    return election.hasVoted ? (
-      <PopupLabel text="Voted" color="green" icon="check square outline" />
-    ) : (
-      <PopupLabel text="Haven't Voted Yet" color="blue" icon="info" />
-    );
+    return {
+      [HasVotedStatus.No]: <PopupLabel text="Haven't Voted Yet" color="blue" icon="info" />,
+      [HasVotedStatus.Partial]: <PopupLabel text="Partial Vote" color="blue" icon="info" />,
+      [HasVotedStatus.Yes]: <PopupLabel text="Voted" color="green" icon="check square outline" />,
+    }[election.hasVoted];
   }
 
   // Test for closed
   if (CLOSED_STATUS.includes(election.status)) {
-    return election.hasVoted ? (
-      <PopupLabel text="Voted" color="green" icon="check square outline" />
-    ) : (
-      <PopupLabel text="Didn't Vote" color="olive" icon="cancel" />
-    );
+    return {
+      [HasVotedStatus.No]: <PopupLabel text="Didn't Vote" color="olive" icon="cancel" />,
+      [HasVotedStatus.Partial]: <PopupLabel text="Partial Vote" color="olive" icon="cancel" />,
+      [HasVotedStatus.Yes]: <PopupLabel text="Voted" color="green" icon="check square outline" />,
+    }[election.hasVoted];
   }
 
   return null;

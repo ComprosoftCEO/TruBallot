@@ -17,7 +17,7 @@ import {
   Tab,
   Transition,
 } from 'semantic-ui-react';
-import { ElectionStatus } from 'models/election';
+import { ElectionStatus, HasVotedStatus } from 'models/election';
 import {
   getFatalError,
   tryReFetchElection,
@@ -152,14 +152,17 @@ export const ManageElection = () => {
                                 <List.Item key={user.id} className={styles['question-item']}>
                                   <Flex justify="space-between" alignItems="center">
                                     {user.name}
-                                    <Label
-                                      color="green"
-                                      icon="check square outline"
-                                      content="Voted"
-                                      style={{
-                                        visibility: Math.random() > 0.5 ? 'hidden' : undefined,
-                                      }}
-                                    />
+                                    {user.hasVoted === HasVotedStatus.Yes ? (
+                                      <Label color="green" icon="check square outline" content="Voted" />
+                                    ) : (
+                                      <Label
+                                        basic
+                                        color="orange"
+                                        icon="question"
+                                        content="Partial Vote"
+                                        style={{ visibility: user.hasVoted ? undefined : 'hidden' }}
+                                      />
+                                    )}
                                   </Flex>
                                 </List.Item>
                               ))}

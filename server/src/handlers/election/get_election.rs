@@ -5,7 +5,7 @@ use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus};
-use crate::views::election::{PublicElectionDetails, PublicElectionQuestion, UserDetails};
+use crate::views::election::{PublicElectionDetails, PublicElectionQuestion, RegisteredUserDetails, UserDetails};
 
 pub async fn get_election(
   token: ClientToken,
@@ -51,8 +51,11 @@ pub async fn get_election(
   let registrations = election
     .get_registered_users(&conn)?
     .into_iter()
-    .map(UserDetails::new)
-    .collect();
+    .map(|user| {
+      let has_voted = election.has_user_voted(&user.id, &conn)?;
+      Ok(RegisteredUserDetails::new(user, has_voted))
+    })
+    .collect::<Result<_, ServiceError>>()?;
 
   // Get all of the questions and candidates
   let mut questions: Vec<PublicElectionQuestion> = Vec::new();
