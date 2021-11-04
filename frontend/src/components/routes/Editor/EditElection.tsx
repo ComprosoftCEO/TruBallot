@@ -55,7 +55,16 @@ export const EditElection = () => {
           <Container textAlign="center" text style={{ marginTop: '8em' }}>
             <Header size="large">Edit Election:</Header>
 
-            <Segment raised padded loading style={{ minHeight: 400 }} />
+            <Segment raised padded loading>
+              <Form size="large">
+                <Editor disabled />
+
+                <Divider />
+
+                <Button primary size="large" icon="save" content="Save Changes" disabled />
+                <Button size="large" icon="redo" content="Reload" disabled />
+              </Form>
+            </Segment>
 
             <Button
               icon="arrow left"
