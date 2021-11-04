@@ -66,7 +66,7 @@ export const DashboardHome = () => {
             <Card as="a" onClick={() => history.push('/elections/access-code')} raised>
               <Card.Content className={styles['card-container-content']}>
                 <Card.Header>
-                  <Icon name="lock" />
+                  <Icon name="key" />
                   Access Code
                 </Card.Header>
               </Card.Content>

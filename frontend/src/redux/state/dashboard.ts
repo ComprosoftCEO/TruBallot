@@ -1,5 +1,5 @@
 /*
- * Dashboard state
+ * State used by the main dashboard
  */
 import { apiLoading, APIResult } from 'api';
 import { AllElectionsResult } from 'models/election';
