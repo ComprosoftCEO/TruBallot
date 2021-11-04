@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import lodash from 'lodash';
 import { SemanticTRANSITIONS, Transition, TransitionPropDuration } from 'semantic-ui-react';
 
@@ -40,21 +40,52 @@ export const TransitionList = ({
         (child, index) =>
           child &&
           index <= currentIndex && (
-            <Transition
+            <DelayedTransition
               animation={animation}
               directional={directional}
               duration={duration}
-              transitionOnMount
-              onStart={() => {
-                setTimeout(() => {
-                  setCurrentIndex(currentIndex + 1);
-                }, delay);
-              }}
+              delay={delay}
+              currentIndex={currentIndex}
+              setCurrentIndex={setCurrentIndex}
             >
               {child}
-            </Transition>
+            </DelayedTransition>
           ),
       )}
     </>
   );
 };
+
+interface DelayedTransitionProps {
+  children: React.ReactNode;
+  animation?: SemanticTRANSITIONS | string;
+  directional?: boolean;
+  duration?: number | string | TransitionPropDuration;
+  delay: number;
+  currentIndex: number;
+  setCurrentIndex: (input: number) => void;
+}
+
+function DelayedTransition({
+  children,
+  animation,
+  directional,
+  duration,
+  delay,
+  currentIndex,
+  setCurrentIndex,
+}: DelayedTransitionProps): JSX.Element {
+  // Use a hook so we can clean up the "setInterval" call if the component unmounts prematurely
+  useLayoutEffect(() => {
+    const timeout = setTimeout(() => {
+      setCurrentIndex(currentIndex + 1);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [currentIndex, delay, setCurrentIndex]);
+
+  return (
+    <Transition animation={animation} directional={directional} duration={duration} transitionOnMount>
+      {children}
+    </Transition>
+  );
+}
