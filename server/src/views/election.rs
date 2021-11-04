@@ -81,6 +81,13 @@ pub struct PublicElectionQuestion {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PublishElectionResult {
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub access_code: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ElectionParameters {
   pub num_registered: i64,
   pub questions: Vec<QuestionParameters>,

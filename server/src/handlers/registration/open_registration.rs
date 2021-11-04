@@ -6,6 +6,7 @@ use crate::db::DbConnection;
 use crate::errors::{ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus};
 use crate::notifications::{notify_election_published, notify_registration_opened};
+use crate::views::election::PublishElectionResult;
 
 pub async fn open_registration(
   token: ClientToken,
@@ -56,5 +57,7 @@ pub async fn open_registration(
     election.id
   );
 
-  Ok(HttpResponse::Ok().finish())
+  Ok(HttpResponse::Ok().json(PublishElectionResult {
+    access_code: election.access_code,
+  }))
 }

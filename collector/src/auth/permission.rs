@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt;
 
 pub static DEFAULT_PERMISSIONS: &[Permission] = &[
@@ -9,8 +9,8 @@ pub static DEFAULT_PERMISSIONS: &[Permission] = &[
 ];
 
 /// List of every permission
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
+#[repr(u32)]
 pub enum Permission {
   CanLogin,
   CreateElection,
