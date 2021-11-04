@@ -3,10 +3,11 @@
  *
  * This returns a fragment and should be wrapped inside a <Form> element
  */
-import { Fragment, useState } from 'react';
-import { Message, Form, Checkbox, Grid, List, Popup } from 'semantic-ui-react';
+import { useState } from 'react';
+import { Form, Checkbox, Grid, List, Popup } from 'semantic-ui-react';
 import { StringInput, TextAreaInput } from 'components/input';
 import { nestedSelectorHook } from 'redux/helpers';
+import { PublicElectionMessge } from 'components/shared';
 import { QuestionErrors } from './QuestionErrors';
 import {
   PLACEHOLDER_TEXT,
@@ -66,14 +67,7 @@ export const Editor = ({ disabled }: EditorProps) => {
             open={publicHover && !disabled}
             onOpen={() => setPublicHover(true)}
             onClose={() => setPublicHover(false)}
-            content={
-              <Message
-                compact
-                icon={isPublic ? 'lock open' : 'lock'}
-                header={`${isPublic ? 'Public' : 'Private'} Election`}
-                content={isPublic ? 'Open for anyone on the site to register' : 'Requires an access code to register'}
-              />
-            }
+            content={<PublicElectionMessge isPublic={isPublic} />}
             trigger={
               <Checkbox toggle label="Public?" checked={isPublic} onChange={toggleIsPublic} disabled={disabled} />
             }
@@ -112,20 +106,18 @@ export const Editor = ({ disabled }: EditorProps) => {
                 {questionItems.map(([question, candidates], i) => (
                   // This is intended for the preview to work correctly
                   // eslint-disable-next-line react/no-array-index-key
-                  <Fragment key={`${i}-${question}`}>
-                    <List.Item className={styles['question-item']}>
-                      {question}
-                      <List.List as="ul" className={styles.candidate}>
-                        {candidates.map((candidate, j) => (
-                          // This is intended for the preview to work correctly:
-                          // eslint-disable-next-line react/no-array-index-key
-                          <List.Item as="li" key={`${j}-${candidate}`}>
-                            {candidate}
-                          </List.Item>
-                        ))}
-                      </List.List>
-                    </List.Item>
-                  </Fragment>
+                  <List.Item key={`${i}-${question}`} className={styles['question-item']}>
+                    {question}
+                    <List.List as="ul" className={styles.candidate}>
+                      {candidates.map((candidate, j) => (
+                        // This is intended for the preview to work correctly:
+                        // eslint-disable-next-line react/no-array-index-key
+                        <List.Item as="li" key={`${j}-${candidate}`}>
+                          {candidate}
+                        </List.Item>
+                      ))}
+                    </List.List>
+                  </List.Item>
                 ))}
               </List>
             </Grid.Column>

@@ -1,0 +1,30 @@
+.question-header {
+  font-weight: bolder;
+}
+
+.outer-scroll-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.scroll-list {
+  flex-grow: 1;
+  padding-top: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.textarea {
+  min-height: 200px;
+  font-family: monospace;
+}
+
+.question-item {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.candidate {
+  padding-inline-start: 20px;
+  margin-top: 6px;
+}

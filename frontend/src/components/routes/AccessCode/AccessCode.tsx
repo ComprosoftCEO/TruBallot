@@ -14,8 +14,8 @@ const useSelector = nestedSelectorHook('accessCode');
 const CODE_LENGTH = 6;
 
 export const AccessCode = () => {
-  useTitle('Access Code');
   useClearState();
+  useTitle('Access Code');
 
   const code = useSelector((state) => state.code);
   const loadingElection = useSelector((state) => state.loadingElection);

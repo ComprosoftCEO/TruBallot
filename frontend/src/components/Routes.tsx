@@ -15,8 +15,9 @@ import { LoginForm } from './routes/LoginForm';
 import { Register } from './routes/Register';
 import { Dashboard, DashboardFilter } from './routes/Dashboard';
 import { CreateElection, EditElection } from './routes/Editor';
-import { Preferences } from './routes/Preferences';
+import { ManageElection } from './routes/ManageElection';
 import { AccessCode } from './routes/AccessCode';
+import { Preferences } from './routes/Preferences';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -105,14 +106,14 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
     children: <Dashboard filter={DashboardFilter.RegistrationsClosed} />,
   },
 
-  // Editor
+  // Election
   { path: '/elections/create', exact: true, component: CreateElection, permission: Permission.CreateElection },
+  { path: '/elections/access-code', exact: true, component: AccessCode },
+  { path: '/elections/:electionId', exact: true, component: ManageElection },
   { path: '/elections/:electionId/edit', exact: true, component: EditElection, permission: Permission.CreateElection },
 
   // User preferences
   { path: '/preferences', exact: true, component: Preferences },
-
-  { path: '/elections/access-code', exact: true, component: AccessCode },
 ];
 
 /// Routes that always appear
