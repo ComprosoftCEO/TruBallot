@@ -8,7 +8,7 @@ export interface ClipboardLabelProps {
 }
 
 export const ClipboardLabel = ({ value, disabled = false }: ClipboardLabelProps) => {
-  const { isCopied, copyToClipboard } = useCopyClipboard(value, 1);
+  const { isCopied, copyToClipboard } = useCopyClipboard(value, 0.5);
 
   return (
     <Flex alignItems="center">
@@ -30,15 +30,15 @@ export const ClipboardLabel = ({ value, disabled = false }: ClipboardLabelProps)
           <Button
             basic={isCopied ? undefined : true}
             compact
-            icon="clipboard"
+            icon="copy outline"
             onClick={copyToClipboard}
-            color={isCopied ? 'red' : undefined}
+            color={isCopied ? 'grey' : undefined}
             disabled={disabled}
           />
         }
         disabled={disabled}
       >
-        <b style={{ color: 'red' }}>Copied</b>
+        <b>Copied</b>
       </Popup>
     </Flex>
   );

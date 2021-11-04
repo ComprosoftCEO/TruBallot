@@ -1,4 +1,4 @@
-import { ConfirmState } from 'redux/state';
+import { ConfirmState, initialConfirmState } from 'redux/state';
 import { mergeNestedState } from 'redux/helpers';
 
 const mergeState = mergeNestedState('confirm');
@@ -17,6 +17,6 @@ export const showConfirm = ({ override, ...props }: ConfirmProperties) => {
       action();
     }
   } else {
-    mergeState({ ...props, open: true });
+    mergeState({ ...initialConfirmState, ...props, open: true });
   }
 };

@@ -7,8 +7,8 @@ import { PublicElectionDetails } from 'models/election';
 export interface ManageElectionState {
   electionDetails: APIResult<PublicElectionDetails>;
 
-  publishingElection: APIResult<{}>;
   deletingElection: APIResult<boolean>;
+  publishingElection: APIResult<boolean>;
   openingVoting: APIResult<boolean>;
   closingVoting: APIResult<boolean>;
 }
@@ -16,8 +16,8 @@ export interface ManageElectionState {
 export const initialManageElectionState: ManageElectionState = {
   electionDetails: apiLoading(),
 
-  publishingElection: apiSuccess({}),
   deletingElection: apiSuccess(false),
+  publishingElection: apiSuccess(false),
   openingVoting: apiSuccess(false),
   closingVoting: apiSuccess(false),
 };

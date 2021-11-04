@@ -29,7 +29,10 @@ import {
 import { PublicElectionLabel } from './labels/PublicElectionLabel';
 import { RegisteredLabel } from './labels/RegisteredLabel';
 import { VotedLabel } from './labels/VotedLabel';
+import { DraftControls } from './controls/DraftControls';
+import { RegistrationControls } from './controls/RegistrationControls';
 import styles from './manageElection.module.scss';
+import { useIsLoading } from './controls/controlsActions';
 
 const useSelector = nestedSelectorHook('manageElection');
 
@@ -44,7 +47,14 @@ export const ManageElection = () => {
   const electionDetails = useSelector((store) => store.electionDetails);
   useSetElectionTitle(electionDetails);
 
+  const isLoading = useIsLoading();
   const lastLocation = useLastLocation();
+
+  // Hide everything once the electio is deleted
+  const electionDeleted = useSelector((store) => store.deletingElection);
+  if (!electionDeleted.loading && electionDeleted.success && electionDeleted.data) {
+    return null;
+  }
 
   // Test for a fatal error when or after loading the resource
   const fatalError = getFatalError(electionDetails);
@@ -104,7 +114,7 @@ export const ManageElection = () => {
                   </Flex>
 
                   <Divider horizontal />
-                  <PublicElectionLabel election={election} />
+                  <PublicElectionLabel election={election} disabled={isLoading} />
 
                   <RegisteredLabel election={election} />
                   <VotedLabel election={election} />
@@ -175,6 +185,18 @@ export const ManageElection = () => {
                 </Grid.Column>
               </Grid.Row>
             </Grid>
+
+            {
+              // Show the controls
+              {
+                [ElectionStatus.Draft]: <DraftControls election={election} />,
+                [ElectionStatus.Registration]: <RegistrationControls election={election} />,
+                [ElectionStatus.InitFailed]: null,
+                [ElectionStatus.Voting]: null,
+                [ElectionStatus.CollectionFailed]: null,
+                [ElectionStatus.Finished]: null,
+              }[election.status]
+            }
           </Segment>
 
           <div>
@@ -183,6 +205,7 @@ export const ManageElection = () => {
               content="Go Back"
               style={{ marginTop: '2em' }}
               onClick={() => goBack(lastLocation)}
+              disabled={isLoading}
             />
           </div>
         </TransitionList>
