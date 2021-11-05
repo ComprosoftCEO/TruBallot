@@ -54,8 +54,16 @@ pub async fn vote(
     return Err(ServiceError::NotOpenForVoting { election_id });
   }
 
-  // Make sure the user has not already voted
+  // Make sure user is registered for the election
   let user_id = token.get_user_id();
+  if election.get_user_registration(&user_id, &conn)?.is_none() {
+    return Err(ServiceError::NotRegistered {
+      user_id,
+      election_id: election.id,
+    });
+  };
+
+  // Make sure the user has not already voted
   if let Some(_) = question.find_commitment_optional(&user_id, &conn)? {
     return Err(ServiceError::AlreadyVoted {
       user_id,
