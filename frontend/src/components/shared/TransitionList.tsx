@@ -45,6 +45,7 @@ export const TransitionList = ({
               directional={directional}
               duration={duration}
               delay={delay}
+              index={index}
               currentIndex={currentIndex}
               setCurrentIndex={setCurrentIndex}
             >
@@ -62,6 +63,7 @@ interface DelayedTransitionProps {
   directional?: boolean;
   duration?: number | string | TransitionPropDuration;
   delay: number;
+  index: number;
   currentIndex: number;
   setCurrentIndex: (input: number) => void;
 }
@@ -72,16 +74,20 @@ function DelayedTransition({
   directional,
   duration,
   delay,
+  index,
   currentIndex,
   setCurrentIndex,
 }: DelayedTransitionProps): JSX.Element {
   // Use a hook so we can clean up the "setInterval" call if the component unmounts prematurely
   useLayoutEffect(() => {
-    const timeout = setTimeout(() => {
-      setCurrentIndex(currentIndex + 1);
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [currentIndex, delay, setCurrentIndex]);
+    if (index === currentIndex) {
+      const timeout = setTimeout(() => {
+        setCurrentIndex(currentIndex + 1);
+      }, delay);
+      return () => clearTimeout(timeout);
+    }
+    return undefined;
+  }, [currentIndex, delay, index, setCurrentIndex]);
 
   return (
     <Transition animation={animation} directional={directional} duration={duration} transitionOnMount>
