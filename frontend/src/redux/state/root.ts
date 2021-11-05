@@ -9,7 +9,8 @@ import { DashboardState, initialDashboardState } from './dashboard';
 import { EditorState, initialEditorState } from './editor';
 import { PreferencesState, initialPreferencesState } from './preferences';
 import { AccessCodeState, initialAccessCodeState } from './accessCode';
-import { initialManageElectionState, ManageElectionState } from './manageElection';
+import { ManageElectionState, initialManageElectionState } from './manageElection';
+import { VoteState, initialVoteState } from './vote';
 
 export interface RootState {
   globals: GlobalsState;
@@ -21,6 +22,7 @@ export interface RootState {
   preferences: PreferencesState;
   accessCode: AccessCodeState;
   manageElection: ManageElectionState;
+  vote: VoteState;
 }
 
 export const initialState: RootState = {
@@ -33,4 +35,5 @@ export const initialState: RootState = {
   preferences: initialPreferencesState,
   accessCode: initialAccessCodeState,
   manageElection: initialManageElectionState,
+  vote: initialVoteState,
 };

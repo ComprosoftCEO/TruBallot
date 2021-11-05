@@ -4,7 +4,7 @@ import { LoginResult } from 'models/auth';
 import { useLayoutEffect } from 'react';
 import { logInStore } from 'redux/auth';
 import { getNestedState, mergeNestedState } from 'redux/helpers';
-import { initialPreferencesState } from 'redux/state/preferences';
+import { initialPreferencesState } from 'redux/state';
 
 const mergeState = mergeNestedState('preferences');
 const getState = getNestedState('preferences');

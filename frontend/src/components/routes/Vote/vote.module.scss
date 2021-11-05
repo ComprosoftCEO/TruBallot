@@ -1,0 +1,31 @@
+// Question container has a maximum width
+//   We also need to center it in the container
+.question-container {
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 20px;
+  max-width: 450px;
+}
+
+// Add padding along the bottom button
+.bottom-container {
+  margin: 50px auto;
+  padding-bottom: 50px;
+}
+
+// Handle text overflow in the header
+.header-overflow {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+// Handle text overflow on the radio button
+.radio-overflow {
+  max-width: 100%;
+
+  label {
+    display: inline-block;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+}
