@@ -1,4 +1,5 @@
-import { Segment, Header, Form, Radio, Divider, Checkbox } from 'semantic-ui-react';
+import { Segment, Header, Form, Radio, Divider, Checkbox, Popup, Message } from 'semantic-ui-react';
+import { useState } from 'react';
 import { setChoice, toggleChoice, useQuestion } from './voteActions';
 import styles from './vote.module.scss';
 
@@ -8,11 +9,13 @@ export interface QuestionBoxProps {
   disabled?: boolean;
 }
 
-export const QuestionBox = ({ questionIndex, cheatMode, disabled }: QuestionBoxProps) => {
+export const QuestionBox = ({ questionIndex, cheatMode, disabled }: QuestionBoxProps): JSX.Element => {
+  const [popupOpen, setPopupOpen] = useState(false);
   const question = useQuestion(questionIndex);
+  const formDisabled = disabled || question.hasVoted;
 
-  return (
-    <Segment raised padded textAlign="left">
+  const formComponent = (
+    <Segment raised padded textAlign="left" disabled={formDisabled}>
       <Header textAlign="center" className={styles['header-overflow']}>
         {`${questionIndex + 1}. ${question.name}`}
       </Header>
@@ -30,7 +33,7 @@ export const QuestionBox = ({ questionIndex, cheatMode, disabled }: QuestionBoxP
                 label={candidate}
                 checked={question.choices.has(i)}
                 onChange={() => toggleChoice(questionIndex, i)}
-                disabled={disabled}
+                disabled={formDisabled}
               />
             ) : (
               <Radio
@@ -38,7 +41,7 @@ export const QuestionBox = ({ questionIndex, cheatMode, disabled }: QuestionBoxP
                 label={candidate}
                 checked={question.choices.has(i)}
                 onChange={() => setChoice(questionIndex, i)}
-                disabled={disabled}
+                disabled={formDisabled}
               />
             )}
           </Form.Field>
@@ -46,4 +49,22 @@ export const QuestionBox = ({ questionIndex, cheatMode, disabled }: QuestionBoxP
       </Form>
     </Segment>
   );
+
+  // Add a popup if the user has already voted on the question
+  if (question.hasVoted) {
+    return (
+      <Popup
+        wide
+        on="hover"
+        position="right center"
+        open={popupOpen && !disabled}
+        onOpen={() => setPopupOpen(true)}
+        onClose={() => setPopupOpen(false)}
+        content={<Message compact icon="check square outline" content="Already voted for this question" />}
+        trigger={formComponent}
+      />
+    );
+  }
+
+  return formComponent;
 };

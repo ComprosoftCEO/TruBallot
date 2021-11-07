@@ -31,7 +31,7 @@ export interface PublicElectionList {
   createdBy: UserDetails;
 
   isRegistered: boolean;
-  hasVoted: HasVotedStatus;
+  hasVotedStatus: HasVotedStatus;
   numRegistered: number;
   numQuestions: number;
 }
@@ -48,7 +48,7 @@ export interface PublicElectionDetails {
   accessCode?: string;
 
   isRegistered: boolean;
-  hasVoted: HasVotedStatus;
+  hasVotedStatus: HasVotedStatus;
   registered: RegisteredUserDetails[];
   questions: PublicElectionQuestion[];
 }
@@ -61,12 +61,13 @@ export interface UserDetails {
 export interface RegisteredUserDetails {
   id: string;
   name: string;
-  hasVoted: HasVotedStatus;
+  hasVotedStatus: HasVotedStatus;
 }
 
 export interface PublicElectionQuestion {
   id: string;
   name: string;
+  hasVoted: boolean;
   numVotesReceived: number;
   candidates: string[];
 }

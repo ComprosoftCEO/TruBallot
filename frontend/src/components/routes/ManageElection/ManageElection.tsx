@@ -170,7 +170,7 @@ export const ManageElection = () => {
                                 <List.Item key={user.id} className={styles['question-item']}>
                                   <Flex justify="space-between" alignItems="center">
                                     {user.name}
-                                    {user.hasVoted === HasVotedStatus.Yes ? (
+                                    {user.hasVotedStatus === HasVotedStatus.Yes ? (
                                       <Label color="green" icon="check square outline" content="Voted" />
                                     ) : (
                                       <Label
@@ -178,7 +178,7 @@ export const ManageElection = () => {
                                         color="orange"
                                         icon="question"
                                         content="Partial Vote"
-                                        style={{ visibility: user.hasVoted ? undefined : 'hidden' }}
+                                        style={{ visibility: user.hasVotedStatus ? undefined : 'hidden' }}
                                       />
                                     )}
                                   </Flex>

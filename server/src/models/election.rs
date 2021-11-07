@@ -108,7 +108,8 @@ impl Election {
   }
 
   /// Test if a user has voted for every question in the election
-  pub fn has_user_voted(&self, user_id: &Uuid, conn: &DbConnection) -> Result<HasVotedStatus, ServiceError> {
+  ///    "No", "Partial", or "Yes"
+  pub fn has_user_voted_status(&self, user_id: &Uuid, conn: &DbConnection) -> Result<HasVotedStatus, ServiceError> {
     let num_commitments = self.count_user_commitments(user_id, conn)?;
     if num_commitments == 0 {
       return Ok(HasVotedStatus::No);

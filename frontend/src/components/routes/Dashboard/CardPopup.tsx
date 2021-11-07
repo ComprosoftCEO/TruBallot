@@ -25,7 +25,7 @@ export const CardPopup = ({ election }: CardPopupProps) => {
       [HasVotedStatus.No]: <PopupLabel text="Haven't Voted Yet" color="blue" icon="info" />,
       [HasVotedStatus.Partial]: <PopupLabel text="Partial Vote" color="blue" icon="info" />,
       [HasVotedStatus.Yes]: <PopupLabel text="Voted" color="green" icon="check square outline" />,
-    }[election.hasVoted];
+    }[election.hasVotedStatus];
   }
 
   // Test for closed
@@ -34,7 +34,7 @@ export const CardPopup = ({ election }: CardPopupProps) => {
       [HasVotedStatus.No]: <PopupLabel text="Didn't Vote" color="olive" icon="cancel" />,
       [HasVotedStatus.Partial]: <PopupLabel text="Partial Vote" color="olive" icon="cancel" />,
       [HasVotedStatus.Yes]: <PopupLabel text="Voted" color="green" icon="check square outline" />,
-    }[election.hasVoted];
+    }[election.hasVotedStatus];
   }
 
   return null;

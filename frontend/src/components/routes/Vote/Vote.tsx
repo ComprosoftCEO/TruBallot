@@ -5,6 +5,7 @@ import { ErrorOccured } from 'components/errorDialogs';
 import { DashboardMenu, ErrorPortal, Flex, TransitionList } from 'components/shared';
 import { goBack } from 'helpers/goBack';
 import { nestedSelectorHook } from 'redux/helpers';
+import { Prompt } from 'react-router-dom';
 import {
   getFatalError,
   toggleCheatMode,
@@ -97,6 +98,8 @@ export const Vote = () => {
             </Flex>
           </div>
         </TransitionList>
+
+        <Prompt message="Discard changes to voting form?" />
       </Container>
     </>
   );

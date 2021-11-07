@@ -45,15 +45,15 @@ pub async fn get_election(
   let created_by_details = UserDetails::new(election.get_user(&conn)?);
   let registration = election.get_user_registration(&current_user_id, &conn)?;
   let is_registered = registration.is_some();
-  let has_voted = election.has_user_voted(&current_user_id, &conn)?;
+  let has_voted = election.has_user_voted_status(&current_user_id, &conn)?;
 
   // Get users registered in the election
   let registrations = election
     .get_registered_users(&conn)?
     .into_iter()
     .map(|user| {
-      let has_voted = election.has_user_voted(&user.id, &conn)?;
-      Ok(RegisteredUserDetails::new(user, has_voted))
+      let has_voted_status = election.has_user_voted_status(&user.id, &conn)?;
+      Ok(RegisteredUserDetails::new(user, has_voted_status))
     })
     .collect::<Result<_, ServiceError>>()?;
 
@@ -61,8 +61,14 @@ pub async fn get_election(
   let mut questions: Vec<PublicElectionQuestion> = Vec::new();
   for (question, candidates) in election.get_questions_candidates_ordered(&conn)? {
     let num_votes_received = question.count_commitments(&conn)?;
+    let has_voted = question.find_commitment_optional(&current_user_id, &conn)?.is_some();
 
-    questions.push(PublicElectionQuestion::new(question, num_votes_received, candidates));
+    questions.push(PublicElectionQuestion::new(
+      question,
+      has_voted,
+      num_votes_received,
+      candidates,
+    ));
   }
 
   // Build the final result

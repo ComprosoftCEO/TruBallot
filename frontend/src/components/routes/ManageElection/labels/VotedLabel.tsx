@@ -24,7 +24,7 @@ export const VotedLabel = ({ election }: VotedLabelProps): JSX.Element => (
               [HasVotedStatus.No]: <Label basic color="red" icon="cancel" content="No" />,
               [HasVotedStatus.Partial]: <Label basic color="orange" icon="info" content="Partial" />,
               [HasVotedStatus.Yes]: <Label basic color="green" icon="check" content="Yes" />,
-            }[election.hasVoted]
+            }[election.hasVotedStatus]
           }
         </Flex>
       </>

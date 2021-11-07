@@ -58,13 +58,13 @@ fn elections_into_list(
       let created_by_details = UserDetails::new(election.get_user(conn)?);
       let registration = election.get_user_registration(user_id, conn)?;
       let is_registered = registration.is_some();
-      let has_voted = election.has_user_voted(user_id, &conn)?;
+      let has_voted_status = election.has_user_voted_status(user_id, &conn)?;
 
       Ok(PublicElectionList::new(
         election,
         created_by_details,
         is_registered,
-        has_voted,
+        has_voted_status,
         num_registered,
         num_questions,
       ))

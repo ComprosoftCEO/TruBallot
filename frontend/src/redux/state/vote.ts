@@ -16,6 +16,7 @@ export interface QuestionDetails {
   id: string;
   name: string;
   candidates: string[];
+  hasVoted: boolean;
 
   choices: Set<number>;
   voting: APIResult<{}>;

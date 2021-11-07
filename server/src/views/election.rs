@@ -30,7 +30,7 @@ pub struct PublicElectionList {
   pub created_by: UserDetails,
 
   pub is_registered: bool,
-  pub has_voted: HasVotedStatus,
+  pub has_voted_status: HasVotedStatus,
   pub num_registered: i64,
   pub num_questions: i64,
 }
@@ -50,7 +50,7 @@ pub struct PublicElectionDetails {
   pub access_code: Option<String>,
 
   pub is_registered: bool,
-  pub has_voted: HasVotedStatus,
+  pub has_voted_status: HasVotedStatus,
   pub registered: Vec<RegisteredUserDetails>,
   pub questions: Vec<PublicElectionQuestion>,
 }
@@ -67,7 +67,7 @@ pub struct UserDetails {
 pub struct RegisteredUserDetails {
   pub id: Uuid,
   pub name: String,
-  pub has_voted: HasVotedStatus,
+  pub has_voted_status: HasVotedStatus,
 }
 
 #[derive(Debug, Serialize)]
@@ -75,6 +75,7 @@ pub struct RegisteredUserDetails {
 pub struct PublicElectionQuestion {
   pub id: Uuid,
   pub name: String,
+  pub has_voted: bool,
   pub num_votes_received: i64,
   pub candidates: Vec<String>,
 }
@@ -160,7 +161,7 @@ impl PublicElectionList {
     election: Election,
     created_by: UserDetails,
     is_registered: bool,
-    has_voted: HasVotedStatus,
+    has_voted_status: HasVotedStatus,
     num_registered: i64,
     num_questions: i64,
   ) -> Self {
@@ -171,7 +172,7 @@ impl PublicElectionList {
       is_public: election.is_public,
       created_by,
       is_registered,
-      has_voted,
+      has_voted_status,
       num_registered,
       num_questions,
     }
@@ -183,7 +184,7 @@ impl PublicElectionDetails {
     election: Election,
     created_by: UserDetails,
     is_registered: bool,
-    has_voted: HasVotedStatus,
+    has_voted_status: HasVotedStatus,
     registered: Vec<RegisteredUserDetails>,
     questions: Vec<PublicElectionQuestion>,
   ) -> Self {
@@ -195,7 +196,7 @@ impl PublicElectionDetails {
       is_public: election.is_public,
       access_code: election.access_code,
       is_registered,
-      has_voted,
+      has_voted_status,
       registered,
       questions,
     }
@@ -212,20 +213,21 @@ impl UserDetails {
 }
 
 impl RegisteredUserDetails {
-  pub fn new(user: User, has_voted: HasVotedStatus) -> Self {
+  pub fn new(user: User, has_voted_status: HasVotedStatus) -> Self {
     Self {
       id: user.id,
       name: user.name,
-      has_voted,
+      has_voted_status,
     }
   }
 }
 
 impl PublicElectionQuestion {
-  pub fn new(question: Question, num_votes_received: i64, candidates: Vec<Candidate>) -> Self {
+  pub fn new(question: Question, has_voted: bool, num_votes_received: i64, candidates: Vec<Candidate>) -> Self {
     Self {
       id: question.id,
       name: question.question,
+      has_voted,
       num_votes_received,
       candidates: candidates.into_iter().map(|c| c.candidate).collect(),
     }

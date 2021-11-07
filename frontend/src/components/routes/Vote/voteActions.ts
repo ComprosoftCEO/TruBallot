@@ -78,7 +78,7 @@ export const getFatalError = (input: APIResult<PublicElectionDetails>): string |
     return 'User is not registered for election';
   }
 
-  if (election.hasVoted === HasVotedStatus.Yes) {
+  if (election.hasVotedStatus === HasVotedStatus.Yes) {
     return 'User already voted';
   }
 
@@ -102,6 +102,7 @@ function setElection(electionDetails: APISuccess<PublicElectionDetails> | APIErr
     id: question.id,
     name: question.name,
     candidates: question.candidates,
+    hasVoted: question.hasVoted,
     choices: new Set(),
     voting: apiSuccess(false),
   }));
@@ -192,4 +193,6 @@ export const toggleChoice = (questionIndex: number, choice: number): void => {
  * Test if the given input is valid, depending on the state of "cheat" mode
  */
 export const useIsFormValid = (): boolean =>
-  useSelector((state) => state.cheatMode || state.questions.every((question) => question.choices.size === 1));
+  useSelector(
+    (state) => state.cheatMode || state.questions.every((question) => question.hasVoted || question.choices.size === 1),
+  );

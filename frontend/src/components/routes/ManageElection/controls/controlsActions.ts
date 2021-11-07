@@ -178,7 +178,7 @@ export const register = async (electionId: string): Promise<void> => {
       registering: apiSuccess(true),
       ...updateNestedElectionProps((props) => ({
         isRegistered: true,
-        registered: [...props.registered, { id: userId, name, hasVoted: HasVotedStatus.No }],
+        registered: [...props.registered, { id: userId, name, hasVotedStatus: HasVotedStatus.No }],
       })),
     });
   } else {
