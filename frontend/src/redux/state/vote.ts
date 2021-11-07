@@ -12,7 +12,7 @@ export interface VoteState {
 
   questions: QuestionDetails[];
   cheatMode: boolean;
-  encryptedLocation: BigInt;
+  encryptedLocation: bigint;
 
   votingStatus: VotingStatus;
 }
@@ -32,6 +32,7 @@ export enum VotingStatus {
   Init = 0,
   Voting,
   Error,
+  Success,
 }
 
 export const initialVoteState: VoteState = {

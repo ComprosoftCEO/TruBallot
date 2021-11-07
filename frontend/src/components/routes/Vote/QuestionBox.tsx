@@ -60,7 +60,7 @@ export const QuestionBox = ({ questionIndex, cheatMode, disabled }: QuestionBoxP
         open={popupOpen && !disabled}
         onOpen={() => setPopupOpen(true)}
         onClose={() => setPopupOpen(false)}
-        content={<Message compact icon="check square outline" content="Already voted for this question" />}
+        content={<Message compact icon="check circle outline" content="Already voted for this question" />}
         trigger={formComponent}
       />
     );

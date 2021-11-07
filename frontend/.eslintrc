@@ -12,6 +12,7 @@
     "jsx-a11y/label-has-associated-control": "off",
     "react/jsx-key": "error",
     "no-continue": "off",
-    "react/require-default-props": "off"
+    "react/require-default-props": "off",
+    "no-bitwise": "off"
   }
 }

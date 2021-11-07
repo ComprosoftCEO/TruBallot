@@ -105,7 +105,7 @@ export const Vote = () => {
                 size="large"
                 icon="check square outline"
                 content="Submit Vote"
-                onClick={vote}
+                onClick={() => vote(electionId)}
                 disabled={!formValid || votingStatus !== VotingStatus.Init}
                 loading={votingStatus === VotingStatus.Voting}
               />
@@ -121,11 +121,10 @@ export const Vote = () => {
           </div>
         </TransitionList>
 
-        {votingStatus === VotingStatus.Voting ? (
-          <Prompt message="Cancel voting?" />
-        ) : (
+        {[VotingStatus.Init, VotingStatus.Error].includes(votingStatus) && (
           <Prompt message="Discard changes to voting form?" />
         )}
+        {votingStatus === VotingStatus.Voting && <Prompt message="Cancel voting?" />}
 
         {votingStatus !== VotingStatus.Init && <VotingModal />}
       </Container>

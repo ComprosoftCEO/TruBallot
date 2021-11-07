@@ -4,7 +4,7 @@ import pluralize from 'pluralize';
 import { Button, Message, Popup, Segment, Transition } from 'semantic-ui-react';
 import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
-import { PublicElectionDetails } from 'models/election';
+import { HasVotedStatus, PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
 import { Permission } from 'models/auth';
 import { FinishingModal } from './FinishingModal';
@@ -61,16 +61,18 @@ export const VotingControls = ({ election }: VotingControlsProps) => {
         )}
 
         <Flex justify="space-around">
-          {election.isRegistered && permissions.has(Permission.Vote) && (
-            <Button
-              primary
-              size="large"
-              icon="check square outline"
-              content="Vote"
-              onClick={() => history.push(`/elections/${election.id}/vote`)}
-              disabled={loading}
-            />
-          )}
+          {election.isRegistered &&
+            election.hasVotedStatus !== HasVotedStatus.Yes &&
+            permissions.has(Permission.Vote) && (
+              <Button
+                primary
+                size="large"
+                icon="check square outline"
+                content="Vote"
+                onClick={() => history.push(`/elections/${election.id}/vote`)}
+                disabled={loading}
+              />
+            )}
 
           <Button
             size="large"

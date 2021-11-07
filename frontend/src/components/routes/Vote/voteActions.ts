@@ -16,6 +16,7 @@ import {
 import { useTitle } from 'helpers/title';
 import {
   CollectorElectionParameters,
+  CollectorQuestionParameters,
   ElectionParameters,
   ElectionStatus,
   HasVotedStatus,
@@ -24,6 +25,7 @@ import {
 import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { QuestionDetails, VoteState, VotingStatus } from 'redux/state';
 import { showConfirm } from 'showConfirm';
+import { getVotingVector, computeBallot } from 'protocol';
 
 const getState = getNestedState('vote');
 const mergeState = mergeNestedState('vote');
@@ -115,7 +117,7 @@ function setElection(electionDetails: APISuccess<PublicElectionDetails> | APIErr
   }
 
   // Build out the questions
-  const questions: QuestionDetails[] = electionDetails.data.questions.map((question) => ({
+  const questions: QuestionDetails[] = electionDetails.data.questions.map((question, i) => ({
     id: question.id,
     name: question.name,
     candidates: question.candidates,
@@ -307,29 +309,140 @@ export const useIsFormValid = (): boolean =>
 /**
  * Start submitting the votes
  */
-export const vote = (): void => {
+export const vote = (electionId: string, override?: true): void => {
   showConfirm({
     header: 'Are you sure you want to submit votes?',
     message: 'You will not be able to change your reponses later',
+    override,
     onConfirm: async () => {
-      const { questions } = getState();
+      const { questions, encryptedLocation, electionParams } = getState();
+      if (electionParams.loading || !electionParams.success) return; // Should NOT happen
+
+      // Mark all questions as loading
       const newQuestions = questions.map((question) => ({
         ...question,
-        voting: question.hasVoted ? apiSuccess(true) : apiLoading(),
+        voting: question.hasVoted ? apiSuccess(false) : apiLoading(),
       }));
 
       mergeState({ votingStatus: VotingStatus.Voting, questions: newQuestions });
 
-      // const results: APIResult<{}>[] = Promise.all(
-      //   questions
-      //     .filter((question) => !question.hasVoted)
-      //     .map((question) =>
-      //       (async () => {
-      //         const x = 0;
-      //         return apiLoading();
-      //       })(),
-      //     ),
-      // );
+      // Run all requests in parallel
+      const results = await Promise.all(
+        [...questions.entries()]
+          .filter((question) => !question[1].hasVoted)
+          .map(([questionIndex, question]) =>
+            voteForQuestion(electionId, question, questionIndex, encryptedLocation, electionParams.data),
+          ),
+      );
+
+      // Test if every request was successful
+      const allSuccessful = results.every((result) => result.success);
+      if (!allSuccessful) {
+        mergeState({ votingStatus: VotingStatus.Error });
+      } else {
+        mergeState({ votingStatus: VotingStatus.Success });
+      }
     },
   });
 };
+
+/**
+ * Cast a vote for a single question
+ *
+ * @param electionId ID of the election
+ * @param question Question details
+ * @param questionIndex Question index in the array
+ *
+ * @returns Result
+ */
+async function voteForQuestion(
+  electionId: string,
+  question: QuestionDetails,
+  questionIndex: number,
+  encryptedLocation: bigint,
+  electionParams: ElectionParameters,
+): Promise<APISuccess<{}> | APIError> {
+  // Get shares from collector 1
+  const c1Result = await axiosApi
+    .get<CollectorQuestionParameters>(`/collector/1/elections/${electionId}/questions/${question.id}/parameters`)
+    .then(...resolveResult);
+
+  if (!c1Result.success) {
+    mergeQuestion(questionIndex, { voting: c1Result });
+    return c1Result;
+  }
+
+  // Get shares from collector 2
+  const c2Result = await axiosApi
+    .get<CollectorQuestionParameters>(`/collector/2/elections/${electionId}/questions/${question.id}/parameters`)
+    .then(...resolveResult);
+
+  if (!c2Result.success) {
+    mergeQuestion(questionIndex, { voting: c2Result });
+    return c2Result;
+  }
+
+  // Get the binary voting vector
+  const { forwardVector, reverseVector } = getVotingVector({
+    candidates: [...question.choices],
+    encryptedLocation,
+    electionParams,
+    questionIndex,
+  });
+
+  // Compute the ballots
+  const ballot = computeBallot({
+    forwardVector,
+    reverseVector,
+    electionParams,
+    c1QuestionParams: c1Result.data,
+    c2QuestionParams: c2Result.data,
+  });
+
+  // Submit the vote!!!
+  const result = await axiosApi
+    .post(`/elections/${electionId}/questions/${question.id}/vote`, {
+      forwardBallot: ballot.forwardBallot.toString(10),
+      reverseBallot: ballot.reverseBallot.toString(10),
+      gS: ballot.gS.toString(10),
+      gSPrime: ballot.gSPrime.toString(10),
+      gSSPrime: ballot.gSSPrime.toString(10),
+    })
+    .then(...resolveResult);
+
+  if (!result.success) {
+    mergeQuestion(questionIndex, { voting: result });
+    return result;
+  }
+
+  // We are done!
+  mergeQuestion(questionIndex, { hasVoted: true, voting: apiSuccess(true), choices: new Set() });
+  return apiSuccess({});
+}
+
+/**
+ * Make a Redux request to update a question
+ *
+ * @param questionIndex Question to update
+ * @param data New data for the question, or a function to dynamically update the question
+ */
+function mergeQuestion(
+  questionIndex: number,
+  data: Partial<QuestionDetails> | ((input: QuestionDetails) => Partial<QuestionDetails>),
+): void {
+  mergeState((state) => {
+    const newQuestions = [...state.questions];
+    if (typeof data === 'function') {
+      newQuestions[questionIndex] = { ...newQuestions[questionIndex], ...data(newQuestions[questionIndex]) };
+    } else {
+      newQuestions[questionIndex] = { ...newQuestions[questionIndex], ...data };
+    }
+
+    return { questions: newQuestions };
+  });
+}
+
+/**
+ * Clear the voting status to make changes to the ballot
+ */
+export const changeBallot = (): void => mergeState({ votingStatus: VotingStatus.Init });
