@@ -120,3 +120,14 @@ export interface UserBallotResult {
 export interface CandidateResult {
   numVotes: number | null;
 }
+
+export interface CollectorElectionParameters {
+  encryptedLocation?: string; // BigInt
+}
+
+export interface CollectorQuestionParameters {
+  forwardVerificationShares: string; // BigInt
+  reverseVerificationShares: string; // BigInt
+  forwardBallotShares: string; // BigInt
+  reverseBallotShares: string; // BigInt
+}

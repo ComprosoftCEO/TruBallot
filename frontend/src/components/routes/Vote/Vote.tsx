@@ -1,11 +1,13 @@
 import { useLastLocation } from 'react-router-last-location';
 import { Button, Checkbox, Container, Divider, Header, Transition } from 'semantic-ui-react';
-import { getErrorInformation } from 'api';
+import { APISuccess } from 'api';
 import { ErrorOccured } from 'components/errorDialogs';
 import { DashboardMenu, ErrorPortal, Flex, TransitionList } from 'components/shared';
 import { goBack } from 'helpers/goBack';
 import { nestedSelectorHook } from 'redux/helpers';
 import { Prompt } from 'react-router-dom';
+import { VotingStatus } from 'redux/state';
+import { PublicElectionDetails } from 'models/election';
 import {
   getFatalError,
   toggleCheatMode,
@@ -13,10 +15,13 @@ import {
   useClearState,
   useElectionId,
   useFetchElection,
+  useFetchError,
   useIsFormValid,
   useSetVoteTitle,
+  vote,
 } from './voteActions';
 import { QuestionBox } from './QuestionBox';
+import { VotingModal } from './VotingModal';
 import styles from './vote.module.scss';
 
 const useSelector = nestedSelectorHook('vote');
@@ -27,12 +32,14 @@ export const Vote = () => {
   // Fetch the election to vote for
   const electionId = useElectionId();
   useFetchElection(electionId);
+  const fetchError = useFetchError();
 
   // Set the title based on the election
   const electionDetails = useSelector((state) => state.electionDetails);
   useSetVoteTitle(electionDetails);
 
   const cheatMode = useSelector((state) => state.cheatMode);
+  const votingStatus = useSelector((state) => state.votingStatus);
   const formValid = useIsFormValid();
 
   const lastLocation = useLastLocation();
@@ -44,7 +51,7 @@ export const Vote = () => {
   }
 
   // Show the blank loading form
-  if (electionDetails.loading || !electionDetails.success) {
+  if (fetchError.loading || fetchError.data !== undefined) {
     return (
       <>
         <DashboardMenu />
@@ -63,11 +70,11 @@ export const Vote = () => {
           </Container>
         </Transition>
 
-        {!electionDetails.loading && !electionDetails.success && (
+        {!fetchError.loading && fetchError.data !== undefined && (
           <ErrorPortal
             negative
-            header="Failed to load election"
-            content={getErrorInformation(electionDetails.error).description}
+            header={fetchError.data[0]}
+            content={fetchError.data[1]}
             onReload={() => tryReFetchElection(electionId)}
           />
         )}
@@ -76,7 +83,7 @@ export const Vote = () => {
   }
 
   // Draw the voting form
-  const election = electionDetails.data;
+  const election = (electionDetails as APISuccess<PublicElectionDetails>).data;
   return (
     <>
       <DashboardMenu />
@@ -87,19 +94,40 @@ export const Vote = () => {
 
           {election.questions.map((question, index) => (
             <div key={question.id} className={styles['question-container']}>
-              <QuestionBox questionIndex={index} cheatMode={cheatMode} />
+              <QuestionBox questionIndex={index} cheatMode={cheatMode} disabled={votingStatus !== VotingStatus.Init} />
             </div>
           ))}
 
           <div className={styles['bottom-container']}>
             <Flex direction="column" justify="space-between" alignItems="center" style={{ minHeight: 80 }}>
-              <Button primary size="large" icon="check square outline" content="Submit Vote" disabled={!formValid} />
-              <Checkbox toggle label="Cheat Mode" checked={cheatMode} onChange={toggleCheatMode} />
+              <Button
+                primary
+                size="large"
+                icon="check square outline"
+                content="Submit Vote"
+                onClick={vote}
+                disabled={!formValid || votingStatus !== VotingStatus.Init}
+                loading={votingStatus === VotingStatus.Voting}
+              />
+
+              <Checkbox
+                toggle
+                label="Cheat Mode"
+                checked={cheatMode}
+                onChange={toggleCheatMode}
+                disabled={votingStatus !== VotingStatus.Init}
+              />
             </Flex>
           </div>
         </TransitionList>
 
-        <Prompt message="Discard changes to voting form?" />
+        {votingStatus === VotingStatus.Voting ? (
+          <Prompt message="Cancel voting?" />
+        ) : (
+          <Prompt message="Discard changes to voting form?" />
+        )}
+
+        {votingStatus !== VotingStatus.Init && <VotingModal />}
       </Container>
     </>
   );
