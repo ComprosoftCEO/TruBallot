@@ -245,7 +245,7 @@ export const openVoting = (electionId: string, override?: true): void => {
  * Makes sure each question has at least 2 votes
  */
 export const validateNumberOfVotes = (questions: PublicElectionQuestion[]): boolean =>
-  questions.every((question) => question.numVotesReceived > MIN_VOTES_FOR_CLOSING);
+  questions.every((question) => question.numVotesReceived >= MIN_VOTES_FOR_CLOSING);
 
 /**
  * Close voting action

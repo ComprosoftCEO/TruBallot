@@ -41,3 +41,57 @@ export const getVotingVector = ({
 
   return { forwardVector, reverseVector };
 };
+
+export interface ParseVectorEntry {
+  candidatePicked: number | null | undefined; // "null" = No vote, "undefined" = Invalid
+  bits: string;
+}
+
+/**
+ * Parse the voting vector
+ *
+ * @param vector Voting vector to parse
+ * @param numCandidates Number of candidates
+ * @param numRegistered Number of registered users
+ * @param reverse If true, reverses the order of the candidates
+ *
+ * @returns Vector of parsed entries
+ */
+export const parseVotingVector = (
+  vector: bigint,
+  numCandidates: number,
+  numRegistered: number,
+  reverse = false,
+): ParseVectorEntry[] => {
+  // Convert the voting vector into a bit string with L = n*m bits
+  const totalBits = numCandidates * numRegistered;
+  const bitString = vector.toString(2).padStart(totalBits, '0');
+
+  // Split string into chunks of bit strings
+  const chunks = [];
+  for (let i = 0; i < numRegistered; i += 1) {
+    chunks.push(bitString.slice(i * numCandidates, (i + 1) * numCandidates));
+  }
+
+  // Now parse each chunk to find the candidate index
+  return chunks.map((bits) => {
+    // Make sure at least 1 bit is set
+    const index = bits.indexOf('1');
+    if (index < 0) {
+      // No bits set, so return NULL for "no vote"
+      return { candidatePicked: null, bits };
+    }
+
+    // Test to see if two bits are set
+    const nextIndex = bits.indexOf('1', index + 1);
+    if (nextIndex >= 0) {
+      // Picked at least two candidates, so invalid vector!
+      return { candidatePicked: undefined, bits };
+    }
+
+    // We only picked one candidate
+    // If the bits are in the reverse order, adjust the calculations
+    const candidatePicked = reverse ? index : numCandidates - (index + 1);
+    return { candidatePicked, bits };
+  });
+};

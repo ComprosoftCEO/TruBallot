@@ -93,16 +93,16 @@ export interface ElectionResult {
 }
 
 export interface QuestionResult {
-  forwardBallots: string; // BigInt
-  reverseBallots: string; // BigInt
+  forwardBallots?: string; // BigInt
+  reverseBallots?: string; // BigInt
   ballotValid: boolean;
 
-  forwardCancelationShares: string; // BigInt
-  reverseCancelationShares: string; // BigInt
+  forwardCancelationShares?: string; // BigInt
+  reverseCancelationShares?: string; // BigInt
 
-  candidateVotes: Record<string, CandidateResult>;
   userBallots: UserBallotResult[];
   noVotes: UserDetails[];
+  candidateVotes?: Record<string, CandidateResult>;
 }
 
 export interface UserBallotResult {
@@ -118,7 +118,7 @@ export interface UserBallotResult {
 }
 
 export interface CandidateResult {
-  numVotes: number | null;
+  numVotes: number;
 }
 
 export interface CollectorElectionParameters {

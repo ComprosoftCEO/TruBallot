@@ -18,6 +18,7 @@ import { CreateElection, EditElection } from './routes/Editor';
 import { ManageElection } from './routes/ManageElection';
 import { AccessCode } from './routes/AccessCode';
 import { Vote } from './routes/Vote';
+import { Results } from './routes/Results';
 import { Preferences } from './routes/Preferences';
 
 interface RouterEntry extends RouteProps {
@@ -113,6 +114,7 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
   { path: '/elections/:electionId', exact: true, component: ManageElection },
   { path: '/elections/:electionId/edit', exact: true, component: EditElection, permission: Permission.CreateElection },
   { path: '/elections/:electionId/vote', exact: true, component: Vote, permission: Permission.Vote },
+  { path: '/elections/:electionId/results', exact: true, component: Results },
 
   // User preferences
   { path: '/preferences', exact: true, component: Preferences },

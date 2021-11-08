@@ -36,7 +36,7 @@ export const ElectionsList = ({ filter }: ElectionListProps) => {
 
       <Divider />
 
-      <Card.Group stackable itemsPerRow="3" centered={[].length === 0 && false}>
+      <Card.Group stackable itemsPerRow="3">
         {showCreateCard(filter) && (
           <Transition animation="browse" duration={400} transitionOnMount>
             <Card
