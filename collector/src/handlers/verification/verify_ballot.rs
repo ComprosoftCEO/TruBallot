@@ -33,7 +33,7 @@ pub async fn verify_ballot(
   // Make sure the election, question, and user registration exist
   let election = Election::find_resource(&election_id, &conn)?;
   let question = Question::find_resource(&question_id, &election_id, &conn)?;
-  let num_registered = election.count_registrations(&conn)?;
+  let num_registered = question.count_registrations(&conn)?;
   let registration = election
     .get_registration(&question_id, &data.user_id, &conn)?
     .ok_or_else(|| ServiceError::UserNotRegistered {
@@ -238,7 +238,7 @@ pub async fn verify_ballot(
   // ============================================================
 
   // Verify forward ballot on client
-  let g_p_i = BigInt::mod_mul(&generator, &data.forward_ballot, &prime);
+  let g_p_i = BigInt::mod_pow(&generator, &data.forward_ballot, &prime);
   let g_p_i_combined = BigInt::mod_mul(&data.g_s, &BigInt::mod_mul(&g_stild_1, &g_stild_2, &prime), &prime);
   let g_p_i_verified = &g_p_i == &g_p_i_combined;
 
@@ -247,7 +247,7 @@ pub async fn verify_ballot(
   log::debug!("Forward ballot: {}", if g_p_i_verified { "valid" } else { "invalid" });
 
   // Verify reverse ballot on client
-  let g_p_i_prime = BigInt::mod_mul(&generator, &data.reverse_ballot, &prime);
+  let g_p_i_prime = BigInt::mod_pow(&generator, &data.reverse_ballot, &prime);
   let g_p_i_prime_combined = BigInt::mod_mul(
     &data.g_s_prime,
     &BigInt::mod_mul(&g_stild_1_prime, &g_stild_2_prime, &prime),

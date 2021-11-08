@@ -397,8 +397,8 @@ impl ServiceError {
         format!(
           "Vote is not valid: failed to validate {}",
           match (sub_protocol_1, sub_protocol_2) {
-            (true, false) => "sub-protocol 1",
-            (false, true) => "sub-protocol 2",
+            (false, true) => "sub-protocol 1",
+            (true, false) => "sub-protocol 2",
             _ => "sub-protocol 1 and sub-protocol 2",
           }
         ),

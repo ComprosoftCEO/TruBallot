@@ -22,7 +22,7 @@ pub async fn verify_ballot_websocket(
   // Make sure the election, question, and user registration exist
   let election = Election::find_resource(&election_id, &conn)?;
   let question = Question::find_resource(&question_id, &election_id, &conn)?;
-  let num_registered = election.count_registrations(&conn)?;
+  let num_registered = question.count_registrations(&conn)?;
   let registration = election
     .get_registration(&question_id, &user_id, &conn)?
     .ok_or_else(|| ServiceError::UserNotRegistered {

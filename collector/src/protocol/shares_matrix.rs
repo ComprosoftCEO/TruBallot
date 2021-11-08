@@ -51,7 +51,7 @@ impl SharesMatrix {
       sum += &self[(row, voter)];
     }
 
-    Some(sum)
+    Some(sum % &self.modulus)
   }
 
   /// Get the sum of shares for a given voter to use for voter verification.
@@ -68,7 +68,7 @@ impl SharesMatrix {
       sum += &self[(voter, col)];
     }
 
-    Some(sum)
+    Some(sum % &self.modulus)
   }
 
   // Quadrants Filled:
@@ -78,13 +78,12 @@ impl SharesMatrix {
   // Areas outside are filled with 0's so the sum is unchaged
   fn fill_collector_one(&mut self) {
     let midpoint = self.num_voters / 2;
-    let modulus = self.get_modulus().clone();
 
     // Left half
     for row in 0..midpoint {
       for col in 0..midpoint {
         if row != col {
-          self[(row, col)] = BigInt::sample_below(&modulus);
+          self[(row, col)] = BigInt::sample_below(&self.modulus);
         }
       }
     }
@@ -93,7 +92,7 @@ impl SharesMatrix {
     for row in midpoint..self.num_voters {
       for col in midpoint..self.num_voters {
         if row != col {
-          self[(row, col)] = BigInt::sample_below(&modulus);
+          self[(row, col)] = BigInt::sample_below(&self.modulus);
         }
       }
     }
@@ -106,19 +105,18 @@ impl SharesMatrix {
   // Areas outside are filled with 0's so the sum is unchaged
   fn fill_collector_two(&mut self) {
     let midpoint = self.num_voters / 2;
-    let modulus = self.get_modulus().clone();
 
     // Left half
     for row in midpoint..self.num_voters {
       for col in 0..midpoint {
-        self[(row, col)] = BigInt::sample_below(&modulus);
+        self[(row, col)] = BigInt::sample_below(&self.modulus);
       }
     }
 
     // Right half
     for row in 0..midpoint {
       for col in midpoint..self.num_voters {
-        self[(row, col)] = BigInt::sample_below(&modulus);
+        self[(row, col)] = BigInt::sample_below(&self.modulus);
       }
     }
   }
