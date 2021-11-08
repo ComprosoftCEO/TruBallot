@@ -1,5 +1,4 @@
 import { ElectionParameters } from 'models/election';
-import { bitLength } from 'bigint-mod-arith';
 
 export interface GetVotingVectorInput {
   candidates: number[]; // 0...(n-1)
@@ -27,8 +26,7 @@ export const getVotingVector = ({
   questionIndex,
 }: GetVotingVectorInput): GetVotingVectorOutput => {
   const numCandidates = BigInt(electionParams.questions[questionIndex].numCandidates);
-  const numTotalBits = numCandidates * BigInt(electionParams.numRegistered);
-  const bitShift = encryptedLocation * BigInt(numCandidates);
+  const numRegistered = BigInt(electionParams.numRegistered);
 
   // Set the corresponding bit for each candidate in the list
   const forwardBitsSet = candidates.reduce((prev, current) => prev | (BigInt(1) << BigInt(current)), BigInt(0));
@@ -38,7 +36,8 @@ export const getVotingVector = ({
   );
 
   // Compute the bit vectors
-  const forwardVector = forwardBitsSet << bitShift;
-  const reverseVector = reverseBitsSet << (numTotalBits - (bitShift + BigInt(bitLength(reverseBitsSet))));
+  const forwardVector = forwardBitsSet << (encryptedLocation * numCandidates);
+  const reverseVector = reverseBitsSet << ((numRegistered - (encryptedLocation + BigInt(1))) * numCandidates);
+
   return { forwardVector, reverseVector };
 };

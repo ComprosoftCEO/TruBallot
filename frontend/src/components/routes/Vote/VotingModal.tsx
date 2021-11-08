@@ -51,7 +51,7 @@ export const VotingModal = (): JSX.Element => {
               key={question.id}
               color="green"
               header={`${i + 1}. ${question.name}`}
-              icon={question.voting.data ? 'check square outline' : 'check circle outline'}
+              icon={question.voting.data ? 'check square' : 'check circle outline'}
               content={question.voting.data ? 'Vote Successful!' : 'Already Voted'}
             />
           ) : (

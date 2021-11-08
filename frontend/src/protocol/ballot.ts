@@ -37,15 +37,15 @@ export const computeBallot = ({
 
   // Compute the secrets
   const secret = toZn(
-    forwardVector +
-      BigInt(c1QuestionParams.forwardVerificationShares) +
+    forwardVector -
+      BigInt(c1QuestionParams.forwardVerificationShares) -
       BigInt(c2QuestionParams.forwardVerificationShares),
     modulus,
   );
 
   const secretPrime = toZn(
-    reverseVector +
-      BigInt(c1QuestionParams.reverseVerificationShares) +
+    reverseVector -
+      BigInt(c1QuestionParams.reverseVerificationShares) -
       BigInt(c2QuestionParams.reverseVerificationShares),
     modulus,
   );
@@ -58,12 +58,12 @@ export const computeBallot = ({
 
   // Compute the ballots
   const forwardBallot = toZn(
-    secret - BigInt(c1QuestionParams.forwardBallotShares) - BigInt(c2QuestionParams.forwardBallotShares),
+    secret + BigInt(c1QuestionParams.forwardBallotShares) + BigInt(c2QuestionParams.forwardBallotShares),
     modulus,
   );
 
   const reverseBallot = toZn(
-    secretPrime - BigInt(c1QuestionParams.reverseBallotShares) - BigInt(c2QuestionParams.reverseBallotShares),
+    secretPrime + BigInt(c1QuestionParams.reverseBallotShares) + BigInt(c2QuestionParams.reverseBallotShares),
     modulus,
   );
 
