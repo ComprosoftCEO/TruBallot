@@ -4,7 +4,6 @@ table! {
         question_id -> Uuid,
         candidate -> Varchar,
         candidate_number -> Int8,
-        num_votes -> Nullable<Int8>,
     }
 }
 
@@ -42,10 +41,6 @@ table! {
         election_id -> Uuid,
         question -> Varchar,
         question_number -> Int8,
-        final_forward_ballots -> Numeric,
-        final_reverse_ballots -> Numeric,
-        ballots_valid -> Bool,
-        users_without_vote -> Array<Uuid>,
         forward_cancelation_shares -> Numeric,
         reverse_cancelation_shares -> Numeric,
     }

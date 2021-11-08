@@ -48,7 +48,7 @@ export enum GlobalErrorCode {
   NotOpenForVoting,
   NotEnoughVotes,
   CancelationSharesError,
-  ElectionNotFinished,
+  ElectionNotStarted,
   NoNotifyPermission,
   NoSubscribePermission,
   NotificationError,

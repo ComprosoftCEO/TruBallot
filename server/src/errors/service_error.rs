@@ -101,7 +101,7 @@ pub enum ServiceError {
     question_id: Uuid,
   },
   CancelationSharesError(Collector, ClientRequestError),
-  ElectionNotFinished {
+  ElectionNotStarted {
     election_id: Uuid,
   },
 }
@@ -433,10 +433,10 @@ impl ServiceError {
         format!("{:?}", error),
       ),
 
-      ServiceError::ElectionNotFinished { election_id } => ErrorResponse::new(
+      ServiceError::ElectionNotStarted { election_id } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Cannot retrieve results before election is finished".into(),
-        GlobalErrorCode::ElectionNotFinished,
+        "Cannot retrieve results before election has started".into(),
+        GlobalErrorCode::ElectionNotStarted,
         format!("Election ID: {}", election_id),
       ),
     }

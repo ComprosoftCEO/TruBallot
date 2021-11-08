@@ -114,20 +114,34 @@ pub struct ElectionResult {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuestionResult {
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub forward_ballots: BigInt,
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub reverse_ballots: BigInt,
+  #[serde(
+    with = "crate::utils::serialize_option_bigint",
+    skip_serializing_if = "Option::is_none"
+  )]
+  pub forward_ballots: Option<BigInt>,
+  #[serde(
+    with = "crate::utils::serialize_option_bigint",
+    skip_serializing_if = "Option::is_none"
+  )]
+  pub reverse_ballots: Option<BigInt>,
   pub ballot_valid: bool,
 
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub forward_cancelation_shares: BigInt,
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub reverse_cancelation_shares: BigInt,
+  #[serde(
+    with = "crate::utils::serialize_option_bigint",
+    skip_serializing_if = "Option::is_none"
+  )]
+  pub forward_cancelation_shares: Option<BigInt>,
+  #[serde(
+    with = "crate::utils::serialize_option_bigint",
+    skip_serializing_if = "Option::is_none"
+  )]
+  pub reverse_cancelation_shares: Option<BigInt>,
 
-  pub candidate_votes: HashMap<Uuid, CandidateResult>,
   pub user_ballots: Vec<UserBallotResult>,
   pub no_votes: Vec<UserDetails>,
+
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub candidate_votes: Option<HashMap<i64, CandidateResult>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -152,8 +166,7 @@ pub struct UserBallotResult {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CandidateResult {
-  // We want to serialize this as NULL if the ballot is invalid
-  pub num_votes: Option<i64>,
+  pub num_votes: i64,
 }
 
 impl PublicElectionList {
@@ -235,23 +248,45 @@ impl PublicElectionQuestion {
 }
 
 impl QuestionResult {
+  /// Construct a partial election result
+  pub fn new_partial(_question: Question, user_ballots: Vec<UserBallotResult>, no_votes: Vec<UserDetails>) -> Self {
+    Self {
+      forward_ballots: None,
+      reverse_ballots: None,
+      ballot_valid: false,
+
+      forward_cancelation_shares: None,
+      reverse_cancelation_shares: None,
+
+      user_ballots,
+      no_votes,
+      candidate_votes: None,
+    }
+  }
+
+  /// Construct a finished election result
   pub fn new(
     question: Question,
-    candidate_votes: HashMap<Uuid, CandidateResult>,
+    forward_ballots: BigInt,
+    reverse_ballots: BigInt,
+    candidate_votes: Option<Vec<i64>>,
     user_ballots: Vec<UserBallotResult>,
     no_votes: Vec<UserDetails>,
   ) -> Self {
+    let candidate_votes =
+      candidate_votes.map(|votes| (0i64..).zip(votes.into_iter().map(CandidateResult::new)).collect());
+
     Self {
-      forward_ballots: question.final_forward_ballots.to_bigint(),
-      reverse_ballots: question.final_reverse_ballots.to_bigint(),
-      ballot_valid: question.ballots_valid,
+      forward_ballots: Some(forward_ballots),
+      reverse_ballots: Some(reverse_ballots),
+      ballot_valid: candidate_votes.is_some(),
 
-      forward_cancelation_shares: question.forward_cancelation_shares.to_bigint(),
-      reverse_cancelation_shares: question.reverse_cancelation_shares.to_bigint(),
+      forward_cancelation_shares: Some(question.forward_cancelation_shares.to_bigint()),
+      reverse_cancelation_shares: Some(question.reverse_cancelation_shares.to_bigint()),
 
-      candidate_votes,
       user_ballots,
       no_votes,
+      candidate_votes,
     }
   }
 }
@@ -273,9 +308,7 @@ impl UserBallotResult {
 }
 
 impl CandidateResult {
-  pub fn new(candidate: Candidate) -> Self {
-    Self {
-      num_votes: candidate.num_votes,
-    }
+  pub fn new(num_votes: i64) -> Self {
+    Self { num_votes }
   }
 }

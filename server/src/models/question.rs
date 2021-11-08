@@ -20,11 +20,7 @@ pub struct Question {
   pub question: String,
   pub question_number: i64,
 
-  pub final_forward_ballots: BigDecimal,
-  pub final_reverse_ballots: BigDecimal,
-  pub ballots_valid: bool,
-
-  pub users_without_vote: Vec<Uuid>,
+  // Set to 0 until after the election has closed
   pub forward_cancelation_shares: BigDecimal,
   pub reverse_cancelation_shares: BigDecimal,
 }
@@ -42,10 +38,6 @@ impl Question {
       election_id,
       question: question.into(),
       question_number,
-      final_forward_ballots: BigDecimal::default(),
-      final_reverse_ballots: BigDecimal::default(),
-      ballots_valid: false,
-      users_without_vote: Vec::new(),
       forward_cancelation_shares: BigDecimal::default(),
       reverse_cancelation_shares: BigDecimal::default(),
     }
@@ -95,6 +87,7 @@ impl Question {
 
   ///
   /// Compute the forward and reverse ballot sum for a given question, mod (p - 1)
+  ///   This method also applies the cancelation shares
   ///
   pub fn get_ballots_sum(&self, modulo: &BigInt, conn: &DbConnection) -> Result<(BigInt, BigInt), ServiceError> {
     use crate::schema::commitments::dsl::{commitments, election_id, forward_ballot, question_id, reverse_ballot};
@@ -114,7 +107,10 @@ impl Question {
       .get_result::<Option<BigDecimal>>(conn.get())?
       .unwrap_or_else(BigDecimal::default);
 
-    Ok((forward.to_bigint() % modulo, reverse.to_bigint() % modulo))
+    Ok((
+      (forward + &self.forward_cancelation_shares).to_bigint() % modulo,
+      (reverse + &self.reverse_cancelation_shares).to_bigint() % modulo,
+    ))
   }
 
   ///

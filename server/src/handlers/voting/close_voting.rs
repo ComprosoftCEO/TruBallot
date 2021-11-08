@@ -9,9 +9,8 @@ use uuid_b64::UuidB64 as Uuid;
 use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
-use crate::models::{Candidate, Election, ElectionStatus, Question};
+use crate::models::{Election, ElectionStatus, Question};
 use crate::notifications::{notify_results_published, notify_voting_closed};
-use crate::protocol::count_ballot_votes;
 use crate::utils::ConvertBigInt;
 use crate::Collector;
 
@@ -64,62 +63,24 @@ pub async fn close_voting(
 
   let jwt_encoding_key = jwt_key.get_encoding_key();
   let modulus = election.prime.to_bigint() - 1;
-  let num_voters = election.count_registrations(&conn)?;
 
   // Cache all of the updates
-  let mut all_candidates = Vec::new();
   for question in questions.iter_mut() {
-    // Sum the ballots for each question
-    let (forward_ballots, reverse_ballots) = question.get_ballots_sum(&modulus, &conn)?;
-
-    // Cancel out any users who didn't vote
+    // Get cancelation shares for users who didn't vote
     let no_vote = question.get_user_ids_without_vote(&conn)?;
     let (forward_cancelation_shares, reverse_cancelation_shares) =
-      get_cancelation_shares(&question, no_vote.clone(), &modulus, &jwt_encoding_key).await?;
-
-    // Count the number of votes for each candidates
-    //   (This process tests to make sure the voting vector is valid)
-    let num_candidates = question.count_candidates(&conn)?;
-    let num_votes = count_ballot_votes(
-      &forward_ballots,
-      &reverse_ballots,
-      num_candidates,
-      num_voters,
-      no_vote.len(),
-    );
+      get_cancelation_shares(&question, no_vote, &modulus, &jwt_encoding_key).await?;
 
     // Update the values in the database model
     //  Don't save yet, we will perform a massive transaction at the end
-    question.final_forward_ballots =
-      BigInt::mod_add(&forward_ballots, &forward_cancelation_shares, &modulus).to_bigdecimal();
-    question.final_reverse_ballots =
-      BigInt::mod_add(&reverse_ballots, &reverse_cancelation_shares, &modulus).to_bigdecimal();
-    question.ballots_valid = num_votes.is_some();
-
-    question.users_without_vote = no_vote;
     question.forward_cancelation_shares = forward_cancelation_shares.to_bigdecimal();
     question.reverse_cancelation_shares = reverse_cancelation_shares.to_bigdecimal();
-
-    // Mark the candidates for update if the voting vector is valid
-    //  Don't save yet, we will perform a massive transaction at the end
-    if let Some(num_votes) = num_votes {
-      let mut candidates: Vec<Candidate> = question.get_candidates(&conn)?;
-      for candidate in candidates.iter_mut() {
-        candidate.num_votes = Some(num_votes[candidate.candidate_number as usize]);
-      }
-
-      all_candidates.append(&mut candidates);
-    }
   }
 
   // Perform a massive database transaction to update all questions at once
   election = conn.get().transaction::<_, ServiceError, _>(|| {
     for question in questions {
       question.update(&conn)?;
-    }
-
-    for candidate in all_candidates {
-      candidate.update(&conn)?;
     }
 
     election.status = ElectionStatus::Finished;
@@ -160,7 +121,7 @@ async fn get_cancelation_shares(
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
     .finish()
-    .post(Collector::One.api_url(&url)?)
+    .get(Collector::One.api_url(&url)?)
     .send_json(&cancelation_shares_data);
 
   let c1_shares: CancelationShares = ClientRequestError::handle(c1_shares_request)
@@ -174,7 +135,7 @@ async fn get_cancelation_shares(
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
     .finish()
-    .post(Collector::Two.api_url(&url)?)
+    .get(Collector::Two.api_url(&url)?)
     .send_json(&cancelation_shares_data);
 
   let c2_shares: CancelationShares = ClientRequestError::handle(c2_shares_request)

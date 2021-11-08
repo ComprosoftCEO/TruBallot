@@ -14,7 +14,6 @@ pub struct Candidate {
   pub question_id: Uuid,
   pub candidate: String,
   pub candidate_number: i64,
-  pub num_votes: Option<i64>,
 }
 
 impl Candidate {
@@ -28,7 +27,6 @@ impl Candidate {
       question_id,
       candidate: candidate.into(),
       candidate_number,
-      num_votes: None,
     }
   }
 }

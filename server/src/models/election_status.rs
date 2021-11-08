@@ -42,4 +42,17 @@ impl ElectionStatus {
       ElectionStatus::Finished => true,
     }
   }
+
+  /// Test if we are allowed to view the results
+  ///   (Even if the election isn't 100% finished yet)
+  pub fn can_view_results(&self) -> bool {
+    match self {
+      ElectionStatus::Draft => false,
+      ElectionStatus::Registration => false,
+      ElectionStatus::InitFailed => false,
+      ElectionStatus::Voting => true,
+      ElectionStatus::CollectionFailed => true,
+      ElectionStatus::Finished => true,
+    }
+  }
 }

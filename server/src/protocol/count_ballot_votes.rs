@@ -34,7 +34,7 @@ pub fn count_ballot_votes(
   };
 
   // Step 3: Make sure the number of voted bits matches the users who voted
-  if voted + no_vote != total_bits || no_vote != no_vote_count {
+  if voted + no_vote != (num_voters as usize) || no_vote != no_vote_count {
     return None;
   }
 

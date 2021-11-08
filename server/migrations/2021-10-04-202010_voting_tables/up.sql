@@ -23,12 +23,8 @@ CREATE TABLE questions (
   question_number BIGINT NOT NULL CHECK (question_number >= 0),
   UNIQUE (election_id, question_number),
 
-  -- Computed values after electiton has ended
-  final_forward_ballots NUMERIC NOT NULL,
-  final_reverse_ballots NUMERIC NOT NULL,
-  ballots_valid BOOLEAN NOT NULL DEFAULT false,
-
-  users_without_vote UUID[] NOT NULL,
+  -- Store these values from the collectors after the election has ended
+  --   Set to 0 by default before then
   forward_cancelation_shares NUMERIC NOT NULL,
   reverse_cancelation_shares NUMERIC NOT NULL
 );
@@ -40,10 +36,7 @@ CREATE TABLE candidates (
   question_id UUID NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
   candidate VARCHAR(255) NOT NULL,
   candidate_number BIGINT NOT NULL CHECK (candidate_number >= 0),
-  UNIQUE (question_id, candidate_number),
-
-  -- Cached values after election has ended
-  num_votes BIGINT NULL DEFAULT NULL
+  UNIQUE (question_id, candidate_number)
 );
 
 

@@ -29,7 +29,7 @@ pub async fn get_election_parameters(
     }
   }
 
-  // Election must have already closed voting
+  // Election parameters must be properly initialized
   if !election.status.is_initialized() {
     return Err(ServiceError::ElectionNotInitialized {
       election_id: election.id,
