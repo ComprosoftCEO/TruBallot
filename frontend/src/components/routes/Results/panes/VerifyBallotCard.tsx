@@ -5,18 +5,23 @@ import { nestedSelectorHook } from 'redux/helpers';
 import { clearVerifyResult, verifyBallot } from './panesActions';
 
 const useSelector = nestedSelectorHook('results');
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 export interface VerifyBallotCardProps {
   electionId: string;
   questionIndex: number;
   ballot: UserBallotResult;
   ballotIndex: number;
+  currentUserId: string;
 }
 
-export const VerifyBallotCard = ({ electionId, questionIndex, ballot, ballotIndex }: VerifyBallotCardProps) => {
+export const VerifyBallotCard = ({
+  electionId,
+  questionIndex,
+  ballot,
+  ballotIndex,
+  currentUserId,
+}: VerifyBallotCardProps) => {
   const verifying = useSelector((state) => state.questions[questionIndex].ballots[ballotIndex].verifying);
-  const currentUserId = useGlobalsSelector((state) => state.userId);
 
   const extra: JSX.Element = (() => {
     if (verifying.loading) {

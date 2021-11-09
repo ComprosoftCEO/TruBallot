@@ -1,7 +1,7 @@
 /**
  * State used to view the election results
  */
-import { APIResult, apiLoading } from 'api';
+import { APIResult, apiLoading, APIOption, apiSome } from 'api';
 import {
   CollectorElectionParameters,
   ElectionParameters,
@@ -23,6 +23,7 @@ export interface ResultsState {
   currentQuestionIndex: number;
   generator: bigint;
   prime: bigint;
+  verifySum: APIOption<[bigint, bigint] | null>;
 
   // Only if registered in the election
   encryptedLocation: bigint | null;
@@ -63,6 +64,7 @@ export const initialResultsState: ResultsState = {
   currentQuestionIndex: 0,
   generator: BigInt(0),
   prime: BigInt(0),
+  verifySum: apiSome(null),
 
   encryptedLocation: null,
 };

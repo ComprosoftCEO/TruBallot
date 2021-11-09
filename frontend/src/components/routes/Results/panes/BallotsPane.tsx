@@ -5,12 +5,14 @@ import { useTabAnimation } from './panesActions';
 import { VerifyBallotCard } from './VerifyBallotCard';
 
 const useSelector = nestedSelectorHook('results');
+const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const BallotsPane = () => {
   const questionIndex = useSelector((state) => state.currentQuestionIndex);
   const question = useSelector((state) => state.questions[questionIndex]);
 
   const electionId = useElectionId();
+  const currentUserId = useGlobalsSelector((state) => state.userId);
   const tabAnimation = useTabAnimation();
 
   return (
@@ -28,6 +30,7 @@ export const BallotsPane = () => {
                     ballot={ballot}
                     ballotIndex={index}
                     electionId={electionId}
+                    currentUserId={currentUserId}
                   />
                 ))}
               </Card.Group>
@@ -37,7 +40,7 @@ export const BallotsPane = () => {
               <Header textAlign="center">Didn&apos;t Vote:</Header>
               <List bulleted>
                 {question.noVotes.map((user) => (
-                  <List.Item key={user.id}>{user.name}</List.Item>
+                  <List.Item key={user.id}>{user.id === currentUserId ? <u>Me</u> : user.name}</List.Item>
                 ))}
               </List>
             </Grid.Column>

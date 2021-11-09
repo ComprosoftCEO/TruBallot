@@ -1,6 +1,6 @@
 import { SemanticTRANSITIONS, TabProps } from 'semantic-ui-react';
 import exportFromJSON from 'export-from-json';
-import { apiLoading, apiSuccess, axiosApi, resolveResult } from 'api';
+import { apiLoading, apiSome, apiSuccess, axiosApi, resolveResult } from 'api';
 import { VerificationResult, VerifyBallotData } from 'models/verification';
 import { getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { ExtendedBallotsResult } from 'redux/state/results';
@@ -46,6 +46,39 @@ export const toggleShowVote = (questionIndex: number): void => {
 
   mergeState({ questions: newQuestions });
 };
+
+/**
+ * Re-compute the sum of votes
+ */
+export const verifySum = (): void => {
+  mergeState({ verifySum: apiLoading() });
+
+  // Add a bit of delay to make the program "feel" like it is chugging away
+  setTimeout(() => {
+    const { questions, currentQuestionIndex, prime } = getState();
+    const question = questions[currentQuestionIndex];
+    const modulus = BigInt(prime) - BigInt(1);
+
+    const forwardSum =
+      question.ballots.reduce(
+        (sum, ballot) => sum + BigInt(ballot.forwardBallot),
+        BigInt(question.forwardCancelationShares ?? '0'),
+      ) % modulus;
+
+    const reverseSum =
+      question.ballots.reduce(
+        (sum, ballot) => sum + BigInt(ballot.reverseBallot),
+        BigInt(question.reverseCancelationShares ?? '0'),
+      ) % modulus;
+
+    mergeState({ verifySum: apiSome([forwardSum, reverseSum]) });
+  }, 1000);
+};
+
+/**
+ * Hide the modal that shows the re-computed sum
+ */
+export const clearVerifySum = (): void => mergeState({ verifySum: apiSome(null) });
 
 /**
  * Handle ballot verification

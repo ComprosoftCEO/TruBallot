@@ -2,7 +2,8 @@
 import { parseVotingVector } from 'protocol';
 import { nestedSelectorHook } from 'redux/helpers';
 import { Header, Card, Tab, Divider, Button, Transition } from 'semantic-ui-react';
-import { setVectorTab, toggleShowVote, useTabAnimation } from './panesActions';
+import { setVectorTab, toggleShowVote, useTabAnimation, verifySum } from './panesActions';
+import { VerifySumModal } from './VerifySumModal';
 
 const useSelector = nestedSelectorHook('results');
 
@@ -101,18 +102,19 @@ export const VotingVectorPane = () => {
           ]}
         />
 
+        <Divider horizontal />
         {encryptedLocation !== null && (
-          <>
-            <Divider horizontal />
-            <Button
-              primary
-              size="large"
-              icon={showVote ? 'eye slash' : 'eye'}
-              content={showVote ? 'Hide My Vote' : 'Show My Vote'}
-              onClick={() => toggleShowVote(currentIndex)}
-            />
-          </>
+          <Button
+            primary
+            size="large"
+            icon={showVote ? 'eye slash' : 'eye'}
+            content={showVote ? 'Hide My Vote' : 'Show My Vote'}
+            onClick={() => toggleShowVote(currentIndex)}
+          />
         )}
+
+        <Button size="large" icon="check circle outline" content="Verify Sum" onClick={verifySum} />
+        <VerifySumModal />
       </Tab.Pane>
     </Transition>
   );
