@@ -1,3 +1,6 @@
+import { useEffect, useLayoutEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { TabProps } from 'semantic-ui-react';
 import {
   apiLoading,
   APIOption,
@@ -17,11 +20,8 @@ import {
   ElectionStatus,
   PublicElectionDetails,
 } from 'models/election';
-import { useEffect, useLayoutEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { ExtendedQuestionResult } from 'redux/state/results';
-import { TabProps } from 'semantic-ui-react';
 
 const getState = getNestedState('results');
 const mergeState = mergeNestedState('results');

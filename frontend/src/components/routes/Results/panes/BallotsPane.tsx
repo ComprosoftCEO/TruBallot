@@ -1,5 +1,5 @@
-import { nestedSelectorHook } from 'redux/helpers';
 import { Header, Card, Tab, Transition, Grid, List } from 'semantic-ui-react';
+import { nestedSelectorHook } from 'redux/helpers';
 import { useElectionId } from '../resultsActions';
 import { useTabAnimation } from './panesActions';
 import { VerifyBallotCard } from './VerifyBallotCard';

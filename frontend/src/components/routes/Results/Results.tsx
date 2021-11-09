@@ -1,9 +1,13 @@
-import { ErrorOccured } from 'components/errorDialogs';
-import { DashboardMenu, ErrorPortal, Flex, TransitionList } from 'components/shared';
-import { goBack } from 'helpers/goBack';
 import { useLastLocation } from 'react-router-last-location';
-import { nestedSelectorHook } from 'redux/helpers';
 import { Button, Container, Divider, Header, Menu, Tab, Transition } from 'semantic-ui-react';
+import { DashboardMenu, ErrorPortal, Flex, TransitionList } from 'components/shared';
+import { ErrorOccured } from 'components/errorDialogs';
+import { goBack } from 'helpers/goBack';
+import { nestedSelectorHook } from 'redux/helpers';
+import { TallyPane } from './panes/TallyPane';
+import { VotingVectorPane } from './panes/VotingVectorPane';
+import { BallotsPane } from './panes/BallotsPane';
+import { RawValuesPane } from './panes/RawValuesPane';
 import {
   getFatalError,
   nextQuestion,
@@ -16,10 +20,6 @@ import {
   useFetchError,
   useSetResultsTitle,
 } from './resultsActions';
-import { CandidatePane } from './panes/CandidatePane';
-import { VotingVectorPane } from './panes/VotingVectorPane';
-import { BallotsPane } from './panes/BallotsPane';
-import { RawValuesPane } from './panes/RawValuesPane';
 
 const useSelector = nestedSelectorHook('results');
 
@@ -113,10 +113,8 @@ export const Results = () => {
             onTabChange={setCurrentTab}
             panes={[
               {
-                menuItem: currentQuestion.ballotValid && (
-                  <Menu.Item key="candidates" icon="users" content="Candidates" />
-                ),
-                render: () => <CandidatePane />,
+                menuItem: currentQuestion.ballotValid && <Menu.Item key="tally" icon="chart bar" content="Tally" />,
+                render: () => <TallyPane />,
               },
               {
                 menuItem: currentQuestion.forwardBallots !== undefined &&

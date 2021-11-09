@@ -1,12 +1,12 @@
 /* eslint-disable react/no-array-index-key */
 import pluralize from 'pluralize';
-import { nestedSelectorHook } from 'redux/helpers';
 import { Header, Card, Tab, Label, Popup, Transition } from 'semantic-ui-react';
+import { nestedSelectorHook } from 'redux/helpers';
 import { useTabAnimation } from './panesActions';
 
 const useSelector = nestedSelectorHook('results');
 
-export const CandidatePane = () => {
+export const TallyPane = () => {
   const currentIndex = useSelector((state) => state.currentQuestionIndex);
   const question = useSelector((state) => state.questions[currentIndex]);
   const tabAnimation = useTabAnimation();
@@ -17,7 +17,7 @@ export const CandidatePane = () => {
   return (
     <Transition animation={tabAnimation} duration={300} transitionOnMount>
       <Tab.Pane>
-        <Header>Candidates:</Header>
+        <Header>Final Tally:</Header>
         <Card.Group stackable itemsPerRow="3" centered={question.candidates.length < 3}>
           {question.candidates.map((candidate, i) => (
             <Card key={`${i}-${candidate}`} raised={candidate.numVotes === winningVotes}>
