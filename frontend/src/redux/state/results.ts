@@ -21,11 +21,8 @@ export interface ResultsState {
 
   questions: ExtendedQuestionResult[];
   currentQuestionIndex: number;
+  generator: bigint;
   prime: bigint;
-
-  currentTab: number;
-  prevTab: number;
-  vectorTab: number;
 
   // Only if registered in the election
   encryptedLocation: bigint | null;
@@ -36,6 +33,11 @@ export interface ExtendedQuestionResult extends QuestionResult {
   name: string;
   candidates: ExtendedCandidatesResult[];
   ballots: ExtendedBallotsResult[];
+
+  currentTab: number;
+  prevTab: number;
+  vectorTab: number;
+  rawTab: number;
 
   showVote: boolean;
 }
@@ -59,11 +61,8 @@ export const initialResultsState: ResultsState = {
 
   questions: [],
   currentQuestionIndex: 0,
+  generator: BigInt(0),
   prime: BigInt(0),
-
-  currentTab: 0,
-  prevTab: 0,
-  vectorTab: 0,
 
   encryptedLocation: null,
 };

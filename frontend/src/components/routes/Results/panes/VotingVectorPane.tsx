@@ -1,11 +1,10 @@
 /* eslint-disable react/no-array-index-key */
 import { parseVotingVector } from 'protocol';
-import { mergeNestedState, nestedSelectorHook } from 'redux/helpers';
+import { nestedSelectorHook } from 'redux/helpers';
 import { Header, Card, Tab, Divider, Button, Transition } from 'semantic-ui-react';
-import { toggleShowVote, useTabAnimation } from './panesActions';
+import { setVectorTab, toggleShowVote, useTabAnimation } from './panesActions';
 
 const useSelector = nestedSelectorHook('results');
-const mergeState = mergeNestedState('results');
 
 const VOTE_STYLE = { outline: '5px solid red' };
 
@@ -33,14 +32,14 @@ export const VotingVectorPane = () => {
   );
 
   const tabAnimation = useTabAnimation();
-  const vectorTab = useSelector((state) => state.vectorTab);
+  const vectorTab = useSelector((state) => state.questions[currentIndex].vectorTab);
 
   return (
     <Transition animation={tabAnimation} duration={300} transitionOnMount>
       <Tab.Pane>
         <Tab
           activeIndex={vectorTab}
-          onTabChange={(event, { activeIndex }) => mergeState({ vectorTab: Number(activeIndex) })}
+          onTabChange={setVectorTab}
           menu={{ secondary: true, pointing: true }}
           panes={[
             {
@@ -61,8 +60,8 @@ export const VotingVectorPane = () => {
                           <Card.Header
                             content={
                               typeof candidatePicked === 'number'
-                                ? `${numRegistered - (i + 1)}. ${question.candidates[candidatePicked].name}`
-                                : `${numRegistered - (i + 1)}. {${candidatePicked === null ? 'Empty' : 'Invalid'}}`
+                                ? question.candidates[candidatePicked].name
+                                : `{${candidatePicked === null ? 'Empty' : 'Invalid'}}`
                             }
                           />
                         </Card.Content>
@@ -87,8 +86,8 @@ export const VotingVectorPane = () => {
                           <Card.Header
                             content={
                               typeof candidatePicked === 'number'
-                                ? `${i}. ${question.candidates[candidatePicked].name}`
-                                : `${i}. <${candidatePicked === null ? 'Empty' : 'Invalid'}>`
+                                ? question.candidates[candidatePicked].name
+                                : `{${candidatePicked === null ? 'Empty' : 'Invalid'}}`
                             }
                           />
                         </Card.Content>

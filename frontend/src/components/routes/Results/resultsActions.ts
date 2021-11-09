@@ -51,10 +51,6 @@ export async function tryReFetchData(electionId: string): Promise<void> {
     }
   }
 
-  // Set the default tab based on the election status
-  const tab = electionDetails.data.status !== ElectionStatus.Finished ? 2 : 0;
-  mergeState({ currentTab: tab, prevTab: tab });
-
   // Try to fetch the election parameters if they failed to fetch
   let { electionParams } = getState();
   if (electionParams.loading || !electionParams.success) {
@@ -81,6 +77,7 @@ export async function tryReFetchData(electionId: string): Promise<void> {
 
   // Build out the list of questions
   const allQuestionResults = electionResults.data.questionResults;
+  const tab = electionDetails.data.status !== ElectionStatus.Finished ? 2 : 0;
   const questions: ExtendedQuestionResult[] = electionDetails.data.questions.map((question) => {
     const questionResults = allQuestionResults[question.id];
 
@@ -94,9 +91,13 @@ export async function tryReFetchData(electionId: string): Promise<void> {
       })),
       ballots: questionResults.userBallots.map((ballot) => ({ ...ballot, verifying: apiSuccess(undefined) })),
       showVote: false,
+      currentTab: tab,
+      prevTab: tab,
+      vectorTab: 0,
+      rawTab: 0,
     };
   });
-  mergeState({ questions, prime: BigInt(electionParams.data.prime) });
+  mergeState({ questions, generator: BigInt(electionParams.data.generator), prime: BigInt(electionParams.data.prime) });
 
   // Try to fetch encrypted location from collector 1 if it failed to fetch
   let { c1Params } = getState();
@@ -241,7 +242,13 @@ export const useSetResultsTitle = (electionDetails: APIResult<PublicElectionDeta
  * Set the new tab for the main component
  */
 export const setCurrentTab = (event: React.MouseEvent<HTMLDivElement>, { activeIndex }: TabProps): void =>
-  mergeState((state) => ({ prevTab: state.currentTab, currentTab: Number(activeIndex) }));
+  mergeState((state) => {
+    const newQuestions = [...state.questions];
+    newQuestions[state.currentQuestionIndex].prevTab = newQuestions[state.currentQuestionIndex].currentTab;
+    newQuestions[state.currentQuestionIndex].currentTab = Number(activeIndex);
+
+    return { questions: newQuestions };
+  });
 
 /// Move to the next question in the results
 export const nextQuestion = (): void =>

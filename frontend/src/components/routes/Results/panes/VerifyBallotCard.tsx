@@ -1,10 +1,11 @@
-import { Button, Card, Message } from 'semantic-ui-react';
+import { Button, Card, Icon, Message } from 'semantic-ui-react';
 import { getErrorInformation } from 'api';
 import { UserBallotResult } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
 import { clearVerifyResult, verifyBallot } from './panesActions';
 
 const useSelector = nestedSelectorHook('results');
+const useGlobalsSelector = nestedSelectorHook('globals');
 
 export interface VerifyBallotCardProps {
   electionId: string;
@@ -15,6 +16,7 @@ export interface VerifyBallotCardProps {
 
 export const VerifyBallotCard = ({ electionId, questionIndex, ballot, ballotIndex }: VerifyBallotCardProps) => {
   const verifying = useSelector((state) => state.questions[questionIndex].ballots[ballotIndex].verifying);
+  const currentUserId = useGlobalsSelector((state) => state.userId);
 
   const extra: JSX.Element = (() => {
     if (verifying.loading) {
@@ -58,5 +60,19 @@ export const VerifyBallotCard = ({ electionId, questionIndex, ballot, ballotInde
     );
   })();
 
-  return <Card header={ballot.name} extra={extra} />;
+  return (
+    <Card
+      header={
+        ballot.id === currentUserId ? (
+          <Card.Header>
+            <Icon name="user" />
+            <u>Me</u>
+          </Card.Header>
+        ) : (
+          ballot.name
+        )
+      }
+      extra={extra}
+    />
+  );
 };

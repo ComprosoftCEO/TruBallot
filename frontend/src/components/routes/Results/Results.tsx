@@ -19,6 +19,7 @@ import {
 import { CandidatePane } from './panes/CandidatePane';
 import { VotingVectorPane } from './panes/VotingVectorPane';
 import { BallotsPane } from './panes/BallotsPane';
+import { RawValuesPane } from './panes/RawValuesPane';
 
 const useSelector = nestedSelectorHook('results');
 
@@ -37,7 +38,7 @@ export const Results = () => {
   const numQuestions = useSelector((state) => state.questions.length);
   const questionIndex = useSelector((state) => state.currentQuestionIndex);
   const currentQuestion = useSelector((state) => state.questions[questionIndex]);
-  const currentTab = useSelector((state) => state.currentTab);
+  const currentTab = useSelector((state) => state.questions[questionIndex]?.currentTab ?? 0);
   const lastLocation = useLastLocation();
 
   // Test for a fatal error when or after loading the resource
@@ -55,7 +56,7 @@ export const Results = () => {
           <Container textAlign="center" style={{ marginTop: '8em' }}>
             <Header size="large">Loading Election Results...</Header>
 
-            <Divider />
+            <Divider section />
 
             <Button
               icon="arrow left"
@@ -81,7 +82,7 @@ export const Results = () => {
   return (
     <>
       <DashboardMenu />
-      <Container textAlign="center" style={{ marginTop: '8em' }}>
+      <Container textAlign="center" style={{ marginTop: '8em', paddingBottom: 50 }}>
         <TransitionList animation="fade down" duration={500} totalDuration={500}>
           <div>
             <Flex justify="space-between" alignItems="center">
@@ -130,7 +131,7 @@ export const Results = () => {
               },
               {
                 menuItem: { key: 'raw', icon: 'table', content: 'Raw Values' },
-                render: () => <Tab.Pane>Tab 1 Content</Tab.Pane>,
+                render: () => <RawValuesPane />,
               },
             ]}
           />
