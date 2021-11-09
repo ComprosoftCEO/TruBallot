@@ -20,6 +20,7 @@ import { AccessCode } from './routes/AccessCode';
 import { Vote } from './routes/Vote';
 import { Results } from './routes/Results';
 import { Preferences } from './routes/Preferences';
+import { About } from './routes/About';
 
 interface RouterEntry extends RouteProps {
   redirect?: string;
@@ -118,6 +119,9 @@ const LOGGED_IN_ENTRIES: RouterEntry[] = [
 
   // User preferences
   { path: '/preferences', exact: true, component: Preferences },
+
+  // About page
+  { path: '/about', exact: true, component: About },
 ];
 
 /// Routes that always appear

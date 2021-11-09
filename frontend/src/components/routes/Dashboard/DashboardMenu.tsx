@@ -128,6 +128,7 @@ export const DashboardMenu = () => {
             <Dropdown.Menu>
               <Dropdown.Header content="Account" />
               <Dropdown.Item icon="cog" text="Preferences" onClick={() => history.push('/preferences')} />
+              <Dropdown.Item icon="info" text="About" onClick={() => history.push('/about')} />
 
               <Dropdown.Divider />
 
