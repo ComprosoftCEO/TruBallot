@@ -3,6 +3,7 @@ import zxcvbn from 'zxcvbn';
 import { MINIMUM_PASSWORD_COMPLEXITY, SITE_SPECIFIC_WORDS } from 'helpers/passwordComplexity';
 import { useTitle } from 'helpers/title';
 import { nestedSelectorHook } from 'redux/helpers';
+import { useUserEmail, useUserName } from 'redux/auth';
 import { useLastLocation } from 'react-router-last-location';
 import { goBack } from 'helpers/goBack';
 import { Button, Container, Divider, Form, Grid, Header, Message, Popup, Segment, Transition } from 'semantic-ui-react';
@@ -25,7 +26,6 @@ import {
 } from './preferencesActions';
 
 const useSelector = nestedSelectorHook('preferences');
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const Preferences = () => {
   useClearState();
@@ -34,8 +34,8 @@ export const Preferences = () => {
   const [hover, setHover] = useState(false);
 
   const newName = useSelector((state) => state.newName);
-  const name = useGlobalsSelector((state) => state.name);
-  const email = useGlobalsSelector((state) => state.email);
+  const name = useUserName();
+  const email = useUserEmail();
   const updatingPreferences = useSelector((state) => state.updatingPreferences);
 
   const currentPassword = useSelector((state) => state.currentPassword);

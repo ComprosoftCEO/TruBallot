@@ -10,14 +10,12 @@ import {
   PublishElectionResult,
 } from 'models/election';
 import { ManageElectionState } from 'redux/state';
-import { Permission } from 'models/auth';
 
 const getState = getNestedState('manageElection');
 const useSelector = nestedSelectorHook('manageElection');
 const mergeState = mergeNestedState('manageElection');
 
 const getGlobalsState = getNestedState('globals');
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 /// Need at least 4 users registered before voting can begin
 export const MIN_REGISTERED_FOR_VOTING = 4;
@@ -37,12 +35,6 @@ export const useIsLoading = (): boolean =>
       state.openingVoting.loading ||
       state.closingVoting.loading,
   );
-
-/// Get the current user ID
-export const useUserId = (): string => useGlobalsSelector((state) => state.userId);
-
-// Get permissions
-export const usePermissions = (): Set<Permission> => useGlobalsSelector((state) => state.permissions);
 
 /**
  * Get the current request that errored.

@@ -4,16 +4,9 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { usePermissions, useUserId } from 'redux/auth';
 import { Permission } from 'models/auth';
-import {
-  clearRequests,
-  deleteElection,
-  publishElection,
-  useElectionError,
-  useIsLoading,
-  usePermissions,
-  useUserId,
-} from './controlsActions';
+import { clearRequests, deleteElection, publishElection, useElectionError, useIsLoading } from './controlsActions';
 
 export interface DraftControlsProps {
   election: PublicElectionDetails;

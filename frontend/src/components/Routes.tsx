@@ -188,7 +188,7 @@ export const Routes = () => {
   useLayoutEffect(() => {
     const refreshToken = getRefreshToken();
     if (refreshToken !== undefined) {
-      logInStore(refreshToken);
+      logInStore(refreshToken, false);
     } else {
       logOutStore();
     }

@@ -5,15 +5,9 @@ import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
 import { Permission } from 'models/auth';
+import { usePermissions, useUserId } from 'redux/auth';
 import { FinishingModal } from './FinishingModal';
-import {
-  clearRequests,
-  useElectionError,
-  useIsLoading,
-  useUserId,
-  closeVoting,
-  usePermissions,
-} from './controlsActions';
+import { clearRequests, useElectionError, useIsLoading, closeVoting } from './controlsActions';
 
 export interface CollectionFailedControlsProps {
   election: PublicElectionDetails;

@@ -6,17 +6,16 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { HasVotedStatus, PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { usePermissions, useUserId } from 'redux/auth';
 import { Permission } from 'models/auth';
 import { FinishingModal } from './FinishingModal';
 import {
   clearRequests,
   useElectionError,
   useIsLoading,
-  useUserId,
   MIN_VOTES_FOR_CLOSING,
   validateNumberOfVotes,
   closeVoting,
-  usePermissions,
 } from './controlsActions';
 
 export interface VotingControlsProps {

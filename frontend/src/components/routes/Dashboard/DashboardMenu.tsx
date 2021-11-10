@@ -1,15 +1,13 @@
 import { Container, Menu, Image, Dropdown } from 'semantic-ui-react';
 import { useHistory } from 'react-router-dom';
-import { nestedSelectorHook } from 'redux/helpers';
+import { usePermissions, useUserName } from 'redux/auth';
 import { Permission } from 'models/auth';
 import { logOut } from './dashboardActions';
 
-const useGlobalsSelector = nestedSelectorHook('globals');
-
 export const DashboardMenu = () => {
   const history = useHistory();
-  const name = useGlobalsSelector((state) => state.name);
-  const permissions = useGlobalsSelector((state) => state.permissions);
+  const name = useUserName();
+  const permissions = usePermissions();
 
   return (
     <Menu fixed="top">

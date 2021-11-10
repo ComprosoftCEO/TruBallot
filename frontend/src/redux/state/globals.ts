@@ -11,6 +11,7 @@ export interface GlobalsState {
   name: string;
   email: string;
   permissions: Set<Permission>;
+  accessToken: string | null;
 
   globalError: Error | null;
   redirect: string | null;
@@ -23,6 +24,7 @@ export const initialGlobalsState: GlobalsState = {
   name: '',
   email: '',
   permissions: new Set(),
+  accessToken: null,
 
   globalError: null,
   redirect: null,

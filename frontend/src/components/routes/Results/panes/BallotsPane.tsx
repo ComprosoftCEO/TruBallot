@@ -1,18 +1,18 @@
 import { Header, Card, Tab, Transition, Grid, List } from 'semantic-ui-react';
 import { nestedSelectorHook } from 'redux/helpers';
+import { useUserId } from 'redux/auth';
 import { useElectionId } from '../resultsActions';
 import { useTabAnimation } from './panesActions';
 import { VerifyBallotCard } from './VerifyBallotCard';
 
 const useSelector = nestedSelectorHook('results');
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const BallotsPane = () => {
   const questionIndex = useSelector((state) => state.currentQuestionIndex);
   const question = useSelector((state) => state.questions[questionIndex]);
 
   const electionId = useElectionId();
-  const currentUserId = useGlobalsSelector((state) => state.userId);
+  const currentUserId = useUserId();
   const tabAnimation = useTabAnimation();
 
   return (

@@ -1,8 +1,10 @@
+import { getAccessToken } from 'axios-jwt';
 import jwt from 'jsonwebtoken';
-import { ClientToken } from 'models/auth';
-import { mergeNestedState } from './helpers';
+import { ClientToken, Permission } from 'models/auth';
+import { mergeNestedState, nestedSelectorHook } from './helpers';
 
 const mergeState = mergeNestedState('globals');
+const useSelector = nestedSelectorHook('globals');
 
 /**
  * Mark the store as being logged in from the access token
@@ -10,16 +12,27 @@ const mergeState = mergeNestedState('globals');
  * Note: We are also allowed to pass a refresh token, since it
  *   contains the SAME FIELDS as the access token
  *
- * @param accessToken Access token (or refresh token) JWT string
+ * @param token Access token (or refresh token) JWT string
  */
-export const logInStore = (accessToken: string): void => {
-  const clientToken: ClientToken = jwt.decode(accessToken) as ClientToken;
+export const logInStore = (token: string, isAccessToken = true): void => {
+  // If we are passing in the refresh token, try to load the access token
+  //  If the access token is INDEED null, then set it to null
+  let accessToken = isAccessToken ? token : null;
+  if (!isAccessToken) {
+    const currentToken = getAccessToken();
+    if (currentToken !== undefined) {
+      accessToken = currentToken;
+    }
+  }
+
+  const clientToken: ClientToken = jwt.decode(token) as ClientToken;
   mergeState({
     isLoggedIn: true,
     userId: clientToken.sub,
     name: clientToken.name,
     email: clientToken.email,
     permissions: new Set(clientToken.permissions),
+    accessToken,
   });
 };
 
@@ -30,8 +43,23 @@ export const logInStore = (accessToken: string): void => {
  */
 export const logOutStore = (redirect?: string | null): void => {
   if (redirect !== undefined) {
-    mergeState({ isLoggedIn: false, redirect });
+    mergeState({ isLoggedIn: false, accessToken: null, redirect });
   } else {
-    mergeState({ isLoggedIn: false });
+    mergeState({ isLoggedIn: false, accessToken: null });
   }
 };
+
+/// Hook to get the user ID
+export const useUserId = (): string => useSelector((state) => state.userId);
+
+/// Hook to get the current user name
+export const useUserName = (): string => useSelector((state) => state.name);
+
+/// Hook to get the current user email
+export const useUserEmail = (): string => useSelector((state) => state.email);
+
+/// Hook to get user permissions
+export const usePermissions = (): Set<Permission> => useSelector((state) => state.permissions);
+
+/// Hook to get the current access token
+export const useAccessToken = (): string | null => useSelector((state) => state.accessToken);

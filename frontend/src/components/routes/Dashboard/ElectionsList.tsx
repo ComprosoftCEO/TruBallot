@@ -2,7 +2,7 @@ import { Container, Header, Divider, Icon, Card, Transition } from 'semantic-ui-
 import { ElectionStatusLabel, TransitionList, ErrorPortal } from 'components/shared';
 import { useHistory } from 'react-router-dom';
 import { getErrorInformation } from 'api';
-import { nestedSelectorHook } from 'redux/helpers';
+import { useUserId } from 'redux/auth';
 import {
   DashboardFilter,
   getCardMetaText,
@@ -15,8 +15,6 @@ import {
 import { CardPopup } from './CardPopup';
 import styles from './dashboard.module.scss';
 
-const useGlobalsSelector = nestedSelectorHook('globals');
-
 export interface ElectionListProps {
   filter: DashboardFilter;
 }
@@ -24,7 +22,7 @@ export interface ElectionListProps {
 export const ElectionsList = ({ filter }: ElectionListProps) => {
   useFetchAllElections();
 
-  const userId = useGlobalsSelector((state) => state.userId);
+  const userId = useUserId();
   const filteredElections = useFilteredElections(filter);
   const history = useHistory();
 

@@ -1,10 +1,10 @@
 import { Tab, Transition, Table, Divider, Button, Icon } from 'semantic-ui-react';
 import Latex from 'react-latex';
 import { nestedSelectorHook } from 'redux/helpers';
+import { useUserId } from 'redux/auth';
 import { exportResultsJSON, setRawTab, useTabAnimation } from './panesActions';
 
 const useSelector = nestedSelectorHook('results');
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const RawValuesPane = () => {
   const questionIndex = useSelector((state) => state.currentQuestionIndex);
@@ -14,7 +14,7 @@ export const RawValuesPane = () => {
   const prime = useSelector((state) => state.prime);
 
   const rawTab = useSelector((state) => state.questions[questionIndex].rawTab);
-  const currentUserId = useGlobalsSelector((state) => state.userId);
+  const currentUserId = useUserId();
   const tabAnimation = useTabAnimation();
 
   return (

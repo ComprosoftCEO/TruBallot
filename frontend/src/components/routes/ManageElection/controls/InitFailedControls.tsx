@@ -3,15 +3,9 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { usePermissions, useUserId } from 'redux/auth';
 import { Permission } from 'models/auth';
-import {
-  clearRequests,
-  openVoting,
-  useElectionError,
-  useIsLoading,
-  usePermissions,
-  useUserId,
-} from './controlsActions';
+import { clearRequests, openVoting, useElectionError, useIsLoading } from './controlsActions';
 import { GeneratingModal } from './GeneratingModal';
 
 export interface InitFailedControlsProps {

@@ -1,17 +1,15 @@
 import { useHistory } from 'react-router-dom';
 import { Card, Container, Divider, Header, Icon, Image, Segment } from 'semantic-ui-react';
 import { TransitionList } from 'components/shared';
-import { nestedSelectorHook } from 'redux/helpers';
 import { Permission } from 'models/auth';
+import { usePermissions, useUserName } from 'redux/auth';
 import styles from './dashboard.module.scss';
-
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const DashboardHome = () => {
   const history = useHistory();
 
-  const name = useGlobalsSelector((state) => state.name);
-  const permissions = useGlobalsSelector((state) => state.permissions);
+  const name = useUserName();
+  const permissions = usePermissions();
 
   return (
     <Container style={{ marginTop: '7em' }} textAlign="center">

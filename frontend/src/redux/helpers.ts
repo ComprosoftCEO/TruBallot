@@ -22,11 +22,11 @@ export type PropertyFunction<Props, State> = (input: PropertyOrActionSource<Prop
  * @param nestedState Key of the nested state
  * @returns Hook function
  */
-export const nestedSelectorHook =
-  <NestedState extends keyof RootState>(nestedState: NestedState) =>
-  <T>(selector: (input: RootState[NestedState]) => T, equalityFn?: (left: T, right: T) => boolean): T =>
+export function nestedSelectorHook<NestedState extends keyof RootState>(nestedState: NestedState) {
+  return <T>(selector: (input: RootState[NestedState]) => T, equalityFn?: (left: T, right: T) => boolean): T =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useSelector<RootState, T>((state) => selector(state[nestedState]), equalityFn);
+}
 
 /**
  * Higher-order function that serves as a "getState()" method for a nested state
@@ -34,10 +34,9 @@ export const nestedSelectorHook =
  * @param nestedState Key of the nested state
  * @returns Nested state
  */
-export const getNestedState =
-  <NestedState extends keyof RootState>(nestedState: NestedState) =>
-  (): RootState[NestedState] =>
-    store.getState()[nestedState];
+export function getNestedState<NestedState extends keyof RootState>(nestedState: NestedState) {
+  return (): RootState[NestedState] => store.getState()[nestedState];
+}
 
 /**
  * Higher-order function to merge two states together
@@ -163,10 +162,9 @@ export function setNestedState<NestedState extends keyof RootState>(
  * @param newValue New value for the property
  * @returns Higher-order function
  */
-export const setNestedProperty =
-  <NestedState extends keyof RootState>(nestedState: NestedState) =>
-  (property: keyof RootState[NestedState]) =>
-    setProperty(nestedState, property);
+export function setNestedProperty<NestedState extends keyof RootState>(nestedState: NestedState) {
+  return (property: keyof RootState[NestedState]) => setProperty(nestedState, property);
+}
 
 function setProperty<NestedState extends keyof RootState, Property extends keyof RootState[NestedState]>(
   nestedState: NestedState,

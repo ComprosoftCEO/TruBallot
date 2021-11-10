@@ -10,7 +10,7 @@ export function isDev(): boolean {
 // API server URLs
 export const API_BASE_URL: string = process.env.REACT_APP_API_BASE_URL ?? '/api/v1';
 export const NOTIFICATIONS_BASE_URL: string =
-  process.env.REACT_APP_NOTIFICATIONS_BASE_URL ?? 'ws://localhost:3005/api/v1/notifications';
+  process.env.REACT_APP_NOTIFICATIONS_BASE_URL ?? 'ws://localhost:3010/api/v1/notifications';
 
 // reCAPTCHA site key must be set
 //   https://www.google.com/recaptcha/about/

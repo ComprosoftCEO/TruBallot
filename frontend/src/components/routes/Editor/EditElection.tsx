@@ -7,6 +7,7 @@ import { getErrorInformation } from 'api';
 import { goBack } from 'helpers/goBack';
 import { DashboardMenu, ErrorPortal } from 'components/shared';
 import { ErrorOccured } from 'components/errorDialogs';
+import { useUserId } from 'redux/auth';
 import { Editor } from './Editor';
 import {
   useClearState,
@@ -21,7 +22,6 @@ import {
 } from './editorActions';
 
 const useSelector = nestedSelectorHook('editor');
-const useGlobalsSelector = nestedSelectorHook('globals');
 
 export const EditElection = () => {
   useTitle('Edit Election');
@@ -40,7 +40,7 @@ export const EditElection = () => {
   const lastLocation = useLastLocation();
 
   // Test for a fatal error when or after loading the resource
-  const userId = useGlobalsSelector((state) => state.userId);
+  const userId = useUserId();
   const fatalError = getFatalError(election, userId);
   if (fatalError !== undefined) {
     return <ErrorOccured header="Error: Cannot edit election!" message={fatalError} />;

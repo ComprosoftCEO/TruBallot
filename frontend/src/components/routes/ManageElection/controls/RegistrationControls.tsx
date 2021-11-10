@@ -5,6 +5,7 @@ import { getErrorInformation } from 'api';
 import { Flex } from 'components/shared';
 import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
+import { usePermissions, useUserId } from 'redux/auth';
 import { Permission } from 'models/auth';
 import {
   clearRequests,
@@ -13,9 +14,7 @@ import {
   unregister,
   useElectionError,
   useIsLoading,
-  useUserId,
   MIN_REGISTERED_FOR_VOTING,
-  usePermissions,
 } from './controlsActions';
 import { GeneratingModal } from './GeneratingModal';
 
