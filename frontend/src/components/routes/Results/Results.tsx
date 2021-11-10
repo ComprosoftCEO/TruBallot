@@ -113,7 +113,10 @@ export const Results = () => {
             onTabChange={setCurrentTab}
             panes={[
               {
-                menuItem: currentQuestion.ballotValid && <Menu.Item key="tally" icon="chart bar" content="Tally" />,
+                menuItem: currentQuestion.forwardBallots !== undefined &&
+                  currentQuestion.reverseBallots !== undefined && (
+                    <Menu.Item key="tally" icon="chart bar" content="Tally" />
+                  ),
                 render: () => <TallyPane />,
               },
               {

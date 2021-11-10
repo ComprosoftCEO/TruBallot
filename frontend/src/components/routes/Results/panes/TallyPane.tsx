@@ -17,13 +17,18 @@ export const TallyPane = () => {
   return (
     <Transition animation={tabAnimation} duration={300} transitionOnMount>
       <Tab.Pane>
-        <Header>Final Tally:</Header>
+        <Header>
+          Final Tally:
+          {!question.ballotValid && <Label color="red" icon="exclamation" content="Invalid!" />}
+        </Header>
         <Card.Group stackable itemsPerRow="3" centered={question.candidates.length < 3}>
           {question.candidates.map((candidate, i) => (
             <Card key={`${i}-${candidate}`} raised={candidate.numVotes === winningVotes}>
               <Card.Content>
                 <Card.Header content={candidate.name} />
-                <Card.Description content={pluralize('Vote', candidate.numVotes ?? 0, true)} />
+                <Card.Description
+                  content={question.ballotValid ? pluralize('Vote', candidate.numVotes ?? 0, true) : '{Invalid}'}
+                />
 
                 {candidate.numVotes === winningVotes &&
                   (isTied ? (
