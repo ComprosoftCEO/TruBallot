@@ -1,4 +1,5 @@
 use actix_web::error::{JsonPayloadError, PathError, QueryPayloadError, UrlencodedError};
+use actix_web::http::header::ToStrError;
 use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
@@ -17,6 +18,8 @@ pub enum ServiceError {
   QueryStringError(QueryPayloadError),
   JWTError(JWTError),
   JWTExtractorError(AuthenticationError<Bearer>),
+  MissingWebsocketJWT,
+  WebsocketJWTParseError(ToStrError),
   NoNotifyPermission,
   NoSubscribePermission,
   NotificationError(WebsocketError),
@@ -68,6 +71,20 @@ impl ServiceError {
       ),
 
       ServiceError::JWTExtractorError(error) => ErrorResponse::new(
+        StatusCode::UNAUTHORIZED,
+        "Invalid JWT Token".into(),
+        GlobalErrorCode::InvalidJWTToken,
+        format!("{}", error),
+      ),
+
+      ServiceError::MissingWebsocketJWT => ErrorResponse::new(
+        StatusCode::UNAUTHORIZED,
+        "Invalid JWT Token".into(),
+        GlobalErrorCode::InvalidJWTToken,
+        "Missing JWT token in 'Sec-WebSocket-Protocol' header".into(),
+      ),
+
+      ServiceError::WebsocketJWTParseError(error) => ErrorResponse::new(
         StatusCode::UNAUTHORIZED,
         "Invalid JWT Token".into(),
         GlobalErrorCode::InvalidJWTToken,

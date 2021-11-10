@@ -2,20 +2,19 @@
 // List of all events that can occur in the server
 //
 use actix::Message;
-use serde::Serialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
+use serde::{Deserialize, Serialize};
 use uuid_b64::UuidB64 as Uuid;
 
 /// Events not attached to any specific election
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
-#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum GlobalEvents {
   ElectionPublished,
 }
 
 /// Events specific to an election
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
-#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ElectionEvents {
   RegistrationOpened,
   RegistrationCountUpdated,

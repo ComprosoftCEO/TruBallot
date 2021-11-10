@@ -8,6 +8,7 @@ pub mod server_types;
 mod subscription_actor;
 mod websocket_actor;
 
+pub use client_types::WS_PROTOCOL;
 pub use events::*;
 pub use server_types::AllServerMessages;
 pub use subscription_actor::SubscriptionActor;

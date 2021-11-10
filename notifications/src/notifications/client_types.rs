@@ -8,9 +8,18 @@ use uuid_b64::UuidB64 as Uuid;
 
 use crate::notifications::{ElectionEvents, GlobalEvents};
 
-/// =========================================================
-/// Set actor subscriptions - Client sends this to websocket
-/// =========================================================
+/// Websocket protocol to specify for the client
+///
+/// Some browsers (I'm looking at you, Chrome) close the websocket
+///  if we don't return one of the websocket protocols from the list
+///
+/// Since we use the protocol header to send the access token, we
+///  need a valid "protocol" to send back to the web browser.
+pub const WS_PROTOCOL: &str = "wsevt";
+
+/// ==========================================================
+///  Set actor subscriptions - Client sends this to websocket
+/// ==========================================================
 #[derive(Serialize, Deserialize, Message)]
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -67,7 +76,7 @@ pub enum WebsocketResponse {
 //      Main Response Data Types
 // ==========================================
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", tag = "type")]
 pub enum AllClientResponses {
   ElectionPublished(ElectionDetails),
   RegistrationOpened(ElectionDetails),

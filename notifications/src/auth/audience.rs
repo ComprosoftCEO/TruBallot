@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
@@ -20,6 +21,7 @@ pub trait Audience {
 }
 
 /// Route is available to all token types
+#[derive(Deserialize)]
 pub struct All;
 
 impl Audience for All {
@@ -28,6 +30,7 @@ impl Audience for All {
 }
 
 /// Route can only be called by the frontend client
+#[derive(Deserialize)]
 pub struct ClientOnly;
 
 impl Audience for ClientOnly {
@@ -36,6 +39,7 @@ impl Audience for ClientOnly {
 }
 
 /// Route can only be called by the server
+#[derive(Deserialize)]
 pub struct ServerOnly;
 
 impl Audience for ServerOnly {
@@ -44,6 +48,7 @@ impl Audience for ServerOnly {
 }
 
 /// Route can only be called by a collector
+#[derive(Deserialize)]
 pub struct CollectorOnly;
 
 impl Audience for CollectorOnly {
