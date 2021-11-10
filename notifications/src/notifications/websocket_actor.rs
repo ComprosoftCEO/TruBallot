@@ -6,7 +6,7 @@ use actix_http::ws::{CloseCode, CloseReason};
 use actix_web_actors::ws;
 use serde::Serialize;
 
-use super::internal_types::{Notify, Subscribe, Unsubscribe, UnsubscribeAll};
+use super::internal_types::{Notify, Replace, Subscribe, Unsubscribe, UnsubscribeAll};
 use crate::notifications::{
   client_types::{SubscriptionActions, WebsocketResponse},
   SubscriptionActor,
@@ -145,6 +145,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebsocketActor {
         election_events,
       }),
 
+      SubscriptionActions::Replace {
+        global_events,
+        elections,
+        election_events,
+      } => self_addr.do_send(Replace {
+        me,
+        global_events,
+        elections,
+        election_events,
+      }),
+
       SubscriptionActions::UnsubscribeAll => self_addr.do_send(UnsubscribeAll { me }),
     }
   }
@@ -214,6 +225,17 @@ impl Handler<Unsubscribe> for WebsocketActor {
     log::debug!("Received unsubscribe request: {:#?}", unsubscribe);
 
     self.subscription_manager.do_send(unsubscribe);
+    Self::send_json(&WebsocketResponse::Success, ctx);
+  }
+}
+
+impl Handler<Replace> for WebsocketActor {
+  type Result = ();
+
+  fn handle(&mut self, replace: Replace, ctx: &mut Self::Context) -> Self::Result {
+    log::debug!("Received replace request: {:#?}", replace);
+
+    self.subscription_manager.do_send(replace);
     Self::send_json(&WebsocketResponse::Success, ctx);
   }
 }

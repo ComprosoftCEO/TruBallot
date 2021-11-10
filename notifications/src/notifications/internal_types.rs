@@ -45,6 +45,22 @@ pub struct Unsubscribe {
   pub election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
 }
 
+/// Replace the existing subscriptions with the new values
+#[derive(Debug, Message)]
+#[rtype(result = "()")]
+pub struct Replace {
+  pub me: Recipient<Notify>,
+
+  // Specific global events
+  pub global_events: Option<HashSet<GlobalEvents>>,
+
+  // All events from a given election
+  pub elections: Option<HashSet<Uuid>>,
+
+  // Specific events from a given election
+  pub election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
+}
+
 /// Unsubscribe the actor from all messages
 #[derive(Debug, Message)]
 #[rtype(result = "()")]

@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid_b64::UuidB64 as Uuid;
 
-use super::internal_types::{Notify, Subscribe, Unsubscribe, UnsubscribeAll};
+use super::internal_types::{Notify, Replace, Subscribe, Unsubscribe, UnsubscribeAll};
 use crate::notifications::{
   ElectionEvent, ElectionEventWrapper, ElectionEvents, GlobalEvent, GlobalEventWrapper, GlobalEvents,
 };
@@ -139,6 +139,69 @@ impl Handler<Unsubscribe> for SubscriptionActor {
               set.remove(&me);
             }
           }
+        }
+      }
+    }
+  }
+}
+
+impl Handler<Replace> for SubscriptionActor {
+  type Result = ();
+
+  fn handle(&mut self, replace: Replace, _ctx: &mut Self::Context) -> Self::Result {
+    let Replace {
+      me,
+      global_events,
+      elections,
+      election_events,
+    } = replace;
+
+    // Replace global events
+    for (_, events) in self.global_subscriptions.iter_mut() {
+      events.remove(&me);
+    }
+
+    if let Some(global_events) = global_events {
+      for event in global_events {
+        let set = self.global_subscriptions.entry(event).or_insert_with(|| HashSet::new());
+
+        set.insert(me.clone());
+      }
+    }
+
+    // Replace global election events
+    for (_, events) in self.election_subscriptions.iter_mut() {
+      events.remove(&me);
+    }
+
+    if let Some(elections) = elections {
+      for election_id in elections {
+        let set = self
+          .election_subscriptions
+          .entry(election_id)
+          .or_insert_with(|| HashSet::new());
+
+        set.insert(me.clone());
+      }
+    }
+
+    // Replace specific election events
+    for (_, election_events) in self.election_event_subscriptions.iter_mut() {
+      for (_, events) in election_events {
+        events.remove(&me);
+      }
+    }
+
+    if let Some(election_events) = election_events {
+      for (election_id, election_events) in election_events {
+        let map = self
+          .election_event_subscriptions
+          .entry(election_id)
+          .or_insert_with(|| HashMap::new());
+
+        for event in election_events {
+          let set = map.entry(event).or_insert_with(|| HashSet::new());
+          set.insert(me.clone());
         }
       }
     }

@@ -49,6 +49,18 @@ pub enum SubscriptionActions {
   },
 
   #[serde(rename_all = "camelCase")]
+  Replace {
+    // Specific global events
+    global_events: Option<HashSet<GlobalEvents>>,
+
+    // All events from a given election
+    elections: Option<HashSet<Uuid>>,
+
+    // Specific events from a given election
+    election_events: Option<HashMap<Uuid, HashSet<ElectionEvents>>>,
+  },
+
+  #[serde(rename_all = "camelCase")]
   UnsubscribeAll,
 }
 
