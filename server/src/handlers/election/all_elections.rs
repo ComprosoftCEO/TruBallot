@@ -15,7 +15,7 @@ pub async fn all_elections(token: ClientToken, conn: DbConnection) -> Result<Htt
 
   let public_elections = get_public_elections(&conn)?;
   let user_elections = user.get_elections_ordered(&conn)?;
-  let registered_elections = user.get_registered_elections(&conn)?;
+  let registered_elections = user.get_registered_elections_ordered(&conn)?;
 
   Ok(HttpResponse::Ok().json(AllElectionsResult {
     public_elections: elections_into_list(public_elections, &user.id, &conn)?,

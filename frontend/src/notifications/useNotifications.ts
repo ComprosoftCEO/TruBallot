@@ -38,8 +38,7 @@ export const useNotifications = (config: UseNotificationConfig): void => {
   // Update the subscriptions if the subscribeTo object changes
   useEffect(() => {
     if (readyState === ReadyState.OPEN) {
-      sendMessage(JSON.stringify({ type: SubscriptionAction.UnsubscribeAll }));
-      sendMessage(JSON.stringify({ type: SubscriptionAction.Subscribe, ...config.subscribeTo }));
+      sendMessage(JSON.stringify({ type: SubscriptionAction.Replace, ...config.subscribeTo }));
     }
     // We don't want "readyState" to be in the depencencies list
     //  Only call this method if the subscription object changes

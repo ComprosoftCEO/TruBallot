@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { clearAuthTokens } from 'axios-jwt';
 import pluralize from 'pluralize';
 import { clearNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
@@ -115,19 +115,21 @@ const ALL_FILTERS: Record<DashboardFilter, FilterFunction> = {
  */
 export const useFilteredElections = (filter?: DashboardFilter): APIResult<PublicElectionList[]> => {
   const publicElections = useDashboardSelector((state) => state.data);
-  if (publicElections.loading) {
-    return apiLoading();
-  }
 
-  if (!publicElections.success) {
-    return apiError(publicElections.error);
-  }
+  // Memoize the filtered data to avoid infinite looping issues with notifications
+  return useMemo(() => {
+    if (publicElections.loading) {
+      return apiLoading();
+    }
 
-  // Apply the filter
-  const filteredList: PublicElectionList[] =
-    filter !== undefined && ALL_FILTERS[filter] ? ALL_FILTERS[filter](publicElections.data) : [];
+    if (!publicElections.success) {
+      return apiError(publicElections.error);
+    }
 
-  return apiSuccess(filteredList);
+    // Apply the filter
+    const filteredData = filter !== undefined && ALL_FILTERS[filter] ? ALL_FILTERS[filter](publicElections.data) : [];
+    return apiSuccess(filteredData);
+  }, [filter, publicElections]);
 };
 
 /**

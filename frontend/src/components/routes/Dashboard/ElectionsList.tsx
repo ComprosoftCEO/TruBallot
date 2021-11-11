@@ -12,6 +12,7 @@ import {
   useFetchAllElections,
   useFilteredElections,
 } from './dashboardActions';
+import { useElectionListNotifications } from './dashboardNotifications';
 import { CardPopup } from './CardPopup';
 import styles from './dashboard.module.scss';
 
@@ -25,6 +26,8 @@ export const ElectionsList = ({ filter }: ElectionListProps) => {
   const userId = useUserId();
   const filteredElections = useFilteredElections(filter);
   const history = useHistory();
+
+  useElectionListNotifications(filteredElections);
 
   return (
     <Container style={{ marginTop: '7em' }}>

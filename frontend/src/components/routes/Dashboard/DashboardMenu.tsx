@@ -3,8 +3,11 @@ import { useHistory } from 'react-router-dom';
 import { usePermissions, useUserName } from 'redux/auth';
 import { Permission } from 'models/auth';
 import { logOut } from './dashboardActions';
+import { useDashboardMenuNotifications } from './dashboardNotifications';
 
 export const DashboardMenu = () => {
+  useDashboardMenuNotifications();
+
   const history = useHistory();
   const name = useUserName();
   const permissions = usePermissions();

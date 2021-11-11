@@ -169,7 +169,7 @@ export interface VoteReceivedEvent {
 }
 
 export interface VotingClosedEvent {
-  type: ElectionEvents.VotingOpened;
+  type: ElectionEvents.VotingClosed;
   electionId: string;
 }
 
