@@ -16,6 +16,7 @@ export interface EditorState {
   // Values used when editing an existing election
   electionDetails: APIResult<PublicElectionDetails>;
   reloading: APIResult<{}>;
+  updated: boolean;
 }
 
 export const initialEditorState: EditorState = {
@@ -28,4 +29,5 @@ export const initialEditorState: EditorState = {
 
   electionDetails: apiLoading(),
   reloading: apiSuccess({}),
+  updated: true,
 };

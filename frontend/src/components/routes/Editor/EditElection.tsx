@@ -2,12 +2,13 @@ import { Prompt } from 'react-router-dom';
 import { useLastLocation } from 'react-router-last-location';
 import { nestedSelectorHook } from 'redux/helpers';
 import { useTitle } from 'helpers/title';
-import { Message, Button, Container, Divider, Form, Segment, Header, Transition } from 'semantic-ui-react';
+import { Message, Button, Container, Divider, Form, Segment, Header, Transition, Popup } from 'semantic-ui-react';
 import { getErrorInformation } from 'api';
 import { goBack } from 'helpers/goBack';
 import { DashboardMenu, ErrorPortal } from 'components/shared';
 import { ErrorOccured } from 'components/errorDialogs';
 import { useUserId } from 'redux/auth';
+import { useState } from 'react';
 import { Editor } from './Editor';
 import {
   useClearState,
@@ -20,6 +21,7 @@ import {
   getFatalError,
   tryReFetchElection,
 } from './editorActions';
+import { useEditElectionNotifications } from './editorNotifications';
 
 const useSelector = nestedSelectorHook('editor');
 
@@ -30,11 +32,15 @@ export const EditElection = () => {
   // Fetch the election to edit
   const electionId = useElectionId();
   useFetchElection(electionId);
+  useEditElectionNotifications(electionId);
 
   const election = useSelector((store) => store.electionDetails);
   const reloadingElection = useSelector((store) => store.reloading);
   const modified = useSelector((store) => store.modified);
   const updatingElection = useSelector((store) => store.submitting);
+
+  const [popupOpen, setPopupOpen] = useState(false);
+  const updated = useSelector((store) => store.updated);
 
   const formValid = useIsFormValid();
   const lastLocation = useLastLocation();
@@ -121,13 +127,32 @@ export const EditElection = () => {
                 loading={updatingElection.loading}
               />
 
-              <Button
-                size="large"
-                icon="redo"
-                content="Reload"
-                onClick={() => reloadElection(electionId)}
-                disabled={updatingElection.loading || reloadingElection.loading}
-                loading={reloadingElection.loading}
+              <Popup
+                wide
+                on="hover"
+                position="right center"
+                open={updated && popupOpen && !updatingElection.loading && !reloadingElection.loading}
+                onOpen={() => setPopupOpen(true)}
+                onClose={() => setPopupOpen(false)}
+                content={
+                  <Message
+                    compact
+                    icon="exclamation"
+                    header="Election saved in another tab"
+                    content="Reload to avoid losing any changes"
+                  />
+                }
+                trigger={
+                  <Button
+                    size="large"
+                    icon="redo"
+                    content="Reload"
+                    color={updated && !updatingElection.loading && !reloadingElection.loading ? 'red' : undefined}
+                    onClick={() => reloadElection(electionId)}
+                    disabled={updatingElection.loading || reloadingElection.loading}
+                    loading={reloadingElection.loading}
+                  />
+                }
               />
             </Form>
           </Segment>

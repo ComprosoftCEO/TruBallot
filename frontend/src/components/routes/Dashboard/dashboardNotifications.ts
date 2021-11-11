@@ -21,12 +21,12 @@ import {
   ResultsPublishedEvent,
   NameChangedEvent,
 } from 'notifications';
-import { getNestedState, mergeNestedState } from 'redux/helpers';
+import { mergeNestedState } from 'redux/helpers';
 import { isDev } from 'env';
+import { getUserId } from 'redux/auth';
 
 const mergeState = mergeNestedState('dashboard');
 const mergeGlobalsState = mergeNestedState('globals');
-const getGlobalsState = getNestedState('globals');
 
 //
 // List of all event handlers for the menu component
@@ -96,7 +96,7 @@ function handleElectionCreated(event: ElectionCreatedEvent): void {
 }
 
 function handleElectionPublished(event: ElectionPublishedEvent): void {
-  const { userId } = getGlobalsState();
+  const userId = getUserId();
   fetchElection(event.electionId, (election) =>
     mergeElectionList((data) => {
       const publicElections = election.isPublic
@@ -128,7 +128,7 @@ function handleRegistrationOpened(event: RegistrationOpenedEvent): void {
 }
 
 function handleUserRegistered(event: UserRegisteredEvent): void {
-  const { userId } = getGlobalsState();
+  const userId = getUserId();
   mergeElection(event.electionId, (election) => ({
     numRegistered: event.numRegistered,
     isRegistered: userId === event.userId ? true : election.isRegistered,
@@ -136,7 +136,7 @@ function handleUserRegistered(event: UserRegisteredEvent): void {
 }
 
 function handleUserUnregistered(event: UserUnregisteredEvent): void {
-  const { userId } = getGlobalsState();
+  const userId = getUserId();
   mergeElection(event.electionId, (election) => ({
     numRegistered: event.numRegistered,
     isRegistered: userId === event.userId ? false : election.isRegistered,
@@ -152,7 +152,7 @@ function handleVotingOpened(event: VotingOpenedEvent): void {
 }
 
 function handleVoteReceived(event: VoteReceivedEvent): void {
-  const { userId } = getGlobalsState();
+  const userId = getUserId();
   if (event.userId === userId) {
     mergeElection(event.electionId, { hasVotedStatus: event.hasVotedStatus });
   }
@@ -181,7 +181,7 @@ async function fetchElection(
     if (isDev()) {
       const errorInfo = getErrorInformation(result.error);
       // eslint-disable-next-line no-console
-      console.log(`Failed to fetch election '${electionId}': ${errorInfo.description}`);
+      console.error(`Failed to fetch election '${electionId}': ${errorInfo.description}`);
     }
   } else {
     handler(electionDetailsToElectionList(result.data), result.data);

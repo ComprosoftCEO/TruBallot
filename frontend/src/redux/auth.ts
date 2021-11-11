@@ -1,10 +1,11 @@
 import { getAccessToken } from 'axios-jwt';
 import jwt from 'jsonwebtoken';
 import { ClientToken, Permission } from 'models/auth';
-import { mergeNestedState, nestedSelectorHook } from './helpers';
+import { getNestedState, mergeNestedState, nestedSelectorHook } from './helpers';
 
 const mergeState = mergeNestedState('globals');
 const useSelector = nestedSelectorHook('globals');
+const getState = getNestedState('globals');
 
 /**
  * Mark the store as being logged in from the access token
@@ -51,6 +52,9 @@ export const logOutStore = (redirect?: string | null): void => {
 
 /// Hook to get the user ID
 export const useUserId = (): string => useSelector((state) => state.userId);
+
+/// Get the user ID from the state
+export const getUserId = (): string => getState().userId;
 
 /// Hook to get the current user name
 export const useUserName = (): string => useSelector((state) => state.name);

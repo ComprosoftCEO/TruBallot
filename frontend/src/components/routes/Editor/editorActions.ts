@@ -101,6 +101,7 @@ function setElection(electionDetails: APISuccess<PublicElectionDetails> | APIErr
     name: electionDetails.data.name,
     isPublic: electionDetails.data.isPublic,
     questions: questionsToListString(electionDetails.data.questions),
+    updated: false,
   };
 }
 
@@ -248,7 +249,7 @@ export const saveElection = async (electionId: string) => {
 
   const result = await axiosApi.patch(`/elections/${electionId}`, { name, isPublic, questions }).then(...resolveResult);
   if (result.success) {
-    mergeState({ modified: false, submitting: apiSuccess({}) });
+    mergeState({ modified: false, submitting: apiSuccess({}), updated: false });
   } else {
     mergeState({ submitting: result });
   }
