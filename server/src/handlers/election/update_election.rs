@@ -5,10 +5,11 @@ use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
 use super::helpers::validate_candidates;
-use crate::auth::ClientToken;
+use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::{ResourceAction, ServiceError};
 use crate::models::{Candidate, Election, ElectionStatus, Question};
+use crate::notifications::notify_election_updated;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -37,6 +38,7 @@ pub async fn update_election(
   path: web::Path<Uuid>,
   data: web::Json<UpdateElectionData>,
   conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_create_election()?;
   token.validate_user_id(&conn)?;
@@ -70,7 +72,7 @@ pub async fn update_election(
   }
 
   // Update the election, questions, and candidates
-  conn.get().transaction::<_, ServiceError, _>(|| {
+  let election = conn.get().transaction::<_, ServiceError, _>(|| {
     // Possibly update the election parameters
     if let Some(name) = name {
       election.name = name;
@@ -94,8 +96,11 @@ pub async fn update_election(
       }
     }
 
-    Ok(())
+    Ok(election)
   })?;
+
+  notify_election_updated(&election, &jwt_key).await;
+  log::info!("Updated election \"{}\" <{}>", election.name, election.id);
 
   Ok(HttpResponse::Ok().finish())
 }

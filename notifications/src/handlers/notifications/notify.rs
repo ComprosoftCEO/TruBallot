@@ -17,12 +17,17 @@ pub async fn notify(
   // Handle all of the various notifications
   let addr = actor.as_ref();
   match data.into_inner() {
+    AllServerMessages::ElectionCreated(data) => addr.do_send(data.wrap()),
     AllServerMessages::ElectionPublished(data) => addr.do_send(data.wrap()),
+    AllServerMessages::NameChanged(data) => addr.do_send(data.wrap()),
+    AllServerMessages::ElectionUpdated(data) => addr.do_send(data.wrap()),
+    AllServerMessages::ElectionDeleted(data) => addr.do_send(data.wrap()),
     AllServerMessages::RegistrationOpened(data) => addr.do_send(data.wrap()),
-    AllServerMessages::RegistrationCountUpdated(data) => addr.do_send(data.wrap()),
+    AllServerMessages::UserRegistered(data) => addr.do_send(data.wrap()),
+    AllServerMessages::UserUnregistered(data) => addr.do_send(data.wrap()),
     AllServerMessages::RegistrationClosed(data) => addr.do_send(data.wrap()),
     AllServerMessages::VotingOpened(data) => addr.do_send(data.wrap()),
-    AllServerMessages::VoteCountUpdated(data) => addr.do_send(data.wrap()),
+    AllServerMessages::VoteReceived(data) => addr.do_send(data.wrap()),
     AllServerMessages::VotingClosed(data) => addr.do_send(data.wrap()),
     AllServerMessages::ResultsPublished(data) => addr.do_send(data.wrap()),
   }

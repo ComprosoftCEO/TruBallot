@@ -1,14 +1,14 @@
 use actix_web::{web, HttpResponse};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
 use super::helpers::validate_candidates;
-use crate::auth::ClientToken;
+use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::{Candidate, Election, Question};
+use crate::notifications::notify_election_created;
 use crate::views::election::NewElectionResult;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -37,6 +37,7 @@ pub async fn create_election(
   token: ClientToken,
   data: web::Json<CreateElectionData>,
   conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_create_election()?;
   token.validate_user_id(&conn)?;
@@ -49,7 +50,7 @@ pub async fn create_election(
   } = data.into_inner();
 
   // Create the election, questions, and candidates
-  let new_id = conn.get().transaction::<Uuid, ServiceError, _>(|| {
+  let new_election = conn.get().transaction::<_, ServiceError, _>(|| {
     let election = Election::new(name, token.get_user_id(), is_public).insert(&conn)?;
 
     for (question_number, ElectionQuestion { name, candidates }) in questions.into_iter().enumerate() {
@@ -60,8 +61,11 @@ pub async fn create_election(
       }
     }
 
-    Ok(election.id)
+    Ok(election)
   })?;
 
-  Ok(HttpResponse::Ok().json(NewElectionResult { id: new_id }))
+  notify_election_created(&new_election, new_election.created_by, &jwt_key).await;
+  log::info!("New election created: \"{}\" <{}>", new_election.name, new_election.id);
+
+  Ok(HttpResponse::Ok().json(NewElectionResult { id: new_election.id }))
 }

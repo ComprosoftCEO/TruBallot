@@ -5,7 +5,7 @@ use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::{Election, ElectionStatus};
-use crate::notifications::notify_registration_count_updated;
+use crate::notifications::notify_user_unregistered;
 
 pub async fn unregister_from_election(
   token: ClientToken,
@@ -40,7 +40,7 @@ pub async fn unregister_from_election(
 
   // Delete the registration from the database
   registration.delete(&conn)?;
-  notify_registration_count_updated(&election, &conn, &jwt_key).await;
+  notify_user_unregistered(&election, user_id, &conn, &jwt_key).await;
 
   Ok(HttpResponse::Ok().finish())
 }

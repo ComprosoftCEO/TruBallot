@@ -1,15 +1,22 @@
+import { HasVotedStatus } from './election';
+
 // Events not attached to any specific election
 export enum GlobalEvents {
+  ElectionCreated = 'electionCreated',
   ElectionPublished = 'electionPublished',
+  NameChanged = 'nameChanged',
 }
 
 // Events specific to an election
 export enum ElectionEvents {
+  ElectionUpdated = 'electionUpdated',
+  ElectionDeleted = 'electionDeleted',
   RegistrationOpened = 'registrationOpened',
-  RegistrationCountUpdated = 'registrationCountUpdated',
+  UserRegistered = 'userRegistered',
+  UserUnregistered = 'userUnregistered',
   RegistrationClosed = 'registrationClosed',
   VotingOpened = 'votingOpened',
-  VoteCountUpdated = 'voteCountUpdated',
+  VoteReceived = 'voteReceived',
   VotingClosed = 'votingClosed',
   ResultsPublished = 'resultsPublished',
 }
@@ -71,17 +78,42 @@ export interface WebsocketErrorResponse {
  * Event that can be received from the websocket
  */
 export type WebsocketNotificationEvent =
+  | ElectionCreatedEvent
   | ElectionPublishedEvent
+  | NameChangedEvent
+  | ElectionUpdatedEvent
+  | ElectionDeletedEvent
   | RegistrationOpenedEvent
-  | RegistrationCountUpdatedEvent
+  | UserRegisteredEvent
+  | UserUnregisteredEvent
   | RegistrationClosedEvent
   | VotingOpenedEvent
-  | VoteCountUpdatedEvent
+  | VoteReceivedEvent
   | VotingClosedEvent
   | ResultsPublishedEvent;
 
+export interface ElectionCreatedEvent {
+  type: GlobalEvents.ElectionCreated;
+  electionId: string;
+}
+
 export interface ElectionPublishedEvent {
   type: GlobalEvents.ElectionPublished;
+  electionId: string;
+}
+
+export interface NameChangedEvent {
+  type: GlobalEvents.NameChanged;
+  newName: string;
+}
+
+export interface ElectionUpdatedEvent {
+  type: ElectionEvents.ElectionUpdated;
+  electionId: string;
+}
+
+export interface ElectionDeletedEvent {
+  type: ElectionEvents.ElectionDeleted;
   electionId: string;
 }
 
@@ -90,15 +122,26 @@ export interface RegistrationOpenedEvent {
   electionId: string;
 }
 
-export interface RegistrationCountUpdatedEvent {
-  type: ElectionEvents.RegistrationCountUpdated;
+export interface UserRegisteredEvent {
+  type: ElectionEvents.UserRegistered;
   electionId: string;
+
+  userId: string;
+  userName: string;
+  numRegistered: number;
+}
+
+export interface UserUnregisteredEvent {
+  type: ElectionEvents.UserUnregistered;
+  electionId: string;
+  userId: string;
   numRegistered: number;
 }
 
 export interface RegistrationClosedEvent {
   type: ElectionEvents.RegistrationClosed;
   electionId: string;
+  isPublic: boolean;
 }
 
 export interface VotingOpenedEvent {
@@ -106,10 +149,23 @@ export interface VotingOpenedEvent {
   electionId: string;
 }
 
-export interface VoteCountUpdatedEvent {
-  type: ElectionEvents.VoteCountUpdated;
+export interface VoteReceivedEvent {
+  type: ElectionEvents.VoteReceived;
+  electionId: string;
   questionId: string;
-  newCount: string;
+
+  userId: string;
+  userName: string;
+  hasVotedStatus: HasVotedStatus;
+
+  forwardBallot: string; // BigInt
+  reverseBallot: string; // BigInt
+
+  gS: string; // BigInt
+  gSPrime: string; // BigInt
+  gSSPrime: string; // BigInt
+
+  numVotes: number;
 }
 
 export interface VotingClosedEvent {

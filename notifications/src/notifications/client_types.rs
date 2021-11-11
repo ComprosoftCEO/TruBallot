@@ -90,12 +90,17 @@ pub enum WebsocketResponse {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum AllClientResponses {
+  ElectionCreated(ElectionDetails),
   ElectionPublished(ElectionDetails),
+  NameChanged(NameChangedDetails),
+  ElectionUpdated(ElectionDetails),
+  ElectionDeleted(ElectionDetails),
   RegistrationOpened(ElectionDetails),
-  RegistrationCountUpdated(RegistrationCountUpdated),
-  RegistrationClosed(ElectionDetails),
+  UserRegistered(UserRegisteredDetails),
+  UserUnregistered(UserUnregisteredDetails),
+  RegistrationClosed(RegistrationClosedDetails),
   VotingOpened(ElectionDetails),
-  VoteCountUpdated(VoteCountUpdated),
+  VoteReceived(VoteReceivedDetails),
   VotingClosed(ElectionDetails),
   ResultsPublished(ElectionDetails),
 }
@@ -114,15 +119,55 @@ impl From<Uuid> for ElectionDetails {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RegistrationCountUpdated {
+pub struct NameChangedDetails {
+  pub new_name: String,
+}
+
+impl From<String> for NameChangedDetails {
+  fn from(new_name: String) -> Self {
+    Self { new_name }
+  }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserRegisteredDetails {
   pub election_id: Uuid,
+  pub user_id: Uuid,
+  pub user_name: String,
   pub num_registered: i64,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VoteCountUpdated {
+pub struct UserUnregisteredDetails {
+  pub election_id: Uuid,
+  pub user_id: Uuid,
+  pub num_registered: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegistrationClosedDetails {
+  pub election_id: Uuid,
+  pub is_public: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoteReceivedDetails {
   pub election_id: Uuid,
   pub question_id: Uuid,
-  pub new_count: i64,
+
+  pub user_id: Uuid,
+  pub user_name: String,
+  pub has_voted_status: u32,
+
+  pub forward_ballot: String,
+  pub reverse_ballot: String,
+  pub g_s: String,
+  pub g_s_prime: String,
+  pub g_s_s_prime: String,
+
+  pub num_votes: i64,
 }

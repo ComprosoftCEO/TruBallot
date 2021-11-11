@@ -18,7 +18,7 @@ pub async fn subscribe(
   log::debug!("Starting actor to handle websocket notifications...");
   Ok(
     ws::start_with_protocols(
-      WebsocketActor::new(actor.as_ref().clone()),
+      WebsocketActor::new(actor.as_ref().clone(), token.get_user_id()),
       &[WS_PROTOCOL],
       &req,
       payload,

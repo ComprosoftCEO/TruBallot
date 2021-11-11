@@ -9,18 +9,23 @@ use uuid_b64::UuidB64 as Uuid;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum GlobalEvents {
+  ElectionCreated,
   ElectionPublished,
+  NameChanged,
 }
 
 /// Events specific to an election
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ElectionEvents {
+  ElectionUpdated,
+  ElectionDeleted,
   RegistrationOpened,
-  RegistrationCountUpdated,
+  UserRegistered,
+  UserUnregistered,
   RegistrationClosed,
   VotingOpened,
-  VoteCountUpdated,
+  VoteReceived,
   VotingClosed,
   ResultsPublished,
 }
@@ -48,6 +53,11 @@ pub trait GlobalEvent: Sized {
   fn wrap(self) -> GlobalEventWrapper<Self> {
     GlobalEventWrapper(self)
   }
+
+  /// Override this method to have a protected event
+  fn protected(&self) -> Option<Uuid> {
+    None
+  }
 }
 
 ///
@@ -64,5 +74,10 @@ pub trait ElectionEvent: Sized {
   /// Wrap inside a structure that can be passed generically to the subscription actor
   fn wrap(self) -> ElectionEventWrapper<Self> {
     ElectionEventWrapper(self)
+  }
+
+  /// Override this method to have an event protected by a user ID
+  fn protected(&self) -> Option<Uuid> {
+    None
   }
 }

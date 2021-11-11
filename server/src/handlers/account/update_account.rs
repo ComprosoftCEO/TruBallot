@@ -5,6 +5,7 @@ use validator::Validate;
 use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::notifications::notify_name_changed;
 use crate::views::auth::LoginResult;
 
 #[derive(Debug, Deserialize, Validate)]
@@ -18,7 +19,7 @@ pub async fn update_account(
   token: ClientToken,
   data: web::Json<UpdateAccountData>,
   conn: DbConnection,
-  secret: web::Data<JWTSecret>,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_manage_account()?;
   let mut user = token.validate_user_id(&conn)?;
@@ -26,21 +27,17 @@ pub async fn update_account(
 
   let UpdateAccountData { name } = data.into_inner();
 
-  // Okay, update the account details
+  // Update the account details
   if let Some(name) = name {
     user.name = name;
   }
 
-  user.update(&conn)?;
+  user = user.update(&conn)?;
+
+  notify_name_changed(&user, &jwt_key).await;
+  log::info!("Updated account details for {} <{}>", user.name, user.email);
 
   // Generate the JWT tokens
-  let result = LoginResult::build(user, &*secret)?;
-
-  log::info!(
-    "Updated account details for {} <{}>",
-    result.get_name(),
-    result.get_email()
-  );
-
+  let result = LoginResult::build(user, &jwt_key)?;
   Ok(HttpResponse::Ok().json(result))
 }

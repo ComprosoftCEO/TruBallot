@@ -5,6 +5,7 @@ use actix::prelude::*;
 use actix_http::ws::{CloseCode, CloseReason};
 use actix_web_actors::ws;
 use serde::Serialize;
+use uuid_b64::UuidB64 as Uuid;
 
 use super::internal_types::{Notify, Replace, Subscribe, Unsubscribe, UnsubscribeAll};
 use crate::notifications::{
@@ -15,11 +16,15 @@ use crate::notifications::{
 /// Actor used for managing the websocket communication
 pub struct WebsocketActor {
   subscription_manager: Addr<SubscriptionActor>,
+  user_id: Uuid,
 }
 
 impl WebsocketActor {
-  pub fn new(subscription_manager: Addr<SubscriptionActor>) -> Self {
-    Self { subscription_manager }
+  pub fn new(subscription_manager: Addr<SubscriptionActor>, user_id: Uuid) -> Self {
+    Self {
+      subscription_manager,
+      user_id,
+    }
   }
 
   /// Send a JSON response back to the client, handling any serialization errors
@@ -258,6 +263,11 @@ impl Handler<Notify> for WebsocketActor {
   type Result = ();
 
   fn handle(&mut self, notify: Notify, ctx: &mut Self::Context) -> Self::Result {
-    ctx.text(&*notify.0);
+    match notify.get_protected() {
+      None => ctx.text(notify.get_json()),
+
+      Some(user_id) if user_id == self.user_id => ctx.text(notify.get_json()),
+      Some(_) => { /* User Id's don't match */ }
+    }
   }
 }

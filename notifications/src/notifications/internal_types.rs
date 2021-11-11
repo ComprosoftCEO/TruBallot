@@ -11,7 +11,24 @@ use crate::notifications::{ElectionEvents, GlobalEvents};
 /// Send a text JSON notification to the websocket actor
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct Notify(pub Arc<String>);
+pub struct Notify {
+  json: Arc<String>,
+  user_id: Option<Uuid>,
+}
+
+impl Notify {
+  pub fn new(json: Arc<String>, user_id: Option<Uuid>) -> Self {
+    Self { json, user_id }
+  }
+
+  pub fn get_protected(&self) -> Option<Uuid> {
+    self.user_id
+  }
+
+  pub fn get_json(&self) -> &String {
+    &*self.json
+  }
+}
 
 /// Add the actor to specific types of messages
 #[derive(Debug, Message)]

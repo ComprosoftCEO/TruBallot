@@ -1,15 +1,17 @@
 use actix_web::{web, HttpResponse};
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
+use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::{ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus};
+use crate::notifications::notify_election_deleted;
 
 pub async fn delete_election(
   token: ClientToken,
   path: web::Path<Uuid>,
   conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
 ) -> Result<HttpResponse, ServiceError> {
   token.test_can_create_election()?;
   token.validate_user_id(&conn)?;
@@ -37,6 +39,14 @@ pub async fn delete_election(
 
   // "Do It"
   //   -Palpetine
-  election.delete(&conn)?;
+  let deleted_election = election.delete(&conn)?;
+
+  notify_election_deleted(&deleted_election, &jwt_key).await;
+  log::info!(
+    "Deleted election \"{}\" <{}>",
+    deleted_election.name,
+    deleted_election.id
+  );
+
   Ok(HttpResponse::Ok().finish())
 }

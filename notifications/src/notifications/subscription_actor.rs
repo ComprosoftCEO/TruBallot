@@ -26,7 +26,7 @@ impl SubscriptionActor {
   }
 
   /// Internal method to send JSON data to a list of subscribers
-  fn send_all<'a, T, I>(data: &T, subscribers: I)
+  fn send_all<'a, T, I>(data: &T, protected: Option<Uuid>, subscribers: I)
   where
     T: ?Sized + Serialize,
     I: IntoIterator<Item = &'a Recipient<Notify>>,
@@ -40,7 +40,7 @@ impl SubscriptionActor {
     // Notify all of the websockets
     let json = Arc::new(json);
     for subscriber in subscribers.into_iter() {
-      subscriber.do_send(Notify(json.clone())).ok();
+      subscriber.do_send(Notify::new(json.clone(), protected)).ok();
     }
   }
 }
@@ -240,7 +240,8 @@ impl<T: GlobalEvent> Handler<GlobalEventWrapper<T>> for SubscriptionActor {
 
   fn handle(&mut self, event: GlobalEventWrapper<T>, _ctx: &mut Self::Context) -> Self::Result {
     if let Some(clients) = self.global_subscriptions.get(&T::EVENT_TYPE) {
-      Self::send_all(&event.0.into_output(), clients)
+      let protected = event.0.protected();
+      Self::send_all(&event.0.into_output(), protected, clients)
     }
   }
 }
@@ -250,6 +251,7 @@ impl<T: ElectionEvent> Handler<ElectionEventWrapper<T>> for SubscriptionActor {
 
   fn handle(&mut self, event: ElectionEventWrapper<T>, _ctx: &mut Self::Context) -> Self::Result {
     let election_id = event.0.get_election_id();
+    let protected = event.0.protected();
     let output = event.0.into_output();
 
     // Keep track of the unique clients
@@ -268,6 +270,6 @@ impl<T: ElectionEvent> Handler<ElectionEventWrapper<T>> for SubscriptionActor {
     }
 
     // Send the JSON data
-    Self::send_all(&output, all_clients)
+    Self::send_all(&output, protected, all_clients)
   }
 }

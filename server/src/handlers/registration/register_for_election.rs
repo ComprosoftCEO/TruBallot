@@ -5,7 +5,7 @@ use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::{Election, ElectionStatus, Registration};
-use crate::notifications::notify_registration_count_updated;
+use crate::notifications::notify_user_registered;
 
 pub async fn register_for_election(
   token: ClientToken,
@@ -37,7 +37,7 @@ pub async fn register_for_election(
 
   // Create the new registration in the database
   Registration::new(user_id, election.id).insert(&conn)?;
-  notify_registration_count_updated(&election, &conn, &jwt_key).await;
+  notify_user_registered(&election, &user_id, &conn, &jwt_key).await;
 
   Ok(HttpResponse::Ok().finish())
 }

@@ -107,7 +107,7 @@ export interface QuestionResult {
 
 export interface UserBallotResult {
   id: string;
-  name: String;
+  name: string;
 
   forwardBallot: string; // BigInt
   reverseBallot: string; // BigInt

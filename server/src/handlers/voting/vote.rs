@@ -9,7 +9,7 @@ use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ServiceError};
 use crate::models::{Commitment, Election, ElectionStatus};
-use crate::notifications::notify_vote_count_updated;
+use crate::notifications::notify_vote_received;
 use crate::utils::ConvertBigInt;
 use crate::Collector;
 
@@ -129,7 +129,7 @@ pub async fn vote(
   // ================================================
   // Load the data into the database
   // ================================================
-  Commitment {
+  let commitment = Commitment {
     user_id,
     election_id,
     question_id,
@@ -146,7 +146,7 @@ pub async fn vote(
   }
   .insert(&conn)?;
 
-  notify_vote_count_updated(&election, &question, &conn, &jwt_key).await;
+  notify_vote_received(&election, &question, &commitment, &conn, &jwt_key).await;
   log::info!(
     "User {} <{}> cast vote for question {} of \"{}\" <{}>",
     token.get_name(),
