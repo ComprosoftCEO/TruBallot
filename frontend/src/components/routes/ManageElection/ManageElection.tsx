@@ -4,6 +4,7 @@ import { ErrorOccured } from 'components/errorDialogs';
 import { DashboardMenu, ElectionStatusLabel, ErrorPortal, Flex, TransitionList } from 'components/shared';
 import { goBack } from 'helpers/goBack';
 import { nestedSelectorHook } from 'redux/helpers';
+import { useUserId } from 'redux/auth';
 import {
   Button,
   Container,
@@ -35,6 +36,7 @@ import {
   useFetchElection,
   useSetElectionTitle,
 } from './manageElectionActions';
+import { useManageElectionNotifications } from './manageElectionNotifications';
 import { useIsLoading } from './controls/controlsActions';
 import styles from './manageElection.module.scss';
 
@@ -46,11 +48,13 @@ export const ManageElection = () => {
   // Fetch the election to manage
   const electionId = useElectionId();
   useFetchElection(electionId);
+  useManageElectionNotifications(electionId);
 
   // Set the title based on the election
   const electionDetails = useSelector((store) => store.electionDetails);
   useSetElectionTitle(electionDetails);
 
+  const userId = useUserId();
   const isLoading = useIsLoading();
   const lastLocation = useLastLocation();
 
@@ -61,7 +65,7 @@ export const ManageElection = () => {
   }
 
   // Test for a fatal error when or after loading the resource
-  const fatalError = getFatalError(electionDetails);
+  const fatalError = getFatalError(electionDetails, userId);
   if (fatalError !== undefined) {
     return <ErrorOccured header="Error: Cannot view election!" message={fatalError} />;
   }

@@ -1,6 +1,6 @@
 import { APIResult, axiosApi, getErrorInformation, GlobalErrorCode, resolveResult } from 'api';
 import { useTitle } from 'helpers/title';
-import { PublicElectionDetails } from 'models/election';
+import { ElectionStatus, PublicElectionDetails } from 'models/election';
 import { useEffect, useLayoutEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { clearNestedState, mergeNestedState } from 'redux/helpers';
@@ -31,7 +31,7 @@ export function tryReFetchElection(electionId: string): void {
  */
 const FATAL_ERROR_CODES: GlobalErrorCode[] = [GlobalErrorCode.NoSuchResource];
 
-export const getFatalError = (input: APIResult<PublicElectionDetails>): string | undefined => {
+export const getFatalError = (input: APIResult<PublicElectionDetails>, userId: string): string | undefined => {
   if (input.loading) {
     return undefined;
   }
@@ -43,6 +43,19 @@ export const getFatalError = (input: APIResult<PublicElectionDetails>): string |
       return errorDetails.description;
     }
     return undefined;
+  }
+
+  // Special case for websockets:
+  //  Hide the election if it is private and registration has closed on an unregistered user
+  //  who isn't the election creator (Creator can ALWAYS view the election)
+  const election = input.data;
+  if (
+    election.createdBy.id !== userId &&
+    !election.isPublic &&
+    !election.isRegistered &&
+    election.status !== ElectionStatus.Registration
+  ) {
+    return 'Registration has closed for a private election';
   }
 
   // No other errors

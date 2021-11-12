@@ -144,6 +144,7 @@ export const publishElection = (electionId: string): void => {
       const result = await axiosApi
         .put<PublishElectionResult>(`/elections/${electionId}/registration`)
         .then(...resolveResult);
+
       if (result.success) {
         mergeState({
           publishingElection: apiSuccess(true),
@@ -168,10 +169,22 @@ export const register = async (electionId: string): Promise<void> => {
   if (result.success) {
     mergeState({
       registering: apiSuccess(true),
-      ...updateNestedElectionProps((props) => ({
-        isRegistered: true,
-        registered: [...props.registered, { id: userId, name, hasVotedStatus: HasVotedStatus.No }],
-      })),
+      ...updateNestedElectionProps((props) => {
+        // Possibly insert into the list of registered users if the user isn't already in it
+        //   Be sure to sort the list after insertion to keep the order consistent
+        const registeredIndex = props.registered.findIndex((r) => r.id === userId);
+        const registered =
+          registeredIndex > -1
+            ? props.registered
+            : [...props.registered, { id: userId, name, hasVotedStatus: HasVotedStatus.No }].sort((a, b) =>
+                a.name.localeCompare(b.name),
+              );
+
+        return {
+          isRegistered: true,
+          registered,
+        };
+      }),
     });
   } else {
     mergeState({ registering: result });
