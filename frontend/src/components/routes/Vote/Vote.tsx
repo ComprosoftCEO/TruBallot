@@ -20,6 +20,7 @@ import {
   useSetVoteTitle,
   vote,
 } from './voteActions';
+import { useVoteNotifications } from './voteNotifications';
 import { QuestionBox } from './QuestionBox';
 import { VotingModal } from './VotingModal';
 import styles from './vote.module.scss';
@@ -32,12 +33,15 @@ export const Vote = () => {
   // Fetch the election to vote for
   const electionId = useElectionId();
   useFetchElection(electionId);
+  useVoteNotifications(electionId);
+
   const fetchError = useFetchError();
 
   // Set the title based on the election
   const electionDetails = useSelector((state) => state.electionDetails);
   useSetVoteTitle(electionDetails);
 
+  const questions = useSelector((state) => state.questions);
   const cheatMode = useSelector((state) => state.cheatMode);
   const votingStatus = useSelector((state) => state.votingStatus);
   const formValid = useIsFormValid();
@@ -92,7 +96,7 @@ export const Vote = () => {
           <Header size="large">{election.name}</Header>
           <Divider />
 
-          {election.questions.map((question, index) => (
+          {questions.map((question, index) => (
             <div key={question.id} className={styles['question-container']}>
               <QuestionBox questionIndex={index} cheatMode={cheatMode} disabled={votingStatus !== VotingStatus.Init} />
             </div>

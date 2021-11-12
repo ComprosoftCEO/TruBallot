@@ -74,11 +74,7 @@ function buildRequestError(statusCode: number, description: string, errorCode: G
   return {
     isAxiosError: true,
     response: {
-      data: {
-        statusCode: 404,
-        description: 'Election Deleted',
-        errorCode: GlobalErrorCode.NoSuchResource,
-      } as ErrorResponse,
+      data: { statusCode, description, errorCode } as ErrorResponse,
     },
   } as RequestError;
 }
