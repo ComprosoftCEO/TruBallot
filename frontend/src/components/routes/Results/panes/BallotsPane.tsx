@@ -22,8 +22,8 @@ export const BallotsPane = () => {
           <Grid.Row>
             <Grid.Column width="12">
               <Header>Ballots:</Header>
-              <Card.Group stackable itemsPerRow="2" centered={question.userBallots.length < 2}>
-                {question.userBallots.map((ballot, index) => (
+              <Card.Group stackable itemsPerRow="2" centered={question.ballots.length < 2}>
+                {question.ballots.map((ballot, index) => (
                   <VerifyBallotCard
                     key={ballot.id}
                     questionIndex={questionIndex}

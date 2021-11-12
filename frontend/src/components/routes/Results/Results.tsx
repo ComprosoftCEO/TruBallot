@@ -20,6 +20,7 @@ import {
   useFetchError,
   useSetResultsTitle,
 } from './resultsActions';
+import { useResultsNotifications } from './resultsNotifications';
 
 const useSelector = nestedSelectorHook('results');
 
@@ -29,6 +30,7 @@ export const Results = () => {
   // Fetch the election to vote for
   const electionId = useElectionId();
   useFetchData(electionId);
+  useResultsNotifications(electionId);
   const fetchError = useFetchError();
 
   // Set the title based on the election

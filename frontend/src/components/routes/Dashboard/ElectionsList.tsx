@@ -1,6 +1,6 @@
+import { useHistory } from 'react-router-dom';
 import { Container, Header, Divider, Icon, Card, Transition } from 'semantic-ui-react';
 import { ElectionStatusLabel, TransitionList, ErrorPortal } from 'components/shared';
-import { useHistory } from 'react-router-dom';
 import { getErrorInformation } from 'api';
 import { useUserId } from 'redux/auth';
 import {
@@ -23,11 +23,11 @@ export interface ElectionListProps {
 export const ElectionsList = ({ filter }: ElectionListProps) => {
   useFetchAllElections();
 
-  const userId = useUserId();
   const filteredElections = useFilteredElections(filter);
-  const history = useHistory();
-
   useElectionListNotifications(filteredElections);
+
+  const userId = useUserId();
+  const history = useHistory();
 
   return (
     <Container style={{ marginTop: '7em' }}>

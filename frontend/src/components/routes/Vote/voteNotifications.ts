@@ -19,7 +19,7 @@ const mergeState = mergeNestedState('vote');
 const getState = getNestedState('vote');
 
 //
-// List of all event handlers for the election list pages
+// List of all event handlers for the vote page
 //
 const onMessageVote = buildNotificationHandler({
   [ElectionEvents.VotingOpened]: handleVotingOpened,
@@ -36,8 +36,9 @@ const ELECTION_EVENTS: ElectionEvents[] = [
 ];
 
 /**
- * Hook to handle notifications for filtered elections
- * @param filteredElections List of filtered elections
+ * Hook to handle notifications for the vote page
+ *
+ * @param electionId ID of the election
  */
 export const useVoteNotifications = (electionId: string) => {
   const subscribeTo: WebsocketSubscriptionList = useMemo(

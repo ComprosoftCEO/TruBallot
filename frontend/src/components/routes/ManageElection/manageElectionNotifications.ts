@@ -26,7 +26,7 @@ import { history } from 'index';
 const mergeState = mergeNestedState('manageElection');
 
 //
-// List of all event handlers for the election list pages
+// List of all event handlers for the manage election page
 //
 const onMessageManageElection = buildNotificationHandler({
   [ElectionEvents.ElectionUpdated]: handleElectionUpdated,
@@ -42,7 +42,7 @@ const onMessageManageElection = buildNotificationHandler({
 });
 
 /**
- * Hook to handle notifications for the manage elections page
+ * Hook to handle notifications for the manage election page
  *
  * @param electionId ID of the election on this page
  */

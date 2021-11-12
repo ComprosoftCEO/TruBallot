@@ -14,7 +14,7 @@ import { mergeNestedState } from 'redux/helpers';
 const mergeState = mergeNestedState('editor');
 
 //
-// List of all event handlers for the election list pages
+// List of all event handlers for the edit election interface
 //
 const onMessageEditElection = buildNotificationHandler({
   [ElectionEvents.ElectionUpdated]: handleElectionUpdated,
