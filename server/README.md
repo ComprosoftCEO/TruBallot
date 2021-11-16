@@ -133,14 +133,6 @@ All migrations are handled by SQL files. Generating a migration creates two file
 - `up.sql` - Run code for the database migration
 - `down.sql` - Undo any changes made in `up.sql`
 
-If you are initializing the database for the first time, you might also want to run the `init-database`
-utility to load default data values and to generate the default administrator account. Like the API server,
-you will need to specify the database connection in the `.env` file.
-
-```
-cargo run --bin init-database
-```
-
 <br/>
 
 ## Environment Variables
@@ -152,15 +144,197 @@ This can be done using the following files:
 - `.env.development` - Environment variables only on development system
 - `.env.production` - Environment variables only on production system
 
-|       Variable       |      Required       | Default Value | Description                                                                                                                                                                                                          |
-| :------------------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|         HOST         |         No          |   127.0.0.1   | IP address to use for running the API server. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.          |
-|         PORT         |         No          |     3000      | Port number for the API server.                                                                                                                                                                                      |
-|      USE_HTTPS       |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
-|       KEY_FILE       | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
-|      CERT_FILE       | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
-|     DATABASE_URL     |       **Yes**       |               | [PostgreSQL Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for accessing the database. _See above for more details._                                                   |
-|      JWT_SECRET      |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
-| RECAPTCHA_SECRET_KEY |       **Yes**       |               | Secret key used by [Google reCAPTCHA](https://www.google.com/recaptcha/about/) for server-side validation.                                                                                                           |
+Alternatively, these values can be passed in using command-line parameters when running the API server.
+The command-line parameters override any values set in the `.env` files.
 
-Alternatively, these values can be passed in using command-line parameters.
+|       Variable       |       Command-line Flag        |      Required       | Default Value | Description                                                                                                                                                                                                          |
+| :------------------: | :----------------------------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|         HOST         |         `--host`, `-h`         |         No          |   127.0.0.1   | IP address to use for running the API server. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.          |
+|         PORT         |         `--port`, `-p`         |         No          |     3001      | Port number for the API server.                                                                                                                                                                                      |
+|      USE_HTTPS       |         `--use-https`          |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
+|       KEY_FILE       |          `--key-file`          | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
+|      CERT_FILE       |         `--cert-file`          | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
+|     DATABASE_URL     |        `--database-url`        |       **Yes**       |               | [PostgreSQL Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for accessing the database. _See above for more details._                                                   |
+|      JWT_SECRET      |      `--jwt-secret`, `-s`      |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
+| RECAPTCHA_SECRET_KEY | `--recaptcha-secret-key`, `-r` |       **Yes**       |               | Secret key used by [Google reCAPTCHA](https://www.google.com/recaptcha/about/) for server-side validation.                                                                                                           |
+|        C1_URL        |           `--c1-url`           |       **Yes**       |               | Base URL to access collector 1. It should **NOT** include the `/api/v1` suffix. If running on the same machine as the API server, this value can be set to `http://localhost:3001`.                                  |
+|        C2_URL        |           `--c2-url`           |       **Yes**       |               | Base URL to access collector 2. It should **NOT** include the `/api/v1` suffix. If running on the same machine as the API server, this value can be set to `http://localhost:3002`.                                  |
+|  NOTIFICATIONS_URL   |     `--notifications-url`      |       **Yes**       |               | Base URL to access collector 2. It should **NOT** include the `/api/v1` suffix. If running on the same machine as the API server, this value can be set to `http://localhost:3005`.                                  |
+
+**Note:** Google reCAPTCHA provides a [fake testing key](https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do) if you do not want to enable this functionality on the website.
+
+<br />
+
+## Code Structure
+
+- [`/src`](/src) - All source code files for the API server
+- [`/migrations`](/migrations) - Database migrations for the PostgreSQL database
+
+Main files in the `/src` directory:
+
+- [`main.rs`](/src/main.rs) - Entry point for the server application
+- [`lib.rs`](/src/lib.rs) - Entry point for the shared library
+- [`config.rs`](/src/config.rs) - Handle environment variables
+- [`schema.rs`](/src/schema.rs) - Auto-generated file by Diesel ORM that exports the database tables for Rust
+
+Main folders in the `/src` directory:
+
+- [`/auth`](/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
+- [`/db`](/src/db) - Structures and functions needed for running the database
+- [`/errors`](/src/errors) - Structures and functions for error handling across the application
+- [`/handlers`](/src/handlers) - All REST API handlers
+- [`/models`](/src/models) - Rust `struct` definitions for tables in the database
+- [`/notifications`](/src/notifications) - Structures and functions for pushing WebSocket notifications to the frontend
+- [`/protocol`](/src/protocol) - Structures and functions specific to the electronic voting protocol
+- [`/utils`](/src/utils) - Miscellaneous helper functions
+- [`/views`](/src/views) - Shared structures that define the return types from the API handlers
+
+**Note:** The API server compiles both a shared library and a main executable.
+Using this structure enables other [binary utilities](https://doc.rust-lang.org/cargo/guide/project-layout.html) (`/src/bin` directory) to access the data types and API handlers.
+Although this project doesn't have any utilities currently, this may be useful in the future.
+
+### Linting and Formatting
+
+Rust provides a custom code formatter named `rustfmt`, which is configured in the `rustfmt.toml` file.
+When working with Rust, try to install a rustfmt plugin to automatically format your code when saving to ensure a consistent style in the codebase.
+For example, [VSCode](https://code.visualstudio.com/) provides good Rust integration through the following plugins:
+
+- [Rust](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust)
+- [Rust Grammar](https://marketplace.visualstudio.com/items?itemName=siberianmh.rust-grammar)
+- [Rust Analyzer](https://marketplace.visualstudio.com/items?itemName=matklad.rust-analyzer)
+- [vscode-rust](https://github.com/editor-rs/vscode-rust)
+
+### FromRequest Trait
+
+FromRequest is special trait used by [Actix Web](https://docs.rs/actix-web/3.3.2/actix_web/trait.FromRequest.html) that allows types to be referenced directly in the API handler.
+Consider the API handler, which refers to the custom types `ClientToken` and `DbConnection`:
+
+```rust
+pub async fn register_for_election(
+  token: ClientToken,
+  path: web::Path<Uuid>,
+  conn: DbConnection,
+  jwt_key: web::Data<JWTSecret>,
+) -> Result<HttpResponse, ServiceError> {
+  // Code omitted
+}
+```
+
+The following structures implement this trait in the server:
+
+- `JWTToken`
+- `RefreshToken`
+- `DbConnection`
+
+### Database Structures
+
+The `DbConnection` structure is the main database connection object used by the server. This can store one of two types of connections:
+
+- Unpooled Connection - Single connection to the PostgreSQL database
+- Pooled Connection - Shared connection pool between threads in the API server (_used by the API server itself_)
+
+The database system defines a series of Rust macros to automatically generate methods for working with Diesel.
+These methods are based on Active Record from Ruby on Rails. The macros are defined in `associations.rs` and are as follows:
+
+- `model_base!()` - Methods common to all database fields
+- `belongs_to!()` - Foreign key that points to another field
+- `has_one!()` - Another field has a foreign key that points to this field. This is a special case of a one-to-many relationship where only one foreign key points to this field.
+- `has_zero_or_one!()` - Another field has a foreign key that points to this field. This is a special case of a one-to-many relationship where the foreign key may or may not exist.
+- `has_many!()` - Another field has a foreign key that defines a one-to-many relationship to this field.
+- `has_many!(through)` - Defines a many-to-many relationship between two fields
+
+For inheritance in databases, subtypes.rs defines two additional macros:
+
+- `parent_type!()` - Specify the parent field type
+- `child_type!()` - Specify the child field type
+
+Many-to-many relationships must implement the `ManyToManyConstructor` trait to work properly with these macros.
+Also, for fields that are all key, the `model_base!()` macro has the `"no update"` flag that disables the update() method.
+For more specific details on associations, see [Associations.md](Associations.md) for complete documentation.
+
+The `sql_enum!()` macro defines a Rust enum that can be serialized and deserialized as a 32-bit integer in diesel.
+This is used several times by database models.
+
+Models in the API server must derive the following traits to work with the association macros:
+
+- `Serialize` - Can serialize structure from SQL data
+- `Queryable` - Can search for structure in the database
+- `Insertable` - Can insert structure into the database
+- `Identifiable` - Structure contains the primary key
+- `AsChangeset` - Indicates a structure can updated the table, omit for fields that are all-key
+- `Associations` - Structure stores one or more primary keys
+
+Diesel defines the following attributes:
+
+- `#[table_name]` - Usually not required, but necessary if the table name does not match the structure name
+- `#[primary_key]` - Specify the Rust properties in the primary key
+- `#[belongs_to]` - Specify that a structure has a foreign key that points to another table
+
+By default, Diesel renames the structures to plural snake case when searching for the database name.
+So "Election" will search for the table "elections".
+Additionally, by default foreign keys expect snake case with an ID appended.
+So a foreign key from "Election" to "User" will expect Election to have a field `user_id` that points to `id` in User.
+
+### Error Handling
+
+The `ServiceError` structure is a Rust enum that stores all errors in the system.
+The `ErrorResponse` structure defines the error JSON format returned to the user.
+ServiceError implements the [Actix `ResponseError`](https://docs.rs/actix-web/3.3.2/actix_web/trait.ResponseError.html) trait so it can be returned directly from API handlers.
+Anytime an error is returned from an API handler, it is logged to the terminal.
+On the production server, the `ErrorResponse` object does **NOT** return the `developer_notes` field, as it may contain sentivie information about the API server.
+However, this field is still printed to the log file on the production server.
+
+The error handling system also defines a few more structures used by the API server:
+
+- `ClientRequestError` - Used when making API requests to other services, such as the collectors or notifications server
+- `GlobalErrorCodes` - Integer error codes used by the frontend for more finely-grained error handling
+- `ResourceType` and `NamedResourceType` - Used by errors when trying to find a resource that does not exist (or the user does not have permission to access)
+- `ResourceAction` - Actions that can be performed on resources, used by errors that test if user has permission to perform an action on a resource
+
+### API Handlers
+
+General guidelines:
+
+- Each API handler is a single [Rust async function](https://rust-lang.github.io/async-book/), and is defined in its own file
+- All handler parameters must implement the `FromRequest` trait in [Actix Web](https://docs.rs/actix-web/3.3.2/actix_web/trait.FromRequest.html)
+- Usually, API handlers return `HttpResponse` or empty data.
+- If an error can occur, use the `Result<HttpResponse, ServiceError>`
+- API handlers use the Permissions object to check for user permissions
+- If JSON data is passed to the API server, use the Validator library to ensure the data is correct
+
+[Actix Web](https://docs.rs/actix-web/3.3.2/actix_web/index.html) defines special types of `FromRequest` objects to assist with writing API handlers:
+
+- `web::Json<>` - Parse the body of the request as JSON data
+- `web::Path<>` - Read parameters from the path, such as string or integer identifiers
+- `web::Query<>` - Parse parameters in the URL query string
+
+General guidelines for JSON structures:
+
+- Structures that parse data from the user should implement the Deserialize trait
+- Structures that return data to the user should implement the Serialize trait
+- All structure fields should be renamed to camelCase using #[serde(rename_all = "camelCase")]
+
+All API routes are defined in `src/main.rs`.
+This is handled by the Actix Web framework, which provides the following types of objects for defining routes:
+
+- `.route()` - Specify a route using a string and a HTTP method
+- `web::scope()` - Define a new subpath in the route
+- `web::resource()` - Define a single path which supports multiple HTTP methods
+
+Routes in the API server define parameters using brackets `{}`, such as `/api/users/{userId}/roles`
+
+Most API handlers follow CRUD rules for naming and function (Create, Read, Update, Delete)
+In general, HTTP methods work as follows:
+
+- `GET` - Fetch a resource
+- `POST` - Create a new resource
+- `PATCH` - Modify various properties of a resource
+- `PUT` - Replace a resource (Such as with file upload)
+- `DELETE` - Delete a resource
+
+### Miscellaneous Objects and Functions
+
+- `new_safe_uuid_v4()` - Since UUIDs are represented as a base-64 string, it may be possible for a UUID to contain a curse word. This method filters the most common types of curse words and curse variants.
+- `ConvertBigInt` - Trait that provides convenient functions to convert between `BigInt` and `BigDecimal` data types.
+- `serialize_option_bigint` - Functions to serialize and deserialize `Option<BigInt>`, as `BigInt` doesn't implement the Serialize trait.
+- `validate_password_complexity` - Test for the complexity of a password when changing passwords
