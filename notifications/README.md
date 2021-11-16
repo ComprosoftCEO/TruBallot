@@ -34,11 +34,51 @@ This can be done using the following files:
 - `.env.development` - Environment variables only on development system
 - `.env.production` - Environment variables only on production system
 
-|  Variable  |      Required       | Default Value | Description                                                                                                                                                                                                          |
-| :--------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|    HOST    |         No          |   127.0.0.1   | IP address to use for running the API server. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.          |
-|    PORT    |         No          |     3000      | Port number for the API server.                                                                                                                                                                                      |
-| USE_HTTPS  |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
-|  KEY_FILE  | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
-| CERT_FILE  | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
-| JWT_SECRET |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
+Alternatively, these values can be passed in using command-line parameters when running the API server.
+The command-line parameters override any values set in the `.env` files.
+
+|  Variable  |  Command-line Flag   |      Required       | Default Value | Description                                                                                                                                                                                                          |
+| :--------: | :------------------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    HOST    |    `--host`, `-h`    |         No          |   127.0.0.1   | IP address to use for running the API server. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.          |
+|    PORT    |    `--port`, `-p`    |         No          |     3000      | Port number for the API server.                                                                                                                                                                                      |
+| USE_HTTPS  |    `--use-https`     |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
+|  KEY_FILE  |     `--key-file`     | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
+| CERT_FILE  |    `--cert-file`     | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
+| JWT_SECRET | `--jwt-secret`, `-s` |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
+
+<br />
+
+## Code Structure
+
+Main files in the `/src` directory:
+
+- [`main.rs`](/src/main.rs) - Entry point for the notification server executable
+- [`lib.rs`](/src/lib.rs) - Entry point for the shared library
+- [`config.rs`](/src/config.rs) - Handle environment variables
+
+Main folders in the `/src` directory:
+
+- [`/auth`](/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
+- [`/errors`](/src/errors) - Structures and functions for error handling across the application
+- [`/handlers`](/src/handlers) - All REST API handlers
+- [`/notifications`](/src/notifications) - Structures and functions for pushing WebSocket notifications to the frontend
+
+**Note:** The notification server compiles both a shared library and a main executable.
+Using this structure enables other [binary utilities](https://doc.rust-lang.org/cargo/guide/project-layout.html) (`/src/bin` directory) to access the data types and API handlers.
+Although this project doesn't have any utilities currently, this may be useful in the future.
+
+Other important files:
+
+- [`/server_types.rs`](/src/notifications/server_types.rs) - Data structures for notifications pushed from the API server
+- [`/client_types.rs`](/src/notifications/server_types.rs) - Data structures for notifications pushed to the frontend
+- [`/subscription_actor.rs`](/src/notifications/subscription_actor.rs) - [Actix Actor](https://actix.rs/book/actix/) for managing the list of all active subscriptions
+- [`/websocket_actor.rs`](/src/notifications/websocket_actor.rs) - [Actix Actor](https://actix.rs/book/actix/) for managing a single websocket connection
+- [`/internal_types.rs`](/src/notifications/internal_types.rs) - Data structures used for internal actor communication between the subscription actor and the websocket actor
+
+All data types in `server_types.rs` must implement either the `GlobalEvent` or `ElectionEvent` trait.
+These traits provides a generic way for the websocket handler to convert server notifications into data sent to the frontend.
+The `into_output()` method defines the data structure that will be sent to the client.
+Additionally, the `protected()` method can be overridden to only send the event to a given user ID.
+The list of all events are defined in the `GlobalEvents` and `ElectionEvents` enums.
+
+See the [Server README.md](../server/README.md) file for more details on authentication and error handling.
