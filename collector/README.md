@@ -73,26 +73,26 @@ The command-line flags do not require this prefix, as the collector index is kno
 
 ## Code Structure
 
-- [`/src`](/src) - All source code files for the API server
-- [`/migrations`](/migrations) - Database migrations for the PostgreSQL database
+- [`/src`](/collector/src) - All source code files for the API server
+- [`/migrations`](/collector/migrations) - Database migrations for the PostgreSQL database
 
 Main files in the `/src` directory:
 
-- [`main.rs`](/src/main.rs) - Entry point for the collector application
-- [`lib.rs`](/src/lib.rs) - Entry point for the shared library
-- [`config.rs`](/src/config.rs) - Handle environment variables
-- [`schema.rs`](/src/schema.rs) - Auto-generated file by Diesel ORM that exports the database tables for Rust
+- [`main.rs`](/collector/src/main.rs) - Entry point for the collector application
+- [`lib.rs`](/collector/src/lib.rs) - Entry point for the shared library
+- [`config.rs`](/collector/src/config.rs) - Handle environment variables
+- [`schema.rs`](/collector/src/schema.rs) - Auto-generated file by Diesel ORM that exports the database tables for Rust
 
 Main folders in the `/src` directory:
 
-- [`/auth`](/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
-- [`/db`](/src/db) - Structures and functions needed for running the database
-- [`/errors`](/src/errors) - Structures and functions for error handling across the application
-- [`/handlers`](/src/handlers) - All REST API handlers
-- [`/models`](/src/models) - Rust `struct` definitions for tables in the database
-- [`/protocol`](/src/protocol) - Structures and functions specific to the electronic voting protocol
-- [`/utils`](/src/utils) - Miscellaneous helper functions
-- [`/views`](/src/views) - Shared structures that define the return types from the API handlers
+- [`/auth`](/collector/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
+- [`/db`](/collector/src/db) - Structures and functions needed for running the database
+- [`/errors`](/collector/src/errors) - Structures and functions for error handling across the application
+- [`/handlers`](/collector/src/handlers) - All REST API handlers
+- [`/models`](/collector/src/models) - Rust `struct` definitions for tables in the database
+- [`/protocol`](/collector/src/protocol) - Structures and functions specific to the electronic voting protocol
+- [`/utils`](/collector/src/utils) - Miscellaneous helper functions
+- [`/views`](/collector/src/views) - Shared structures that define the return types from the API handlers
 
 **Note:** The collector daemon compiles both a shared library and a main executable.
 Using this structure enables other [binary utilities](https://doc.rust-lang.org/cargo/guide/project-layout.html) (`/src/bin` directory) to access the data types and API handlers.

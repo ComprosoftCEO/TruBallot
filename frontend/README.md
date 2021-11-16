@@ -75,7 +75,7 @@ You will then need to set the following environment values:
 The development proxy is configured in `package.json`. By default, it assumes it can access the API servers and collectors under `localhost:3010`.
 The API then uses `/api/v1` as a replacement for `localhost:3010/api/v1`. This can be changed by updating:
 
-```json
+```jsonc
 {
   // ...
   "proxy": "http://localhost:3010"
@@ -129,8 +129,8 @@ On a production server, the `REACT_APP_API_BASE_URL` will need to be updated to 
 
 **Code Layout:**
 
-- [`/src`](/src) - Main directory for all code files
-- [`/public`](/public) - Other public files included in the website, like images, robots.txt, and the manifest
+- [`/src`](/frontend/src) - Main directory for all code files
+- [`/public`](/frontend/public) - Other public files included in the website, like images, robots.txt, and the manifest
 
 The main entry point for the entire application is `src/index.tsx`, which stores the Redux global state and loads the router.
 This component also defines the [error boundary](https://reactjs.org/docs/error-boundaries.html) used for trapping JavaScript errors.
@@ -138,21 +138,21 @@ All of the routes for the application are defined in `src/components/Routes.tsx`
 
 **Subdirectories in `src/`:**
 
-- [`/api`](/src/api) - Types used to simplify API requests to the backend server
-- [`/components`](/src/components) - React components used to render the pages
-- [`/helpers`](/src/helpers) - Miscellaneous functions and structures
-- [`/models`](/src/models) - Defines the public JSON return types from the API server
-- [`/notifications`](/src/notifications) - Functions and hooks for communicating with the notification server
-- [`/protocol`](/src/protocol) - Functions specific to the electronic voting protocol
-- [`/redux`](/src/redux) - Defines the global state for the application
-- [`/semantic-ui`](/src/semantic-ui) - Custom [Semantic UI Theme](https://semantic-ui.com/usage/theming.html) for the website
+- [`/api`](/frontend/src/api) - Types used to simplify API requests to the backend server
+- [`/components`](/frontend/src/components) - React components used to render the pages
+- [`/helpers`](/frontend/src/helpers) - Miscellaneous functions and structures
+- [`/models`](/frontend/src/models) - Defines the public JSON return types from the API server
+- [`/notifications`](/frontend/src/notifications) - Functions and hooks for communicating with the notification server
+- [`/protocol`](/frontend/src/protocol) - Functions specific to the electronic voting protocol
+- [`/redux`](/frontend/src/redux) - Defines the global state for the application
+- [`/semantic-ui`](/frontend/src/semantic-ui) - Custom [Semantic UI Theme](https://semantic-ui.com/usage/theming.html) for the website
 
 **Subdirectories of `components/`:**
 
-- [`/errorDialogs`](/src/components/errorDialogs) - Shared component for showing application errors
-- [`/input`](/src/components/input) - Various custom input components, like text boxes
-- [`/routes`](/src/components/routes) - The actual pages in the application
-- [`/shared`](/src/components/shared) - Other components shared by multiple pages in the application
+- [`/errorDialogs`](/frontend/src/components/errorDialogs) - Shared component for showing application errors
+- [`/input`](/frontend/src/components/input) - Various custom input components, like text boxes
+- [`/routes`](/frontend/src/components/routes) - The actual pages in the application
+- [`/shared`](/frontend/src/components/shared) - Other components shared by multiple pages in the application
 
 ### Linting and Formatting
 
@@ -242,9 +242,9 @@ Each action is constructed using an `action creator`, which is a plain JavaScrip
 - `Action` - Defines action for the reducer to run
 - `Action Creator` - Builds the action objects
 
-The global store itself is defined in [`/src/redux/store.ts`](/src/redux/store.ts), and the data type is defined in [`/src/redux/state/root.ts`](/src/redux/state/root.ts).
+The global store itself is defined in [`/src/redux/store.ts`](/frontend/src/redux/store.ts), and the data type is defined in [`/src/redux/state/root.ts`](/frontend/src/redux/state/root.ts).
 To isolate parts of the application, each page has a nested property inside the root state.
-All of these nested states are defined in [`/src/redux/store`](/src/redux/store).
+All of these nested states are defined in [`/src/redux/state`](/frontend/src/redux/state).
 
 To simplify the use of Redux in the application, a universal action creator and reducer has been written to update any part of the state.
 Rather, the application defines several higher-order functions for interacting with the store:

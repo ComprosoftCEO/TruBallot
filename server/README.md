@@ -167,27 +167,27 @@ The command-line parameters override any values set in the `.env` files.
 
 ## Code Structure
 
-- [`/src`](/src) - All source code files for the API server
-- [`/migrations`](/migrations) - Database migrations for the PostgreSQL database
+- [`/src`](/server/src) - All source code files for the API server
+- [`/migrations`](/server/migrations) - Database migrations for the PostgreSQL database
 
 Main files in the `/src` directory:
 
-- [`main.rs`](/src/main.rs) - Entry point for the server application
-- [`lib.rs`](/src/lib.rs) - Entry point for the shared library
-- [`config.rs`](/src/config.rs) - Handle environment variables
-- [`schema.rs`](/src/schema.rs) - Auto-generated file by Diesel ORM that exports the database tables for Rust
+- [`main.rs`](/server/src/main.rs) - Entry point for the server application
+- [`lib.rs`](/server/src/lib.rs) - Entry point for the shared library
+- [`config.rs`](/server/src/config.rs) - Handle environment variables
+- [`schema.rs`](/server/src/schema.rs) - Auto-generated file by Diesel ORM that exports the database tables for Rust
 
 Main folders in the `/src` directory:
 
-- [`/auth`](/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
-- [`/db`](/src/db) - Structures and functions needed for running the database
-- [`/errors`](/src/errors) - Structures and functions for error handling across the application
-- [`/handlers`](/src/handlers) - All REST API handlers
-- [`/models`](/src/models) - Rust `struct` definitions for tables in the database
-- [`/notifications`](/src/notifications) - Structures and functions for pushing WebSocket notifications to the frontend
-- [`/protocol`](/src/protocol) - Structures and functions specific to the electronic voting protocol
-- [`/utils`](/src/utils) - Miscellaneous helper functions
-- [`/views`](/src/views) - Shared structures that define the return types from the API handlers
+- [`/auth`](/server/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
+- [`/db`](/server/src/db) - Structures and functions needed for running the database
+- [`/errors`](/server/src/errors) - Structures and functions for error handling across the application
+- [`/handlers`](/server/src/handlers) - All REST API handlers
+- [`/models`](/server/src/models) - Rust `struct` definitions for tables in the database
+- [`/notifications`](/server/src/notifications) - Structures and functions for pushing WebSocket notifications to the frontend
+- [`/protocol`](/server/src/protocol) - Structures and functions specific to the electronic voting protocol
+- [`/utils`](/server/src/utils) - Miscellaneous helper functions
+- [`/views`](/server/src/views) - Shared structures that define the return types from the API handlers
 
 **Note:** The API server compiles both a shared library and a main executable.
 Using this structure enables other [binary utilities](https://doc.rust-lang.org/cargo/guide/project-layout.html) (`/src/bin` directory) to access the data types and API handlers.

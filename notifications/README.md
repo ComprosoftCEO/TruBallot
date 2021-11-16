@@ -52,16 +52,16 @@ The command-line parameters override any values set in the `.env` files.
 
 Main files in the `/src` directory:
 
-- [`main.rs`](/src/main.rs) - Entry point for the notification server executable
-- [`lib.rs`](/src/lib.rs) - Entry point for the shared library
-- [`config.rs`](/src/config.rs) - Handle environment variables
+- [`main.rs`](/notifications/src/main.rs) - Entry point for the notification server executable
+- [`lib.rs`](/notifications/src/lib.rs) - Entry point for the shared library
+- [`config.rs`](/notifications/src/config.rs) - Handle environment variables
 
 Main folders in the `/src` directory:
 
-- [`/auth`](/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
-- [`/errors`](/src/errors) - Structures and functions for error handling across the application
-- [`/handlers`](/src/handlers) - All REST API handlers
-- [`/notifications`](/src/notifications) - Structures and functions for pushing WebSocket notifications to the frontend
+- [`/auth`](/notifications/src/auth) - Structures and functions for authentication and authorization using JSON Web Tokens
+- [`/errors`](/notifications/src/errors) - Structures and functions for error handling across the application
+- [`/handlers`](/notifications/src/handlers) - All REST API handlers
+- [`/notifications`](/notifications/src/notifications) - Structures and functions for pushing WebSocket notifications to the frontend
 
 **Note:** The notification server compiles both a shared library and a main executable.
 Using this structure enables other [binary utilities](https://doc.rust-lang.org/cargo/guide/project-layout.html) (`/src/bin` directory) to access the data types and API handlers.
@@ -69,11 +69,11 @@ Although this project doesn't have any utilities currently, this may be useful i
 
 Other important files:
 
-- [`/server_types.rs`](/src/notifications/server_types.rs) - Data structures for notifications pushed from the API server
-- [`/client_types.rs`](/src/notifications/server_types.rs) - Data structures for notifications pushed to the frontend
-- [`/subscription_actor.rs`](/src/notifications/subscription_actor.rs) - [Actix Actor](https://actix.rs/book/actix/) for managing the list of all active subscriptions
-- [`/websocket_actor.rs`](/src/notifications/websocket_actor.rs) - [Actix Actor](https://actix.rs/book/actix/) for managing a single websocket connection
-- [`/internal_types.rs`](/src/notifications/internal_types.rs) - Data structures used for internal actor communication between the subscription actor and the websocket actor
+- [`/server_types.rs`](/notifications/src/notifications/server_types.rs) - Data structures for notifications pushed from the API server
+- [`/client_types.rs`](/notifications/src/notifications/server_types.rs) - Data structures for notifications pushed to the frontend
+- [`/subscription_actor.rs`](/notifications/src/notifications/subscription_actor.rs) - [Actix Actor](https://actix.rs/book/actix/) for managing the list of all active subscriptions
+- [`/websocket_actor.rs`](/notifications/src/notifications/websocket_actor.rs) - [Actix Actor](https://actix.rs/book/actix/) for managing a single websocket connection
+- [`/internal_types.rs`](/notifications/src/notifications/internal_types.rs) - Data structures used for internal actor communication between the subscription actor and the websocket actor
 
 All data types in `server_types.rs` must implement either the `GlobalEvent` or `ElectionEvent` trait.
 These traits provides a generic way for the websocket handler to convert server notifications into data sent to the frontend.
