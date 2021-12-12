@@ -806,7 +806,7 @@ macro_rules! has_many(
       pub fn [<set_ $func_base>]<'a>(
         &self,
         list: impl std::iter::IntoIterator<Item = &'a $child>,
-        conn: &DbConnection,
+        conn: &crate::db::DbConnection,
       ) -> diesel::prelude::QueryResult<Vec<$through>> {
         let ids_list = list.into_iter().map(|item| <&$child as diesel::associations::Identifiable>::id(&item));
         Self::[<set_ $func_base _ids_from_id>](<&Self as diesel::associations::Identifiable>::id(&self), ids_list, conn)
@@ -818,7 +818,7 @@ macro_rules! has_many(
       pub fn [<set_ $func_base _ids>]<'a>(
         &self,
         ids_list: impl std::iter::IntoIterator<Item = &'a <$through as diesel::associations::BelongsTo<$child>>::ForeignKey>,
-        conn: &DbConnection,
+        conn: &crate::db::DbConnection,
       ) -> diesel::prelude::QueryResult<Vec<$through>> {
         Self::[<set_ $func_base _ids_from_id>](<&Self as diesel::associations::Identifiable>::id(&self), ids_list, conn)
       }
@@ -829,7 +829,7 @@ macro_rules! has_many(
       pub fn [<set_ $func_base _from_id>]<'a>(
         id: <&Self as diesel::associations::Identifiable>::Id,
         list: impl std::iter::IntoIterator<Item = &'a $child>,
-        conn: &DbConnection,
+        conn: &crate::db::DbConnection,
       ) -> diesel::prelude::QueryResult<Vec<$through>> {
         let ids_list = list.into_iter().map(|item| <&$child as diesel::associations::Identifiable>::id(&item));
         Self::[<set_ $func_base _ids_from_id>](id, ids_list, conn)
