@@ -2,7 +2,7 @@ table! {
     collectors (id) {
         id -> Uuid,
         name -> Varchar,
-        private_base_url -> Text,
+        private_base_uri -> Text,
         is_secure -> Bool,
     }
 }

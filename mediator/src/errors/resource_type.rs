@@ -3,6 +3,7 @@ use std::fmt;
 /// Resource that can be accessed in the database, without any identifiers
 #[derive(Debug)]
 pub enum ResourceType {
+  Collector,
   User,
   Election,
   Question,
@@ -12,6 +13,7 @@ pub enum ResourceType {
 impl ResourceType {
   pub fn get_name(&self) -> &'static str {
     match self {
+      ResourceType::Collector => "Collector",
       ResourceType::User => "User",
       ResourceType::Election => "Election",
       ResourceType::Question => "Question",

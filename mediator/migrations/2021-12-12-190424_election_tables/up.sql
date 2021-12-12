@@ -2,7 +2,7 @@
 CREATE TABLE collectors (
   id UUID NOT NULL PRIMARY KEY,              -- Each collector is given a unique UUID
   name VARCHAR(255) NOT NULL,                -- Also has a human-readable name
-  private_base_url TEXT NOT NULL,            -- Internal base URL (without http:// prefix and without the /api/v1 suffix)
+  private_base_uri TEXT NOT NULL,            -- Internal base URI (without http:// prefix and without the /api/v1 suffix)
   is_secure BOOLEAN NOT NULL DEFAULT false   -- Is a secure connection required for this collector? (https:// or wss://)
 );
 

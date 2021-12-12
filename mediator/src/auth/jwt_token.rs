@@ -132,6 +132,28 @@ where
       ))
     }
   }
+
+  pub fn test_can_view_collectors(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Collector,
+        ResourceAction::ReadPrivate,
+      ))
+    }
+  }
+
+  pub fn test_can_register_collector(&self) -> Result<(), ServiceError> {
+    if self.has_permission(Permission::CanLogin) && self.has_permission(Permission::ManageCollector) {
+      Ok(())
+    } else {
+      Err(ServiceError::ForbiddenResourceAction(
+        ResourceType::Collector,
+        ResourceAction::Create,
+      ))
+    }
+  }
 }
 
 impl<A> JWTToken<A, JWTClientData>

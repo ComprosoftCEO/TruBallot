@@ -42,4 +42,5 @@ pub enum GlobalErrorCode {
   NoNotifyPermission,
   NoSubscribePermission,
   NotificationError,
+  InvalidCollectorURI,
 }

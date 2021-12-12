@@ -16,6 +16,7 @@ pub enum Permission {
   CreateElection,
   Register,
   Vote,
+  ManageCollector,
 }
 
 impl fmt::Display for Permission {

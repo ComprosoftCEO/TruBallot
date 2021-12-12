@@ -1027,6 +1027,8 @@ dependencies = [
  "diesel",
  "dotenv",
  "futures",
+ "http",
+ "http-serde",
  "itertools",
  "jsonwebtoken",
  "kzen-paillier",
@@ -1399,6 +1401,16 @@ dependencies = [
  "bytes 1.1.0",
  "fnv",
  "itoa",
+]
+
+[[package]]
+name = "http-serde"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25698ac7002625796d5a7df8f0602400571da944c2edc1d5c268a6947dd4f692"
+dependencies = [
+ "http",
+ "serde",
 ]
 
 [[package]]

@@ -3,8 +3,10 @@ use actix_web::{http::StatusCode, HttpResponse, ResponseError};
 use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::headers::www_authenticate::bearer::Bearer;
 use diesel::r2d2::PoolError;
+use http::uri::InvalidUri;
 use jsonwebtoken::errors::Error as JWTError;
 use std::{error, fmt};
+use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
 use crate::errors::*;
@@ -25,6 +27,7 @@ pub enum ServiceError {
   JWTExtractorError(AuthenticationError<Bearer>),
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
+  InvalidCollectorURI(Uuid, InvalidUri),
 }
 
 impl ServiceError {
@@ -119,6 +122,13 @@ impl ServiceError {
         format!("No Such {}", resource.get_resource_type()),
         GlobalErrorCode::NoSuchResource,
         format!("{}", resource),
+      ),
+
+      ServiceError::InvalidCollectorURI(id, uri) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!("Invalid Collector URI"),
+        GlobalErrorCode::InvalidCollectorURI,
+        format!("'{}' (Collector ID: {})", uri, id),
       ),
     }
   }
