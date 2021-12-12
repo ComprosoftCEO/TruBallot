@@ -15,6 +15,23 @@ macro_rules! model_base(
 
       self.save_changes::<Self>(conn.get())
     }
+
+    // Insert as a new entry, or update the existing entry on conflict
+    //   Uses the primary key to detect duplicate entries
+    pub fn insert_or_update(
+      &self,
+      conn: &crate::db::DbConnection
+    ) -> diesel::prelude::QueryResult<Self> {
+      use diesel::prelude::*;
+      use diesel::insert_into;
+
+      insert_into(<Self as diesel::associations::HasTable>::table())
+        .values(self)
+        .on_conflict(<Self as diesel::associations::HasTable>::table().primary_key())
+        .do_update()
+        .set(self)
+        .get_result::<Self>(conn.get())
+    }
   };
 
   (order by $order:expr) => {
