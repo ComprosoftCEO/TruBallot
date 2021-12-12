@@ -1,0 +1,43 @@
+[package]
+name = "evoting-mediator"
+version = "0.1.0"
+authors = ["Bryan McClain <bamcclain10@gmail.com>"]
+edition = "2018"
+default-run = "evoting-mediator"
+
+[dependencies]
+actix = "0.10.0"
+actix-codec = "0.3.0"
+actix-http = "2.2.1"
+actix-web = { version = "3", features = ["openssl"] }
+actix-web-actors = "3.0.0"
+actix-web-httpauth = "0.5.1"
+anyhow = "1.0.44"
+awc = "2.0.3"
+base64 = "0.13.0"
+bigdecimal = { version = "0.1.2", features = ["serde"] }
+chrono = "0.4.19"
+curv-kzen = { package = "curv-kzen", version = "0.8.0" }
+diesel = { version = "1.4.8", features = ["postgres", "extras"] }
+dotenv = "0.15.0"
+futures = "0.3.17"
+ipnetwork = "0.18.0"
+itertools = "0.10.1"
+jsonwebtoken = "7.2.0"
+kzen-paillier = "0.4.1"
+lazy_static = "1.4.0"
+log = "0.4.14"
+num = "0.2.1"
+num-derive = "0.2"
+num-traits = "0.2"
+openssl = "0.10.36"
+paste = "1.0.5"
+rand = "0.8.4"
+serde = "1.0.130"
+serde_json = "1.0.68"
+serde_repr = "0.1.7"
+simple_logger = "1.13.0"
+structopt = "0.3.23"
+uuid = "0.6"
+uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }
+validator = { version = "0.14.0", features = ["derive"] }
