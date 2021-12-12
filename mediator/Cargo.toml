@@ -21,7 +21,6 @@ curv-kzen = { package = "curv-kzen", version = "0.8.0" }
 diesel = { version = "1.4.8", features = ["postgres", "extras"] }
 dotenv = "0.15.0"
 futures = "0.3.17"
-ipnetwork = "0.18.0"
 itertools = "0.10.1"
 jsonwebtoken = "7.2.0"
 kzen-paillier = "0.4.1"
