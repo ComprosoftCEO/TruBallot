@@ -17,4 +17,8 @@ impl Election {
   has_many!(Question);
   has_many!(Registration);
   has_many!(Collector through ElectionCollector, order by collectors::id.asc());
+
+  pub fn new(id: Uuid, is_public: bool) -> Self {
+    Self { id, is_public }
+  }
 }

@@ -17,4 +17,8 @@ impl Registration {
   model_base!(no update);
 
   belongs_to!(Election);
+
+  pub fn new(user_id: Uuid, election_id: Uuid) -> Self {
+    Self { user_id, election_id }
+  }
 }

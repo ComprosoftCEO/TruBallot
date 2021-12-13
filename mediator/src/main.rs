@@ -43,20 +43,21 @@ async fn main() -> anyhow::Result<()> {
       .app_data(web::QueryConfig::default().error_handler(|err, _req| ServiceError::from(err).into()))
       // Load all routes
       .service(
-        web::scope("/api/v1/mediator").service(
-          web::scope("/auth")
-            .route("", web::get().to(handlers::auth::get_me))
-            .service(
-              web::scope("/collectors")
-                .route("", web::get().to(handlers::collector::all_collectors))
-                .route("", web::post().to(handlers::collector::create_or_update_collector))
-                .service(
-                  web::scope("{collector_id}")
-                    .route("", web::get().to(handlers::collector::get_collector))
-                    .route("", web::patch().to(handlers::collector::update_collector)),
-                ),
-            ),
-        ),
+        web::scope("/api/v1/mediator")
+          .service(web::scope("/auth").route("", web::get().to(handlers::auth::get_me)))
+          .service(
+            web::scope("/collectors")
+              .route("", web::get().to(handlers::collector::all_collectors))
+              .route("", web::post().to(handlers::collector::create_or_update_collector))
+              .service(
+                web::scope("{collector_id}")
+                  .route("", web::get().to(handlers::collector::get_collector))
+                  .route("", web::patch().to(handlers::collector::update_collector)),
+              ),
+          )
+          .service(
+            web::scope("/elections").route("", web::post().to(handlers::election::create_and_initialize_election)),
+          ),
       )
       .default_service(web::route().to(|| HttpResponse::NotFound()))
   });

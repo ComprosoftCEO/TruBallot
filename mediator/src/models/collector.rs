@@ -29,4 +29,22 @@ impl Collector {
   pub fn find_resource(id: &Uuid, conn: &DbConnection) -> Result<Self, ServiceError> {
     Self::find_optional(id, conn)?.ok_or_else(|| NamedResourceType::collector(*id).into_error())
   }
+
+  pub fn private_api_url(&self, path: &str) -> String {
+    format!(
+      "{}:{}/api/v1/collector{}",
+      if self.is_secure { "https" } else { "http" },
+      self.private_base_uri,
+      path
+    )
+  }
+
+  pub fn private_websocket_url(&self, path: &str) -> String {
+    format!(
+      "{}:{}/api/v1/collector{}",
+      if self.is_secure { "wss" } else { "ws" },
+      self.private_base_uri,
+      path
+    )
+  }
 }

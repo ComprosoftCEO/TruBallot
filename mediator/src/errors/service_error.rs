@@ -28,6 +28,8 @@ pub enum ServiceError {
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
   InvalidCollectorURI(Uuid, InvalidUri),
+  NotEnoughUsers { expected: usize, given: usize },
+  RegisterElectionError(Uuid, ClientRequestError),
 }
 
 impl ServiceError {
@@ -129,6 +131,23 @@ impl ServiceError {
         format!("Invalid Collector URI"),
         GlobalErrorCode::InvalidCollectorURI,
         format!("'{}' (Collector ID: {})", uri, id),
+      ),
+
+      ServiceError::NotEnoughUsers { expected, given } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        format!(
+          "Need at least {} registered users to initialize the collectors",
+          expected
+        ),
+        GlobalErrorCode::NotEnoughRegistered,
+        format!("Expected: {}, Given: {}", expected, given),
+      ),
+
+      ServiceError::RegisterElectionError(collector_id, error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Failed to register election with collector".into(),
+        GlobalErrorCode::RegisterElectionError,
+        format!("Collector ID: {}, Error: {:?}", collector_id, error),
       ),
     }
   }

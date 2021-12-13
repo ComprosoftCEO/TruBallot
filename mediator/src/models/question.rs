@@ -17,4 +17,8 @@ impl Question {
   model_base!();
 
   belongs_to!(Election);
+
+  pub fn new(id: Uuid, election_id: Uuid) -> Self {
+    Self { id, election_id }
+  }
 }

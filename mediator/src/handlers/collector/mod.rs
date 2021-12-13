@@ -1,3 +1,6 @@
+//
+// All API handlers for managing the collectors in the database
+//
 mod all_collectors;
 mod create_or_update_collector;
 mod get_collector;
