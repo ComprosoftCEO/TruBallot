@@ -10,6 +10,7 @@ use crate::errors::ServiceError;
 use crate::models::Collector;
 
 #[derive(Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateUpdateCollectorData {
   id: Uuid,
 

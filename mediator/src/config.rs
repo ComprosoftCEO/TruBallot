@@ -18,7 +18,7 @@ pub struct Opt {
   host: String,
 
   /// Port to use for the mediator
-  #[structopt(short, long, env, default_value = "3000")]
+  #[structopt(short, long, env, default_value = "3004")]
   port: u16,
 
   /// Enable HTTPS (SSL) for the mediator

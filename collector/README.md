@@ -10,7 +10,8 @@ Please see the [server README.md](../server/README.md) for instructions on compi
 Each collector should run in its own separate database instance.
 In the `.env` file, you will need to manually specify the `DATABASE_URL` for each collector when running migrations.
 
-When running the code, you will need to specify either `1` or `2` as a parameter to indicate which collector to run.
+When running the code, you will need to specify a number (`1`, `2`, ...) as a parameter to indicate which collector to run.
+This flag is used in the `.env` file to prefix environment variables specific to each collector, allowing you to use one file for all collectors.
 You can also optionally specify the port and/or host using `--port` (or `-p`) and `--host` (or `-h`) command-line arguments.
 These values override any environment values specified in the `.env` files.
 Use the `--help` flag to list all command-line options.
@@ -19,15 +20,14 @@ Use the `--help` flag to list all command-line options.
 # Start Collector 1 on port 3024
 cargo run -- 1 -p 3024
 
-# Start Collector 2 on a custom host with port 3456
-cargo run -- 2 -h 192.168.1.234 --port 3456
+# Start Collector 5 on a custom host with port 3456
+cargo run -- 5 -h 192.168.1.234 --port 3456
 ```
 
 Be sure to specify the `--release` flag for the production server:
 
 ```bash
 cargo run --release -- 1
-cargo run --release -- 2
 ```
 
 <br/>
@@ -53,20 +53,19 @@ This can be done using the following files:
 Alternatively, these values can be passed in using command-line parameters when running the API server.
 The command-line parameters override any values set in the `.env` files.
 
-|       Variable       |  Command-line Flag   |      Required       | Default Value | Description                                                                                                                                                                                                          |
-| :------------------: | :------------------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|      Collector       |      _Argument_      |       **Yes**       |               | Index of the collector (`1` or `2`)                                                                                                                                                                                  |
-|     C{1,2}\_HOST     |       `--host`       |         No          |   127.0.0.1   | IP address to use for running collector 1 or 2. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.        |
-|     C{1,2}\_PORT     |       `--port`       |         No          |     3001      | Port number for collector 1 or 2.                                                                                                                                                                                    |
-|  C{1,2}\_USE_HTTPS   |    `--use-https`     |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
-|   C{1,2}\_KEY_FILE   |     `--key-file`     | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
-|  C{1,2}\_CERT_FILE   |    `--cert-file`     | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
-| C{1,2}\_DATABASE_URL |   `--database-url`   |       **Yes**       |               | [PostgreSQL Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for accessing the collector 1 or 2 database.                                                                |
-|      JWT_SECRET      | `--jwt_secret`, `-s` |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
-|        C1_URL        |      `--c1-url`      |       **Yes**       |               | Base URL to access collector 1. It should **NOT** include the `/api/v1` suffix nor the `http://` or `https://` prefix. If running on the same machine as the API server, this value can be set to `localhost:3001`.  |
-|        C2_URL        |      `--c2-url`      |       **Yes**       |               | Base URL to access collector 2. It should **NOT** include the `/api/v1` suffix nor the `http://` or `https://` prefix. If running on the same machine as the API server, this value can be set to `localhost:3002`.  |
+|      Variable      |  Command-line Flag   |      Required       | Default Value | Description                                                                                                                                                                                                          |
+| :----------------: | :------------------: | :-----------------: | :-----------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|     Collector      |      _Argument_      |       **Yes**       |               | Index of the collector (`1`, `2`, ...)                                                                                                                                                                               |
+|     C{i}\_HOST     |       `--host`       |         No          |   127.0.0.1   | IP address to use for running collector _i_. If you use the `localhost` IP address, then you cannot connect to the API server from an external location. This must be an IP address and not a domain name.           |
+|     C{i}\_PORT     |       `--port`       |         No          |  4000 + _i_   | Port number for collector _i_. (`4001`, `4002`, ...)                                                                                                                                                                 |
+|  C{i}\_USE_HTTPS   |    `--use-https`     |         No          |     false     | If true, then use HTTPS instead of HTTP for API requests. HTTPS encryption is performed using the OpenSSL library.                                                                                                   |
+|   C{i}\_KEY_FILE   |     `--key-file`     | Only If `USE_HTTPS` |               | Private key file for OpenSSL. This should be an unencrypted `.pem` file.                                                                                                                                             |
+|  C{i}\_CERT_FILE   |    `--cert-file`     | Only If `USE_HTTPS` |               | Certificate file for OpenSSL. This should be the unencrypted `.pem` file generated using the private key. For compatibility with some applications, this should be the full chain file and not just the certificate. |
+| C{i}\_DATABASE_URL |   `--database-url`   |       **Yes**       |               | [PostgreSQL Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for accessing the collector _i_ database.                                                                   |
+|     JWT_SECRET     | `--jwt_secret`, `-s` |         No          |  _Hidden..._  | Secret value for signing the JSON Web Token                                                                                                                                                                          |
+|    MEDIATOR_URL    |   `--mediator-url`   |       **Yes**       |               | Base URL to access the mediator. If running on the same machine as the API server with default settings, this value can be set to `http://localhost:3004`.                                                           |
 
-Since the same executable is used for both collector 1 and 2, many of the environment variables need to be prefixed with either a `C1_` or a `C2_`.
+Since the same executable is used for all collectors, many of the environment variables need to be prefixed with a `C{i]_`, where _i_ is the collector index (like `C1_`, `C2_`, ...).
 The command-line flags do not require this prefix, as the collector index is known when running the program (It is a required argument).
 
 <br />
