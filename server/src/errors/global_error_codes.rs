@@ -29,7 +29,7 @@ pub enum GlobalErrorCode {
   RegistrationClosed,
   NotEnoughRegistered,
   ElectionNotInitialized,
-  CollectorURLNotSet,
+  MediatorURLNotSet,
   RegisterElectionError,
   VerificationError,
   AlreadyVoted,

@@ -107,7 +107,7 @@ pub async fn vote(
     sub_protocol_2,
   } = ClientRequestError::handle(verify_request)
     .await
-    .map_err(|e| ServiceError::RegisterElectionError(Collector::One, e))?;
+    .map_err(|e| ServiceError::VerifyVoteError(e))?;
 
   // Make sure both sub-protocols are valid
   log::debug!(

@@ -130,10 +130,11 @@ impl ServiceError {
         format!("{}", resource),
       ),
 
+      // TODO: Remove this error
       ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Server Misconfiguration".into(),
-        GlobalErrorCode::CollectorURLNotSet,
+        GlobalErrorCode::MediatorURLNotSet,
         format!("{} environment variable not set", collector.env_prefix("URL")),
       ),
 

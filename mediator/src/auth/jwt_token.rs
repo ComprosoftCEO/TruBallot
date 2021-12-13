@@ -17,6 +17,7 @@ use crate::errors::{ResourceAction, ResourceType, ServiceError};
 pub type ClientToken = JWTToken<audience::ClientOnly, JWTClientData>;
 pub type ServerToken = JWTToken<audience::ServerOnly, JWTInternalData>;
 pub type CollectorToken = JWTToken<audience::CollectorOnly, JWTInternalData>;
+pub type MediatorToken = JWTToken<audience::MediatorOnly, JWTInternalData>;
 pub type AnyToken = JWTToken<audience::All, JWTAnyData>;
 
 /// JSON Web Token used for user authentication

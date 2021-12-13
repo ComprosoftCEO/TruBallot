@@ -55,3 +55,13 @@ impl Audience for CollectorOnly {
   const TEXT: &'static str = "collector-only";
   const ACCEPTS: &'static [&'static str] = &["all", "collector-only"];
 }
+
+/// Route can only be called by a mediator
+#[derive(Deserialize)]
+pub struct MediatorOnly;
+
+impl Audience for MediatorOnly {
+  const TEXT: &'static str = "mediator-only";
+  const ACCEPTS: &'static [&'static str] = &["all", "mediator-only"];
+}
+

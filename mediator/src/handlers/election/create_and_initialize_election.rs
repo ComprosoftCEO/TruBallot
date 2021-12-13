@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
-use crate::auth::{JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
+use crate::auth::{JWTSecret, MediatorToken, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ServiceError};
 use crate::models::{Collector, Election, ElectionCollector, Question, Registration};
@@ -44,44 +44,6 @@ pub struct CreateElectionQuestion {
 
   #[validate(range(min = 2))]
   num_candidates: i64,
-}
-
-/// Data sent to each individual collector to initialize election
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct CollectorCreateElectionData {
-  id: Uuid,
-  is_public: bool,
-
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  generator: BigInt,
-
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  prime: BigInt,
-
-  questions: Vec<CreateElectionQuestion>,
-  registered_users: Vec<Uuid>,
-
-  collector_index: usize,
-  num_collectors: usize,
-
-  /// Use secure two-party multiplication to store location
-  ///   If n is provided, then this is on step i, otherwise it is on the last step
-  ///   The "should_shuffle" flag tells the first collector to shuffle this list again
-  #[serde(with = "kzen_paillier::serialize::vecbigint")]
-  encrypted_locations: Vec<BigInt>,
-  #[serde(with = "crate::utils::serialize_option_bigint")]
-  n: Option<BigInt>,
-  should_shuffle: bool,
-}
-
-/// Response from each individual collector
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreateElectionResponse {
-  // Vector might be empty when returning from the second collector
-  #[serde(with = "kzen_paillier::serialize::vecbigint")]
-  encryption_result: Vec<BigInt>,
 }
 
 pub async fn create_and_initialize_election(
@@ -146,11 +108,10 @@ pub async fn create_and_initialize_election(
     prime: data.prime,
     questions: data.questions,
     registered_users: data.registered_users,
-    collector_index: 0,
     num_collectors: collectors.len(),
+    collector_index: 0,
     encrypted_locations,
     n: Some(encryption_key.n.clone()),
-    should_shuffle: true,
   };
 
   // =========================================
@@ -179,22 +140,25 @@ pub async fn create_and_initialize_election(
     );
     let collector_request = Client::builder()
       .disable_timeout()
-      .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
+      .bearer_auth(MediatorToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
       .finish()
       .post(collector.private_api_url("/elections"))
       .send_json(&create_elections_data);
 
     // Send the request and handle any errors
-    let collector_response: CreateElectionResponse = ClientRequestError::handle(collector_request)
-      .await
-      .map_err(|e| ServiceError::RegisterElectionError(collector.id, e))?;
+    let collector_response: CreateElectionResponse =
+      ClientRequestError::handle(collector_request)
+        .await
+        .map_err(|error| ServiceError::RegisterElectionError {
+          collector_id: collector.id,
+          collector_number: index + 1,
+          error,
+        })?;
+
     log::debug!("Got success response from collector {}", index + 1);
 
     // Update the list of encrypted locations
     create_elections_data.encrypted_locations = collector_response.encryption_result;
-
-    // We only shuffle with the first collector
-    create_elections_data.should_shuffle = false;
   }
 
   // ==========================================
@@ -224,4 +188,42 @@ pub async fn create_and_initialize_election(
 
   // Woohoo! Election is now fully initialized!
   Ok(HttpResponse::Ok().finish())
+}
+
+///
+/// Data sent to each individual collector to initialize election
+///
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CollectorCreateElectionData {
+  id: Uuid,
+  is_public: bool,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  generator: BigInt,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  prime: BigInt,
+
+  questions: Vec<CreateElectionQuestion>,
+  registered_users: Vec<Uuid>,
+
+  num_collectors: usize,
+  collector_index: usize,
+
+  /// Use secure two-party multiplication to store location
+  ///   If n is provided, then this is on step i, otherwise it is on the last step
+  #[serde(with = "kzen_paillier::serialize::vecbigint")]
+  encrypted_locations: Vec<BigInt>,
+  #[serde(with = "crate::utils::serialize_option_bigint")]
+  n: Option<BigInt>,
+}
+
+/// Response from each individual collector
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateElectionResponse {
+  // Vector might be empty when returning from the second collector
+  #[serde(with = "kzen_paillier::serialize::vecbigint")]
+  encryption_result: Vec<BigInt>,
 }

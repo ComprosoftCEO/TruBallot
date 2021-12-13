@@ -3,8 +3,6 @@ use curv_kzen::BigInt;
 use std::fmt;
 use std::ops::{Index, IndexMut};
 
-use crate::Collector;
-
 /// Matrix used by the collectors for (n,n) Secret Sharing
 pub struct SharesMatrix {
   num_voters: usize,
@@ -13,19 +11,15 @@ pub struct SharesMatrix {
 }
 
 impl SharesMatrix {
-  pub fn new(collector: Collector, num_voters: usize, modulus: BigInt) -> Self {
+  pub fn new(collector: usize, num_collectors: usize, num_voters: usize, modulus: BigInt) -> Self {
     let mut matrix = SharesMatrix {
       num_voters,
       modulus,
       matrix: vec![BigInt::from(0); num_voters * num_voters],
     };
 
-    // Fill in the matrix halves
-    match collector {
-      Collector::One => matrix.fill_collector_one(),
-      Collector::Two => matrix.fill_collector_two(),
-    }
-
+    // Fill in the matrix quadrants
+    matrix.fill_collector(collector, num_collectors);
     matrix
   }
 
@@ -71,52 +65,49 @@ impl SharesMatrix {
     Some(sum % &self.modulus)
   }
 
-  // Quadrants Filled:
-  //   [X ]
-  //   [ x]
+  // Fill the quadrants associated with each collector
+  //
+  // [ 1 ][ 2 ][ 3 ] ... [ n ]
+  // [ n ][ 1 ][ 2 ] ... [n-1]
+  // [n-1][ n ][ 1 ] ... [n-2]
+  //   |    |    |    \    |
+  // [ 2 ][ 3 ][ 4 ] ... [ 1 ]
   //
   // Areas outside are filled with 0's so the sum is unchaged
-  fn fill_collector_one(&mut self) {
-    let midpoint = self.num_voters / 2;
+  fn fill_collector(&mut self, collector: usize, num_collectors: usize) {
+    // Fill the diagonal "cells", wrapping around
+    //  Each cell is approx. (num_voters / num_collectors)^2 entries in size
+    //  For a special case, the last row and column may be different
+    for cell_index in 0..num_collectors {
+      let row_cell_index = cell_index;
+      let col_cell_index = (collector + cell_index) % num_collectors;
 
-    // Left half
-    for row in 0..midpoint {
-      for col in 0..midpoint {
-        if row != col {
-          self[(row, col)] = BigInt::sample_below(&self.modulus);
+      // Top left of the cell
+      let row_start = (row_cell_index * self.num_voters) / num_collectors;
+      let col_start = (col_cell_index * self.num_voters) / num_collectors;
+
+      // Last row may be a different size to fill remaining rows
+      let row_end = if row_cell_index == (num_collectors - 1) {
+        self.num_voters
+      } else {
+        ((row_cell_index + 1) * self.num_voters) / num_collectors
+      };
+
+      // Last column may be a different size to fill remaining columns
+      let col_end = if col_cell_index == (num_collectors - 1) {
+        self.num_voters
+      } else {
+        ((col_cell_index + 1) * self.num_voters) / num_collectors
+      };
+
+      // Fill in all rows and columns in the individual cell
+      for row in row_start..row_end {
+        for col in col_start..col_end {
+          // Don't fill the main diagonal
+          if row != col {
+            self[(row, col)] = BigInt::sample_below(&self.modulus);
+          }
         }
-      }
-    }
-
-    // Right half
-    for row in midpoint..self.num_voters {
-      for col in midpoint..self.num_voters {
-        if row != col {
-          self[(row, col)] = BigInt::sample_below(&self.modulus);
-        }
-      }
-    }
-  }
-
-  // Quadrants Filled:
-  //   [ X]
-  //   [X ]
-  //
-  // Areas outside are filled with 0's so the sum is unchaged
-  fn fill_collector_two(&mut self) {
-    let midpoint = self.num_voters / 2;
-
-    // Left half
-    for row in midpoint..self.num_voters {
-      for col in 0..midpoint {
-        self[(row, col)] = BigInt::sample_below(&self.modulus);
-      }
-    }
-
-    // Right half
-    for row in 0..midpoint {
-      for col in midpoint..self.num_voters {
-        self[(row, col)] = BigInt::sample_below(&self.modulus);
       }
     }
   }

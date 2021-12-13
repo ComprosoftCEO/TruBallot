@@ -72,17 +72,14 @@ pub enum ServiceError {
   NotEnoughRegistered {
     election_id: Uuid,
     num_registered: usize,
+    num_collectors: usize,
   },
   ElectionNotInitialized {
     election_id: Uuid,
   },
   CollectorURLNotSet(Collector),
-  RegisterElectionError(Collector, ClientRequestError),
-  WrongNumberOfEncryptedLocations {
-    collector: Collector,
-    given: usize,
-    expected: usize,
-  },
+  MediatorURLNotSet,
+  RegisterElectionError(ClientRequestError),
   AlreadyVoted {
     user_id: Uuid,
     election_id: Uuid,
@@ -326,11 +323,20 @@ impl ServiceError {
       ServiceError::NotEnoughRegistered {
         election_id,
         num_registered,
+        num_collectors,
       } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Need at least four registered users before voting can begin".into(),
+        format!(
+          "Need at least {} registered users to begin voting with {} collectors",
+          num_registered, num_collectors
+        ),
         GlobalErrorCode::NotEnoughRegistered,
-        format!("Electon ID: {}, Num Registered: {}", election_id, num_registered),
+        format!(
+          "Electon ID: {}, Num Registered: {}, Needed: {}",
+          election_id,
+          num_registered,
+          2 * num_collectors
+        ),
       ),
 
       ServiceError::ElectionNotInitialized { election_id } => ErrorResponse::new(
@@ -340,32 +346,26 @@ impl ServiceError {
         format!("Election ID: {}", election_id),
       ),
 
+      // TODO: Remove this error
       ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Server Misconfiguration".into(),
-        GlobalErrorCode::CollectorURLNotSet,
+        GlobalErrorCode::MediatorURLNotSet,
         format!("{} environment variable not set", collector.env_prefix("URL")),
       ),
 
-      ServiceError::RegisterElectionError(collector, error) => ErrorResponse::new(
+      ServiceError::MediatorURLNotSet => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        format!("Failed to register election with collector {}", collector.to_number()),
-        GlobalErrorCode::RegisterElectionError,
-        format!("{:?}", error),
+        "Server Misconfiguration".into(),
+        GlobalErrorCode::MediatorURLNotSet,
+        "MEDIATOR_URL environment variable not set".into(),
       ),
 
-      ServiceError::WrongNumberOfEncryptedLocations {
-        collector,
-        given,
-        expected,
-      } => ErrorResponse::new(
+      ServiceError::RegisterElectionError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        format!("Failed to register election with collector {}", collector.to_number()),
+        "Failed to register election with the collectors".into(),
         GlobalErrorCode::RegisterElectionError,
-        format!(
-          "Wrong number of encrypted positions: Given {}, Expected: {}",
-          given, expected
-        ),
+        format!("{:?}", error),
       ),
 
       ServiceError::AlreadyVoted {
