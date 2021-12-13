@@ -37,6 +37,12 @@ pub enum ServiceError {
     collector_number: usize,
     error: ClientRequestError,
   },
+  UserNotRegistered {
+    user_id: Uuid,
+    election_id: Uuid,
+    question_id: Option<Uuid>,
+  },
+  CancelationSharesError(Uuid, ClientRequestError),
 }
 
 impl ServiceError {
@@ -159,6 +165,27 @@ impl ServiceError {
         format!("Failed to register election with collector {}", collector_number),
         GlobalErrorCode::RegisterElectionError,
         format!("Collector ID: {}, Error: {:?}", collector_id, error),
+      ),
+
+      ServiceError::UserNotRegistered {
+        user_id,
+        election_id,
+        question_id,
+      } => ErrorResponse::new(
+        StatusCode::CONFLICT,
+        "User not registered for election".into(),
+        GlobalErrorCode::NotRegistered,
+        format!(
+          "User ID: {}, Election ID: {}, Question ID: {:#?}",
+          user_id, election_id, question_id,
+        ),
+      ),
+
+      ServiceError::CancelationSharesError(id, error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Failed to get ballot cancelation shares".into(),
+        GlobalErrorCode::CancelationSharesError,
+        format!("Collector ID: {}, Error: {:?}", id, error),
       ),
     }
   }

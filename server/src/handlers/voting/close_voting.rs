@@ -2,6 +2,7 @@ use actix_web::client::Client;
 use actix_web::{web, HttpResponse};
 use curv_kzen::BigInt;
 use diesel::prelude::*;
+use futures::future::try_join_all;
 use jsonwebtoken::EncodingKey;
 use serde::{Deserialize, Serialize};
 use uuid_b64::UuidB64 as Uuid;
@@ -46,7 +47,7 @@ pub async fn close_voting(
   }
 
   // Each question in the election MUST have at least 2 votes
-  let mut questions: Vec<Question> = election.get_questions(&conn)?;
+  let questions: Vec<Question> = election.get_questions(&conn)?;
   for question in questions.iter() {
     if question.count_commitments(&conn)? < 2 {
       return Err(ServiceError::NotEnoughVotes {
@@ -61,21 +62,27 @@ pub async fn close_voting(
   election = election.update(&conn)?;
   notify_voting_closed(&election, &jwt_key).await;
 
+  // Data needed for the requests
+  let mediator_url = config::get_mediator_url().ok_or_else(|| ServiceError::MediatorURLNotSet)?;
   let jwt_encoding_key = jwt_key.get_encoding_key();
 
-  // Cache all of the updates
-  let mediator_url = config::get_mediator_url().ok_or_else(|| ServiceError::MediatorURLNotSet)?;
-  for question in questions.iter_mut() {
-    // Get cancelation shares for users who didn't vote
-    let no_vote = question.get_user_ids_without_vote(&conn)?;
-    let (forward_cancelation_shares, reverse_cancelation_shares) =
-      get_cancelation_shares(&question, no_vote, &mediator_url, &jwt_encoding_key).await?;
+  // Run all requests in parallel and cache all of the updates
+  let questions = try_join_all(questions.into_iter().map(|mut question| {
+    async {
+      // Get cancelation shares for users who didn't vote
+      let no_vote = question.get_user_ids_without_vote(&conn)?;
+      let (forward_cancelation_shares, reverse_cancelation_shares) =
+        get_cancelation_shares(&question, no_vote, &mediator_url, &jwt_encoding_key).await?;
 
-    // Update the values in the database model
-    //  Don't save yet, we will perform a massive transaction at the end
-    question.forward_cancelation_shares = forward_cancelation_shares.to_bigdecimal();
-    question.reverse_cancelation_shares = reverse_cancelation_shares.to_bigdecimal();
-  }
+      // Update the values in the database model
+      //  Don't save yet, we will perform a massive transaction at the end
+      question.forward_cancelation_shares = forward_cancelation_shares.to_bigdecimal();
+      question.reverse_cancelation_shares = reverse_cancelation_shares.to_bigdecimal();
+
+      Result::<_, ServiceError>::Ok(question)
+    }
+  }))
+  .await?;
 
   // Perform a massive database transaction to update all questions at once
   election = conn.get().transaction::<_, ServiceError, _>(|| {

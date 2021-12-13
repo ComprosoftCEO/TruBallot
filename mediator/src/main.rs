@@ -56,7 +56,14 @@ async fn main() -> anyhow::Result<()> {
               ),
           )
           .service(
-            web::scope("/elections").route("", web::post().to(handlers::election::create_and_initialize_election)),
+            web::scope("/elections")
+              .route("", web::post().to(handlers::election::create_and_initialize_election))
+              .service(web::scope("{election_id}").service(web::scope("/questions").service(
+                web::scope("{question_id}").route(
+                  "/cancelation",
+                  web::get().to(handlers::election::get_cancelation_shares),
+                ),
+              ))),
           ),
       )
       .default_service(web::route().to(|| HttpResponse::NotFound()))

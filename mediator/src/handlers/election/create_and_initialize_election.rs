@@ -166,7 +166,13 @@ pub async fn create_and_initialize_election(
   // ==========================================
   conn.get().transaction::<_, ServiceError, _>(|| {
     // Create the election itself
-    let election = Election::new(create_elections_data.id, create_elections_data.is_public).insert(&conn)?;
+    let election = Election::new(
+      create_elections_data.id,
+      create_elections_data.is_public,
+      &create_elections_data.generator,
+      &create_elections_data.prime,
+    )
+    .insert(&conn)?;
 
     // Add the list of questions
     for question in create_elections_data.questions {

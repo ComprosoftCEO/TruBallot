@@ -11,7 +11,14 @@ CREATE TABLE elections (
   id UUID NOT NULL PRIMARY KEY,
 
   -- List of election collectors is protected information
-  is_public BOOLEAN NOT NULL DEFAULT false
+  is_public BOOLEAN NOT NULL DEFAULT false,
+
+  -- Cached copy of values from the API server:
+  --
+  -- g^x (mod p) is a cyclic group of order p-1
+  --   These values are not generated until the election is closed
+  generator NUMERIC NOT NULL,
+  prime NUMERIC NOT NULL
 );
 
 -- Each election has one or more question

@@ -10,7 +10,7 @@ pub enum NamedResourceType {
   User { id: Uuid },
   Election { id: Uuid },
   Question { id: Uuid, election_id: Uuid },
-  EncryptedLocation { user_id: Uuid, election_id: Uuid },
+  Registration { user_id: Uuid, election_id: Uuid },
 }
 
 impl NamedResourceType {
@@ -20,7 +20,7 @@ impl NamedResourceType {
       NamedResourceType::User { .. } => ResourceType::User,
       NamedResourceType::Election { .. } => ResourceType::Election,
       NamedResourceType::Question { .. } => ResourceType::Question,
-      NamedResourceType::EncryptedLocation { .. } => ResourceType::EncryptedLocation,
+      NamedResourceType::Registration { .. } => ResourceType::Registration,
     }
   }
 
@@ -48,8 +48,8 @@ impl NamedResourceType {
     NamedResourceType::Question { id, election_id }
   }
 
-  pub fn encrypted_location(user_id: Uuid, election_id: Uuid) -> Self {
-    NamedResourceType::EncryptedLocation { user_id, election_id }
+  pub fn registration(user_id: Uuid, election_id: Uuid) -> Self {
+    NamedResourceType::Registration { user_id, election_id }
   }
 }
 
@@ -62,7 +62,7 @@ impl fmt::Display for NamedResourceType {
       NamedResourceType::Question { id, election_id } => {
         write!(f, "{} (ID: {}, Election ID: {})", self.get_name(), id, election_id)
       }
-      NamedResourceType::EncryptedLocation { user_id, election_id } => {
+      NamedResourceType::Registration { user_id, election_id } => {
         write!(
           f,
           "{} (User ID: {}, Election ID: {})",
