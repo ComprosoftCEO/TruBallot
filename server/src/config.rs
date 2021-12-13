@@ -49,14 +49,6 @@ pub struct Opt {
   #[structopt(long, env)]
   mediator_url: String,
 
-  /// Base URL that can be used to access collector 1
-  #[structopt(long, env)]
-  c1_url: String,
-
-  /// Base URL that can be used to access collector 2
-  #[structopt(long, env)]
-  c2_url: String,
-
   /// Base URL to access the notifications server
   #[structopt(long, env)]
   notifications_url: String,
@@ -82,8 +74,6 @@ impl Opt {
     env::set_var("JWT_SECRET", &self.jwt_secret);
     env::set_var("RECAPTCHA_SECRET_KEY", &self.recaptcha_secret_key);
     env::set_var("MEDIATOR_URL", &self.mediator_url);
-    env::set_var("C1_URL", &self.c1_url);
-    env::set_var("C2_URL", &self.c2_url);
     env::set_var("NOTIFICATIONS_URL", &self.notifications_url);
   }
 }
@@ -153,14 +143,6 @@ pub fn get_recaptcha_secret_key() -> Option<String> {
 //
 pub fn get_mediator_url() -> Option<String> {
   return env::var("MEDIATOR_URL").ok();
-}
-
-pub fn get_c1_url() -> Option<String> {
-  return env::var("C1_URL").ok();
-}
-
-pub fn get_c2_url() -> Option<String> {
-  return env::var("C2_URL").ok();
 }
 
 //

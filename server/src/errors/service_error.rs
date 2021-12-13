@@ -13,7 +13,6 @@ use crate::errors::{
   ClientRequestError, ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType,
 };
 use crate::models::ElectionStatus;
-use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -77,7 +76,6 @@ pub enum ServiceError {
   ElectionNotInitialized {
     election_id: Uuid,
   },
-  CollectorURLNotSet(Collector),
   MediatorURLNotSet,
   RegisterElectionError(ClientRequestError),
   AlreadyVoted {
@@ -97,7 +95,7 @@ pub enum ServiceError {
     election_id: Uuid,
     question_id: Uuid,
   },
-  CancelationSharesError(Collector, ClientRequestError),
+  CancelationSharesError(ClientRequestError),
   ElectionNotStarted {
     election_id: Uuid,
   },
@@ -346,14 +344,6 @@ impl ServiceError {
         format!("Election ID: {}", election_id),
       ),
 
-      // TODO: Remove this error
-      ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Server Misconfiguration".into(),
-        GlobalErrorCode::MediatorURLNotSet,
-        format!("{} environment variable not set", collector.env_prefix("URL")),
-      ),
-
       ServiceError::MediatorURLNotSet => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Server Misconfiguration".into(),
@@ -423,12 +413,9 @@ impl ServiceError {
         format!("Election ID: {}, Question ID: {}", election_id, question_id),
       ),
 
-      ServiceError::CancelationSharesError(collector, error) => ErrorResponse::new(
+      ServiceError::CancelationSharesError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        format!(
-          "Failed to get ballot cancelation shares from collector {}",
-          collector.to_number()
-        ),
+        "Failed to get ballot cancelation shares".into(),
         GlobalErrorCode::CancelationSharesError,
         format!("{:?}", error),
       ),

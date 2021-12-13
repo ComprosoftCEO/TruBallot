@@ -109,7 +109,9 @@ pub async fn initialize_voting(
     collectors: data.into_inner().collectors,
   };
 
+  // Build the URL to the mediator API
   let mediator_url = config::get_mediator_url().ok_or_else(|| ServiceError::MediatorURLNotSet)?;
+  let url = format!("{}/api/v1/mediator/elections", mediator_url);
 
   // Register the election with the collector mediator
   log::debug!("Send election parameters to collector mediator");
@@ -117,7 +119,7 @@ pub async fn initialize_voting(
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
     .finish()
-    .post(format!("{}/api/v1/mediator/elections", mediator_url))
+    .post(&url)
     .send_json(&create_elections_data);
 
   ClientRequestError::handle_empty(mediator_request)
