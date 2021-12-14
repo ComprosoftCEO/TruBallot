@@ -65,10 +65,11 @@ pub async fn create_and_initialize_election(
     });
   }
 
-  // See if the election already exists in the database
-  //  (This means it has already been created and initialized, so do nothing)
-  if Election::exists_from_id(&data.id, &conn)? {
-    return Ok(HttpResponse::Ok().finish());
+  // If the election already exists in the database, delete it!
+  //   We want a fresh slate every time this method is called
+  //   This will also automatically cascade delete entries foreign keys
+  if let Some(election) = Election::find_optional(&data.id, &conn)? {
+    election.delete(&conn)?;
   }
 
   // Get all collectors from the database

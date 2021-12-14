@@ -24,19 +24,19 @@ CREATE TABLE elections (
 -- Each election has one or more question
 CREATE TABLE questions (
   id UUID NOT NULL PRIMARY KEY,
-  election_id UUID NOT NULL REFERENCES elections(id)
+  election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE
 );
 
 -- List of users registered in the election
 CREATE TABLE registrations (
   user_id UUID NOT NULL,
-  election_id UUID NOT NULL REFERENCES elections(id),
+  election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, election_id)
 );
 
 -- List of collectors associated with each election
 CREATE TABLE election_collectors (
   election_id UUID NOT NULL REFERENCES elections(id),
-  collector_id UUID NOT NULL REFERENCES collectors(id),
+  collector_id UUID NOT NULL REFERENCES collectors(id) ON DELETE CASCADE,
   PRIMARY KEY (election_id, collector_id)
 );
