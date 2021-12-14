@@ -52,7 +52,8 @@ async fn main() -> anyhow::Result<()> {
               .service(
                 web::scope("{collector_id}")
                   .route("", web::get().to(handlers::collector::get_collector))
-                  .route("", web::patch().to(handlers::collector::update_collector)),
+                  .route("", web::patch().to(handlers::collector::update_collector))
+                  .route("/proxy", web::get().to(handlers::collector::proxy_collector)),
               ),
           )
           .service(

@@ -88,33 +88,70 @@ The code snippet below properly configures NGINX to access all services using `l
 
 ```nginx
 server {
-        listen 3010;
+	listen 3010;
 
-        # Increase the reverse-proxy timeout
-        proxy_connect_timeout 600;
-        proxy_send_timeout 600;
-        proxy_read_timeout 600;
-        send_timeout 600;
+	# Increase the reverse-proxy timeout
+	proxy_connect_timeout 600;
+	proxy_send_timeout 600;
+	proxy_read_timeout 600;
+	send_timeout 600;
 
-        location /api/v1/ {
-                proxy_pass http://localhost:3000/api/v1/;
-        }
+	# Proxy the API server
+	location /api/v1/ {
+		proxy_pass http://localhost:3000/api/v1/;
+	}
 
-        location /api/v1/collector/1/ {
-                proxy_pass http://localhost:3001/api/v1/collector/1/;
-        }
+	# Proxy the mediator
+	location /api/v1/mediator/ {
+		proxy_pass http://localhost:3004/api/v1/mediator/;
+	}
 
-        location /api/v1/collector/2/ {
-                proxy_pass http://localhost:3002/api/v1/collector/2/;
-        }
+	# Proxy the notifications server as a reverse websocket proxy
+	location /api/v1/notifications {
+		proxy_pass http://localhost:3005/api/v1/notifications;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "Upgrade";
+		proxy_set_header Host $host;
+	}
 
-        location /api/v1/notifications {
-                proxy_pass http://localhost:3005/api/v1/notifications;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection "Upgrade";
-                proxy_set_header Host $host;
-        }
+	# Proxy the collectors using /api/v1/collector/{ID}, where ID is the collector UUID
+	#   This uses an internal route from the mediator to convert {ID} into a URL path
+	location ~ "^/api/v1/collector/([a-zA-Z0-9-_]{22})/(.*)$" {
+		set $auth_collector_id "$1";
+		auth_request /collector-path;
+		auth_request_set $collector_url $upstream_http_x_collector_url;
+
+		proxy_pass $collector_url/$2;
+	}
+
+	# Talk with the mediator to get the actual URI path to the collector
+	#  The result gets stored in the "x-collector-url" header
+	location /collector-path {
+		internal;
+
+		proxy_pass                      http://localhost:3004/api/v1/mediator/collectors/$auth_collector_id/proxy;
+		proxy_pass_request_body         off;
+		proxy_set_header                Content-Length "";
+		proxy_set_header                X-Original-URI $request_uri;
+		proxy_intercept_errors          on;
+
+		# Trap all API errors other than 401 and 403
+		error_page 300 301 302 303 304 305 306 307 308
+		400 402 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451
+		500 501 502 503 504 505 506 507 508 510 511 @collector-proxy-error;
+	}
+
+	# Hide the internal proxy pass
+	location ~ "^/api/v1/mediator/collectors/([a-zA-Z0-9-_]{22})/proxy$" {
+		return 404 "";
+	}
+
+	# Handle any unexpected errors from the proxy
+	location @collector-proxy-error {
+		internal;
+		return 403 "";
+	}
 }
 ```
 
