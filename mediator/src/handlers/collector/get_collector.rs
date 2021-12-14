@@ -15,7 +15,7 @@ pub async fn get_collector(
   token.test_can_view_collectors()?;
 
   let collector = Collector::find_resource(&*path, &conn)?;
-  let result = PublicCollector::from_collector(collector)?;
+  let result = PublicCollector::from_collector(collector);
 
   Ok(HttpResponse::Ok().json(result))
 }

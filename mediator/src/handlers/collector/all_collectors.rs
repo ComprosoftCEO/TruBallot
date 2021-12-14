@@ -12,7 +12,7 @@ pub async fn all_collectors(token: ClientToken, conn: DbConnection) -> Result<Ht
   let collectors: Vec<_> = Collector::all_ordered(&conn)?
     .into_iter()
     .map(PublicCollectorList::from_collector)
-    .collect::<Result<_, ServiceError>>()?;
+    .collect();
 
   Ok(HttpResponse::Ok().json(collectors))
 }
