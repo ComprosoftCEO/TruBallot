@@ -7,9 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
 use super::sha_hasher::SHAHasher;
-use super::verification_websocket_actor::VerificationWebsocketActor;
 
-/// Close the JSON connection due to an error
+/// Close the connection due to an error
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct ErrorClose(pub CloseCode, pub Option<String>);
@@ -33,90 +32,11 @@ where
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum WebsocketMessage {
-  MediatorMessage(MediatorMessage<AllMediatorMessages>),
-  UnicastMessage(SignedUnicastMessage<AllUnicastMessages>),
-  BroadcastMessage(SignedBroadcastMessage<AllBroadcastMessages>),
-}
-
-impl WebsocketMessage {
-  /// Check if a message has a signature and get the "from" field
-  pub fn get_from(&self) -> Option<usize> {
-    match self {
-      WebsocketMessage::MediatorMessage(_) => None,
-      WebsocketMessage::UnicastMessage(message) => Some(message.get_from()),
-      WebsocketMessage::BroadcastMessage(message) => Some(message.get_from()),
-    }
-  }
-
-  /// Verify the signature on a message if it is signed
-  pub fn verify_signature_if_signed(&self, public_key: &PublicKey) -> bool {
-    match self {
-      WebsocketMessage::MediatorMessage(_) => true,
-      WebsocketMessage::UnicastMessage(message) => message.verify_signature(public_key),
-      WebsocketMessage::BroadcastMessage(message) => message.verify_signature(public_key),
-    }
-  }
-
-  /// Send the internal message to the actor, NOT checking the signature
-  pub fn send_actor_message_ignore_signature(self, addr: Addr<VerificationWebsocketActor>) {
-    match self {
-      WebsocketMessage::MediatorMessage(MediatorMessage { data }) => match data {
-        AllMediatorMessages::Initialize(data) => addr.do_send(MediatorMessage { data }),
-      },
-
-      WebsocketMessage::UnicastMessage(SignedUnicastMessage {
-        from,
-        to,
-        data,
-        signature,
-      }) => match data {
-        AllUnicastMessages::SP1_STMP_Request(data) => addr.do_send(SignedUnicastMessage {
-          from,
-          to,
-          data,
-          signature,
-        }),
-        AllUnicastMessages::SP1_STMP_Response(data) => addr.do_send(SignedUnicastMessage {
-          from,
-          to,
-          data,
-          signature,
-        }),
-      },
-
-      WebsocketMessage::BroadcastMessage(SignedBroadcastMessage { from, data, signature }) => match data {
-        AllBroadcastMessages::SP1_Product_Response(data) => {
-          addr.do_send(SignedBroadcastMessage { from, data, signature })
-        }
-        AllBroadcastMessages::SP2_Shares_Response(data) => {
-          addr.do_send(SignedBroadcastMessage { from, data, signature })
-        }
-      },
-    }
-  }
-}
-
-/// All messages that can be RECEIVED from a mediator
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
-pub enum AllMediatorMessages {
-  Initialize(Initialize),
-}
-
-/// All messages that can be RECEIVED from a specific websocket (Unicast)
-#[derive(Debug, Clone, Hash, Deserialize)]
-#[serde(untagged, rename_all = "camelCase")]
-pub enum AllUnicastMessages {
-  SP1_STMP_Request(SP1_STMP_Request),
-  SP1_STMP_Response(SP1_STMP_Response),
-}
-
-/// All messages that can be RECEIVED from any websocket
-#[derive(Debug, Clone, Hash, Deserialize)]
-#[serde(untagged, rename_all = "camelCase")]
-pub enum AllBroadcastMessages {
-  SP1_Product_Response(SP1_Product_Response),
-  SP2_Shares_Response(SP2_Shares_Response),
+  Initialize(MediatorMessage<Initialize>),
+  SP1_STMP_Request(SignedUnicastMessage<SP1_STMP_Request>),
+  SP1_STMP_Response(SignedUnicastMessage<SP1_STMP_Response>),
+  SP1_Product_Response(SignedBroadcastMessage<SP1_Product_Response>),
+  SP2_Shares_Response(SignedBroadcastMessage<SP2_Shares_Response>),
 }
 
 /// Represents a received message that is signed
@@ -175,10 +95,12 @@ impl<T: Hash> SignedMediatorMessage<T> {
 }
 
 impl<T: Hash> SignedMessage for SignedMediatorMessage<T> {
+  #[inline]
   fn get_signature(&self) -> &BigInt {
     &self.collector_signature
   }
 
+  #[inline]
   fn get_from(&self) -> usize {
     self.from
   }
@@ -223,10 +145,12 @@ impl<T: Hash> SignedUnicastMessage<T> {
 }
 
 impl<T: Hash> SignedMessage for SignedUnicastMessage<T> {
+  #[inline]
   fn get_signature(&self) -> &BigInt {
     &self.signature
   }
 
+  #[inline]
   fn get_from(&self) -> usize {
     self.from
   }
@@ -271,10 +195,12 @@ impl<T: Hash> SignedBroadcastMessage<T> {
 }
 
 impl<T: Hash> SignedMessage for SignedBroadcastMessage<T> {
+  #[inline]
   fn get_signature(&self) -> &BigInt {
     &self.signature
   }
 
+  #[inline]
   fn get_from(&self) -> usize {
     self.from
   }
@@ -403,7 +329,7 @@ impl Hash for SP1_Product_Response {
 #[derive(Debug, Clone, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SP1_Result_Response {
-  pub ballot_valid: bool,
+  pub sp1_ballot_valid: bool,
 }
 
 // =============================================
@@ -434,5 +360,5 @@ impl Hash for SP2_Shares_Response {
 #[derive(Debug, Clone, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SP2_Result_Response {
-  pub ballot_valid: bool,
+  pub sp2_ballot_valid: bool,
 }

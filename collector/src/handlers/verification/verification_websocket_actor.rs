@@ -145,6 +145,34 @@ impl VerificationWebsocketActor {
     }
   }
 
+  /// Verify the signature on a message using the internal public key
+  ///
+  /// Sends a error close message if the signature validation fails
+  fn verify_signature<T: SignedMessage>(&self, msg: &T, ctx: &mut <Self as Actor>::Context) -> bool {
+    let self_addr = ctx.address();
+    match self.public_keys.get(msg.get_from()) {
+      Some(public_key) if msg.verify_signature(public_key) => true,
+      Some(_) => {
+        self_addr.do_send(ErrorClose::from((
+          CloseCode::Invalid,
+          format!("Invalid signature from collector {}", msg.get_from() + 1),
+        )));
+        false
+      }
+
+      None => {
+        self_addr.do_send(ErrorClose::from((
+          CloseCode::Abnormal,
+          format!(
+            "Cannot verify signature, public key for collector {} is not known",
+            msg.get_from() + 1
+          ),
+        )));
+        false
+      }
+    }
+  }
+
   /// Send an unsigned message to the mediator
   fn send_mediator_unsigned<T: Serialize>(data: T, ctx: &mut <Self as Actor>::Context) {
     Self::send_json(&MediatorMessage { data }, ctx)
@@ -244,38 +272,34 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebso
       }
     };
 
-    // Verify the signature of the message first (If necessary)
-    if let Some(from) = json.get_from() {
-      match self.public_keys.get(from) {
-        // Weird case: public key is not known for the collector
-        None => {
-          return self_addr.do_send(ErrorClose::from((
-            CloseCode::Abnormal,
-            format!(
-              "Cannot verify signature, public key for collector {} is not known",
-              from + 1
-            ),
-          )))
+    // Handle all of the messages, verifying signature first if necessary
+    match json {
+      WebsocketMessage::Initialize(data) => self_addr.do_send(data),
+      WebsocketMessage::SP1_STMP_Request(data) => {
+        if self.verify_signature(&data, ctx) {
+          self_addr.do_send(data);
         }
-
-        // We have the public key, so check the signature
-        Some(ref public_key) => {
-          if !json.verify_signature_if_signed(public_key) {
-            return self_addr.do_send(ErrorClose::from((
-              CloseCode::Invalid,
-              format!("Invalid signature from collector {}", from + 1),
-            )));
-          }
+      }
+      WebsocketMessage::SP1_STMP_Response(data) => {
+        if self.verify_signature(&data, ctx) {
+          self_addr.do_send(data);
+        }
+      }
+      WebsocketMessage::SP1_Product_Response(data) => {
+        if self.verify_signature(&data, ctx) {
+          self_addr.do_send(data);
+        }
+      }
+      WebsocketMessage::SP2_Shares_Response(data) => {
+        if self.verify_signature(&data, ctx) {
+          self_addr.do_send(data);
         }
       }
     }
-
-    // Signature is valid, so we are okay to handle the message
-    json.send_actor_message_ignore_signature(self_addr);
   }
 
   fn finished(&mut self, ctx: &mut Self::Context) {
-    log::debug!("Websocket stream closed, stopping actor");
+    log::info!("Websocket stream closed, stopping actor");
     ctx.stop()
   }
 }
@@ -549,14 +573,14 @@ impl VerificationWebsocketActor {
     log::debug!("g^(2^(L - 1)) = {}", expected_product);
 
     // Send the verification result
-    let ballot_valid = combined_product == expected_product;
+    let sp1_ballot_valid = combined_product == expected_product;
     log::debug!(
       "Sub-protocol 1: ballot {}",
-      if ballot_valid { "valid" } else { "invalid" }
+      if sp1_ballot_valid { "valid" } else { "invalid" }
     );
 
     // Send the final result to the mediator
-    self.send_mediator(SP1_Result_Response { ballot_valid }, ctx);
+    self.send_mediator(SP1_Result_Response { sp1_ballot_valid }, ctx);
   }
 }
 
@@ -639,13 +663,13 @@ impl VerificationWebsocketActor {
     );
 
     // Final verification results
-    let ballot_valid = g_p_i_verified && g_p_i_prime_verified;
+    let sp2_ballot_valid = g_p_i_verified && g_p_i_prime_verified;
     log::debug!(
       "Sub-protocol 2: ballot {}",
-      if ballot_valid { "valid" } else { "invalid" }
+      if sp2_ballot_valid { "valid" } else { "invalid" }
     );
 
     // Send the final result to the mediator
-    self.send_mediator(SP2_Result_Response { ballot_valid }, ctx);
+    self.send_mediator(SP2_Result_Response { sp2_ballot_valid }, ctx);
   }
 }
