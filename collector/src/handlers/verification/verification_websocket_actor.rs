@@ -534,7 +534,7 @@ impl Handler<SignedBroadcastMessage<SP1_Product_Response>> for VerificationWebso
     self.products.insert(msg.from, msg.data.product_j);
 
     // Possibly do the final verification if we have all the products
-    self.maybe_publish_combined_product(ctx);
+    self.maybe_publish_sp1_result(ctx);
   }
 }
 

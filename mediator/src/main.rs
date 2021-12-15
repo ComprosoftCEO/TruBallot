@@ -65,10 +65,16 @@ async fn main() -> anyhow::Result<()> {
                     "/collectors",
                     web::get().to(handlers::election::get_election_collectors),
                   )
-                  .service(web::scope("/questions").service(web::scope("{question_id}").route(
-                    "/cancelation",
-                    web::get().to(handlers::election::get_cancelation_shares),
-                  ))),
+                  .service(
+                    web::scope("/questions").service(
+                      web::scope("{question_id}")
+                        .route("/verification", web::post().to(handlers::verification::verify_ballot))
+                        .route(
+                          "/cancelation",
+                          web::get().to(handlers::election::get_cancelation_shares),
+                        ),
+                    ),
+                  ),
               ),
           ),
       )

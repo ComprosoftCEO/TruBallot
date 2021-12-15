@@ -4,3 +4,4 @@
 pub mod auth;
 pub mod collector;
 pub mod election;
+pub mod verification;

@@ -43,6 +43,8 @@ pub enum ServiceError {
     question_id: Option<Uuid>,
   },
   CancelationSharesError(Uuid, ClientRequestError),
+  VerificationError(WebsocketError),
+  VerificationCanceled,
 }
 
 impl ServiceError {
@@ -186,6 +188,20 @@ impl ServiceError {
         "Failed to get ballot cancelation shares".into(),
         GlobalErrorCode::CancelationSharesError,
         format!("Collector ID: {}, Error: {:?}", id, error),
+      ),
+
+      ServiceError::VerificationError(error) => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Error verifying ballot".into(),
+        GlobalErrorCode::VerificationError,
+        format!("{:?}", error),
+      ),
+
+      ServiceError::VerificationCanceled => ErrorResponse::new(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Error verifying ballot".into(),
+        GlobalErrorCode::VerificationError,
+        "Verification canceled by actor logic".into(),
       ),
     }
   }
