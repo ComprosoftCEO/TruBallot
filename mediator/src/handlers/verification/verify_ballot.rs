@@ -7,8 +7,6 @@ use validator::Validate;
 
 use super::mediator_actor::MediatorActor;
 use super::types::VerifyBallotData;
-use super::websocket_actor::WebsocketActor;
-use super::websocket_messages::*;
 use crate::auth::{AnyToken, JWTSecret, MediatorToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError, WebsocketError};
@@ -51,12 +49,9 @@ pub async fn verify_ballot(
       question_id: Some(question_id),
     })?;
 
-  log::info!("Starting actors to handle ballot verification...");
-  let collectors = election.get_collectors(&conn)?;
-  let (mediator_addr, receiver) = MediatorActor::start(collectors.len(), &data);
-
   // Create all of the collector websocket connections in parallel
-  let websocket_streams = try_join_all(collectors.into_iter().map(|collector| {
+  let collectors = election.get_collectors(&conn)?;
+  let websocket_connections = try_join_all(collectors.into_iter().map(|collector| {
     let jwt_encoding_key = jwt_secret.get_encoding_key();
     let url = collector.private_websocket_url(&format!(
       "/elections/{}/questions/{}/verification/ws/{}",
@@ -71,30 +66,25 @@ pub async fn verify_ballot(
         .ws(url)
         .bearer_auth(MediatorToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?);
 
-      let stream = WebsocketError::connect(request)
+      let connection_stream = WebsocketError::connect(request)
         .await
         .map_err(|e| ServiceError::VerificationError(e))?;
 
       log::debug!("Success! Websocket open to collector '{}'", collector.name);
-      Result::<_, ServiceError>::Ok(stream)
+      Result::<_, ServiceError>::Ok(connection_stream)
     }
   }))
   .await?;
 
-  // Convert each connection into a running actor
-  let websocket_actors: Vec<_> = websocket_streams
-    .into_iter()
-    .enumerate()
-    .map(|(index, stream)| WebsocketActor::start(index, mediator_addr.clone(), stream))
-    .collect();
-
-  // Notify the mediator that the websockets are ready
-  mediator_addr.do_send(SetWebsocketActors(websocket_actors));
+  // Start actor to handle the websocket communication protocol
+  log::info!("Starting mediator actor to handle ballot verification...");
+  let (mediator_addr, receiver) = MediatorActor::start(websocket_connections, data);
 
   // Wait for the calculations to finish
-  //   The actors will automatically kill themselves
+  //   The actor will automatically stop itself
   log::debug!("Beginning protocols and waiting for result...");
   let result: VerificationResult = receiver.await.map_err(|_| ServiceError::VerificationCanceled)?;
+  drop(mediator_addr); // Force Rust to not stop the actor prematurely
 
   // Return final verification results
   log::debug!("Calculations finished, returning final result");

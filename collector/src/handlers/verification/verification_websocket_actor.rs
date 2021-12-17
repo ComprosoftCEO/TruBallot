@@ -151,32 +151,38 @@ impl VerificationWebsocketActor {
   /// Sends a error close message if the signature validation fails
   fn verify_signature<T: SignedMessage>(&self, msg: &T, ctx: &mut <Self as Actor>::Context) -> bool {
     let self_addr = ctx.address();
-    match self.public_keys.get(msg.get_from()) {
-      Some(public_key) if msg.verify_signature(public_key) => true,
-      Some(_) => {
-        self_addr.do_send(ErrorClose::from((
-          CloseCode::Invalid,
-          format!("Invalid signature from collector {}", msg.get_from() + 1),
-        )));
-        false
-      }
 
-      None => {
-        self_addr.do_send(ErrorClose::from((
-          CloseCode::Abnormal,
-          format!(
-            "Cannot verify signature, public key for collector {} is not known",
-            msg.get_from() + 1
-          ),
-        )));
-        false
-      }
+    // Make sure we actually have the public key for this collector
+    //  (This case SHOULD NOT happen in practice)
+    let public_key = self.public_keys.get(msg.get_from());
+    if public_key.is_none() {
+      self_addr.do_send(ErrorClose::from((
+        CloseCode::Abnormal,
+        format!(
+          "Cannot verify signature, public key for collector {} is not known",
+          msg.get_from() + 1,
+        ),
+      )));
+
+      return false;
     }
+
+    // Test the message signature
+    if !msg.verify_signature(public_key.unwrap()) {
+      self_addr.do_send(ErrorClose::from((
+        CloseCode::Invalid,
+        format!("Invalid signature from collector {}", msg.get_from() + 1),
+      )));
+
+      return false;
+    }
+
+    true
   }
 
   /// Send an unsigned message to the mediator
-  fn send_mediator_unsigned<T: Serialize>(data: T, ctx: &mut <Self as Actor>::Context) {
-    Self::send_json(&MediatorMessage { data }, ctx)
+  fn send_mediator_unsigned<T: Serialize>(&self, data: T, ctx: &mut <Self as Actor>::Context) {
+    Self::send_json(&UnsignedMediatorMessage::new(self.collector_index, data), ctx)
   }
 
   /// Send a signed message to the mediator
@@ -226,7 +232,7 @@ impl Actor for VerificationWebsocketActor {
   fn started(&mut self, ctx: &mut Self::Context) {
     // Broadcast the public key back to the mediator
     let shared_secret = config::get_collector_secret();
-    Self::send_mediator_unsigned(PublicKey::new_signed(&self.n, &self.rsa_b, &shared_secret), ctx);
+    self.send_mediator_unsigned(PublicKey::new_signed(&self.n, &self.rsa_b, &shared_secret), ctx);
   }
 }
 
@@ -321,11 +327,10 @@ impl Handler<ErrorClose> for VerificationWebsocketActor {
 ///
 /// Handle the "Initialize" message from the mediator
 ///
-impl Handler<MediatorMessage<Initialize>> for VerificationWebsocketActor {
+impl Handler<Initialize> for VerificationWebsocketActor {
   type Result = ();
 
-  fn handle(&mut self, msg: MediatorMessage<Initialize>, ctx: &mut Self::Context) -> Self::Result {
-    let init = msg.data;
+  fn handle(&mut self, init: Initialize, ctx: &mut Self::Context) -> Self::Result {
     log::debug!("Initialize parameters for collector {}:", init.collector_index + 1);
 
     // Verify all public keys first to ensure they weren't tampered with

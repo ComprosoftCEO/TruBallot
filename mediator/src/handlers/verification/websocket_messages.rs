@@ -4,40 +4,22 @@ use actix_http::ws::CloseCode;
 use curv_kzen::arithmetic::Modulo;
 use curv_kzen::BigInt;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::hash::Hash;
 
 use super::sha_hasher::SHAHasher;
-use super::websocket_actor::WebsocketActor;
 
-/// Close the mediator with an unexpected error
+/// Close the mediator actor due to an error
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct MediatorErrorClose(pub Option<String>);
+pub struct ErrorClose(pub CloseCode, pub Option<String>);
 
-impl<T: std::string::ToString> From<T> for MediatorErrorClose {
-  fn from(input: T) -> Self {
-    Self(Some(input.to_string()))
-  }
-}
-
-/// Close the websocket actor gracefully
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct CloseWebsocketGracefully;
-
-/// Close the websocket actor due to an error
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct WebsocketErrorClose(pub CloseCode, pub Option<String>);
-
-impl From<CloseCode> for WebsocketErrorClose {
+impl From<CloseCode> for ErrorClose {
   fn from(code: CloseCode) -> Self {
     Self(code, None)
   }
 }
 
-impl<T> From<(CloseCode, T)> for WebsocketErrorClose
+impl<T> From<(CloseCode, T)> for ErrorClose
 where
   T: Into<String>,
 {
@@ -46,11 +28,11 @@ where
   }
 }
 
-/// Top level structure for any type of JSON value that can be received by the websocket actor
+/// Top level structure for any type of JSON value that can be received by the mediator
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum WebsocketMessage {
-  PublicKey(MediatorMessage<PublicKey>),
+  PublicKey(UnsignedMediatorMessage<PublicKey>),
   SP1_Result_Response(SignedMediatorMessage<SP1_Result_Response>),
   SP2_Result_Response(SignedMediatorMessage<SP2_Result_Response>),
 
@@ -59,11 +41,6 @@ pub enum WebsocketMessage {
   UnicastMessage(SignedUnicastMessage),
   BroadcastMessage(SignedBroadcastMessage),
 }
-
-/// All messages that can be RECEIVED by a mediator
-#[derive(Debug, Clone, Hash, Deserialize)]
-#[serde(untagged)]
-pub enum AllMediatorMessages {}
 
 /// Messages that have a "from" field
 pub trait OriginMessage {
@@ -83,16 +60,6 @@ pub trait SignedMessage: OriginMessage {
   fn verify_signature(&self, public_key: &PublicKey) -> bool {
     self.get_signature() == &BigInt::mod_pow(&self.compute_hash(), &public_key.b, &public_key.n)
   }
-}
-
-///
-/// Unsigned message sent by a mediator
-///
-#[derive(Debug, Clone, Serialize, Deserialize, Message)]
-#[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct MediatorMessage<T> {
-  pub data: T,
 }
 
 ///
@@ -158,7 +125,7 @@ impl<T: Hash> SignedMessage for SignedMediatorMessage<T> {
 pub struct SignedUnicastMessage {
   pub from: usize,
   pub to: usize,
-  pub data: Value,
+  pub data: serde_json::Value,
 
   /// RSA Signature
   #[serde(with = "kzen_paillier::serialize::bigint")]
@@ -182,7 +149,7 @@ impl OriginMessage for SignedUnicastMessage {
 #[rtype(result = "()")]
 pub struct SignedBroadcastMessage {
   pub from: usize,
-  pub data: Value,
+  pub data: serde_json::Value,
 
   /// RSA Signature
   #[serde(with = "kzen_paillier::serialize::bigint")]
@@ -199,10 +166,6 @@ impl OriginMessage for SignedBroadcastMessage {
 // =============================================
 // Define all data structures from the mediator
 // =============================================
-
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct SetWebsocketActors(pub Vec<Addr<WebsocketActor>>);
 
 /// Publish the public key for a collector
 #[derive(Debug, Clone, Serialize, Deserialize)]

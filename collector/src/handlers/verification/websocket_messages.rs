@@ -32,7 +32,7 @@ where
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum WebsocketMessage {
-  Initialize(MediatorMessage<Initialize>),
+  Initialize(Initialize),
   SP1_STMP_Request(SignedUnicastMessage<SP1_STMP_Request>),
   SP1_STMP_Response(SignedUnicastMessage<SP1_STMP_Response>),
   SP1_Product_Response(SignedBroadcastMessage<SP1_Product_Response>),
@@ -57,13 +57,19 @@ pub trait SignedMessage {
 }
 
 ///
-/// Unsigned message received from a mediator
+/// Send an unsigned message to the mediator
 ///
-#[derive(Debug, Clone, Serialize, Deserialize, Message)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct MediatorMessage<T> {
+pub struct UnsignedMediatorMessage<T> {
+  pub from: usize,
   pub data: T,
+}
+
+impl<T> UnsignedMediatorMessage<T> {
+  pub fn new(from: usize, data: T) -> Self {
+    Self { from, data }
+  }
 }
 
 ///
@@ -263,8 +269,9 @@ impl PublicKey {
 }
 
 /// Initialization parameters to send to the websocket
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Message)]
 #[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
 pub struct Initialize {
   // Collector details
   pub collector_index: usize,
