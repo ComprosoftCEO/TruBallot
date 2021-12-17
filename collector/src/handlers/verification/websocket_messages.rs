@@ -228,6 +228,38 @@ pub struct PublicKey {
   /// Public exponent b for RSA
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub b: BigInt,
+
+  /// Signature to ensure public key has been faithfully published
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub signature: BigInt,
+}
+
+impl PublicKey {
+  pub fn new_signed(n: &BigInt, b: &BigInt, shared_secret: &str) -> Self {
+    // Start by building the public key
+    let mut public_key = PublicKey {
+      n: n.clone(),
+      b: b.clone(),
+      signature: BigInt::from(0),
+    };
+
+    // Then compute the signature from the hash
+    public_key.signature = public_key.compute_hash(shared_secret);
+    public_key
+  }
+
+  /// Verify the signature using the shared collector secret
+  pub fn verify_signature(&self, shared_secret: &str) -> bool {
+    self.signature == self.compute_hash(shared_secret)
+  }
+
+  fn compute_hash(&self, shared_secret: &str) -> BigInt {
+    let mut hasher = SHAHasher::new();
+    self.n.to_bytes().hash(&mut hasher);
+    self.b.to_bytes().hash(&mut hasher);
+    shared_secret.hash(&mut hasher);
+    hasher.get_sha_hash()
+  }
 }
 
 /// Initialization parameters to send to the websocket

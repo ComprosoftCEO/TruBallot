@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 
 use super::websocket_messages::*;
+use crate::config;
 use crate::models::{Election, Question, Registration};
 use crate::protocol::stpm;
 use crate::utils::ConvertBigInt;
@@ -224,13 +225,8 @@ impl Actor for VerificationWebsocketActor {
 
   fn started(&mut self, ctx: &mut Self::Context) {
     // Broadcast the public key back to the mediator
-    Self::send_mediator_unsigned(
-      PublicKey {
-        n: self.n.clone(),
-        b: self.rsa_b.clone(),
-      },
-      ctx,
-    );
+    let shared_secret = config::get_collector_secret();
+    Self::send_mediator_unsigned(PublicKey::new_signed(&self.n, &self.rsa_b, &shared_secret), ctx);
   }
 }
 
@@ -331,6 +327,18 @@ impl Handler<MediatorMessage<Initialize>> for VerificationWebsocketActor {
   fn handle(&mut self, msg: MediatorMessage<Initialize>, ctx: &mut Self::Context) -> Self::Result {
     let init = msg.data;
     log::debug!("Initialize parameters for collector {}:", init.collector_index + 1);
+
+    // Verify all public keys first to ensure they weren't tampered with
+    //   Only the collectors know the shared secret, so the mediator cannot sign the keys
+    let shared_secret = config::get_collector_secret();
+    for (index, public_key) in init.public_keys.iter().enumerate() {
+      if !public_key.verify_signature(&shared_secret) {
+        return ctx.address().do_send(ErrorClose::from((
+          CloseCode::Invalid,
+          format!("Invalid signature for collector {} public key", index + 1),
+        )));
+      }
+    }
 
     // Collector details
     self.collector_index = init.collector_index;

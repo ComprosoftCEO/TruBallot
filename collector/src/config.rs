@@ -11,6 +11,7 @@ use uuid_b64::UuidB64 as Uuid;
 const DEFAULT_HOST: &str = "127.0.0.1";
 const DEFAULT_C0_PORT: u16 = 4000;
 const DEFAULT_JWT_SECRET: &str = "JWT_SECRET_VALUE_LOL";
+const DEFAULT_COLLECTOR_SECRET: &str = "COLLECTOR_SECRET_VALUE_LOL";
 
 /// Get the prefix to use when loading collector-specific environment variables
 pub trait EnvPrefix {
@@ -53,7 +54,7 @@ pub struct Opt {
   #[structopt(long, parse(from_os_str))]
   key_file: Option<PathBuf>,
 
-  /// Path for the SSL certificate chail file
+  /// Path for the SSL certificate chain file
   #[structopt(long, parse(from_os_str))]
   cert_file: Option<PathBuf>,
 
@@ -68,6 +69,10 @@ pub struct Opt {
   /// Base URL that can be used to access the collector mediators
   #[structopt(long, env)]
   mediator_url: String,
+
+  /// Shared collector secret used to verify public keys
+  #[structopt(long, env)]
+  collector_secret: String,
 }
 
 impl Opt {
@@ -106,6 +111,7 @@ impl Opt {
 
     env::set_var("JWT_SECRET", &self.jwt_secret);
     env::set_var("MEDIATOR_URL", &self.mediator_url);
+    env::set_var("COLLECTOR_SECRET", &self.collector_secret);
   }
 }
 
@@ -198,4 +204,8 @@ pub fn get_jwt_secret() -> String {
 //
 pub fn get_mediator_url() -> Option<String> {
   return env::var("MEDIATOR_URL").ok();
+}
+
+pub fn get_collector_secret() -> String {
+  env::var("COLLECTOR_SECRET").unwrap_or_else(|_| DEFAULT_COLLECTOR_SECRET.to_string())
 }

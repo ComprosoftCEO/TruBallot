@@ -215,6 +215,10 @@ pub struct PublicKey {
   /// Public exponent b for RSA
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub b: BigInt,
+
+  /// Signature to ensure public key has been faithfully published
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub signature: BigInt,
 }
 
 /// Initialization parameters to send to the websocket
