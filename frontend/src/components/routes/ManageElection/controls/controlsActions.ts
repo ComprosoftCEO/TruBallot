@@ -1,4 +1,4 @@
-import { APIError, apiLoading, apiSuccess, axiosApi, resolveResult } from 'api';
+import { APIError, apiLoading, APISuccess, apiSuccess, axiosApi, resolveResult } from 'api';
 import { getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { showConfirm } from 'showConfirm';
 import { history } from 'index';
@@ -10,6 +10,7 @@ import {
   PublishElectionResult,
 } from 'models/election';
 import { ManageElectionState } from 'redux/state';
+import { PublicCollectorList } from 'models/mediator';
 
 const getState = getNestedState('manageElection');
 const useSelector = nestedSelectorHook('manageElection');
@@ -213,37 +214,58 @@ export const unregister = async (electionId: string): Promise<void> => {
   }
 };
 
+export const openCollectorModal = (): void =>
+  mergeState({ pickCollectorsModalOpen: true, collectorsSelected: new Set() });
+
+export const closeCollectorModal = (): void => mergeState({ pickCollectorsModalOpen: false });
+
+export const toggleCollectorSelected = (collectorId: string): void => {
+  mergeState((state) => {
+    const collectorsSelected = new Set(state.collectorsSelected);
+    if (collectorsSelected.has(collectorId)) {
+      collectorsSelected.delete(collectorId);
+    } else {
+      collectorsSelected.add(collectorId);
+    }
+
+    return { collectorsSelected };
+  });
+};
+
 /**
  * Open election voting
  */
-export const openVoting = (electionId: string, override?: true): void => {
-  showConfirm({
-    header: 'Are you sure you want to open voting?',
-    message: 'This will close registration',
-    override,
-    onConfirm: async () => {
-      mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading() });
+export const openVoting = async (electionId: string): Promise<void> => {
+  const { collectorsSelected, allCollectors } = getState();
+  mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading(), pickCollectorsModalOpen: false });
 
-      const result = await axiosApi.post(`/elections/${electionId}/voting`).then(...resolveResult);
-      if (result.success) {
-        mergeState({
-          openingVoting: apiSuccess(true),
-          ...updateNestedElectionProps({
-            status: ElectionStatus.Voting,
-            accessCode: undefined,
-          }),
-        });
-      } else {
-        mergeState({
-          openingVoting: result,
-          ...updateNestedElectionProps({
-            status: ElectionStatus.InitFailed,
-            accessCode: undefined,
-          }),
-        });
-      }
-    },
-  });
+  const result = await axiosApi
+    .post(`/elections/${electionId}/voting`, { collectors: [...collectorsSelected] })
+    .then(...resolveResult);
+
+  if (result.success) {
+    // Build the list of selected election collectors
+    const electionCollectors: PublicCollectorList[] = (allCollectors as APISuccess<PublicCollectorList[]>).data.filter(
+      ({ id }) => collectorsSelected.has(id),
+    );
+
+    mergeState({
+      electionCollectors: apiSuccess(electionCollectors),
+      openingVoting: apiSuccess(true),
+      ...updateNestedElectionProps({
+        status: ElectionStatus.Voting,
+        accessCode: undefined,
+      }),
+    });
+  } else {
+    mergeState({
+      openingVoting: result,
+      ...updateNestedElectionProps({
+        status: ElectionStatus.InitFailed,
+        accessCode: undefined,
+      }),
+    });
+  }
 };
 
 /**

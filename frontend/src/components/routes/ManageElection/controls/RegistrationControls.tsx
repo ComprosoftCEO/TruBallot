@@ -9,14 +9,15 @@ import { usePermissions, useUserId } from 'redux/auth';
 import { Permission } from 'models/auth';
 import {
   clearRequests,
-  openVoting,
   register,
   unregister,
   useElectionError,
   useIsLoading,
   MIN_REGISTERED_FOR_VOTING,
+  openCollectorModal,
 } from './controlsActions';
 import { GeneratingModal } from './GeneratingModal';
+import { PickCollectorsModal } from './PickCollectorsModal';
 
 export interface RegistrationControlsProps {
   election: PublicElectionDetails;
@@ -122,7 +123,7 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
                     size="large"
                     icon="list ordered"
                     content="Open Voting"
-                    onClick={() => openVoting(election.id)}
+                    onClick={openCollectorModal}
                     disabled={loading || election.registered.length < MIN_REGISTERED_FOR_VOTING}
                   />
                 </div>
@@ -131,6 +132,7 @@ export const RegistrationControls = ({ election }: RegistrationControlsProps) =>
           )}
         </Flex>
 
+        <PickCollectorsModal />
         <GeneratingModal open={openingVoting.loading} />
       </Segment>
     </Transition>
