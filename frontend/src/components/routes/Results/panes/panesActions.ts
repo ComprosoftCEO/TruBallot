@@ -103,7 +103,7 @@ export const verifyBallot = async (electionId: string, questionIndex: number, ba
   // We can verify with either collector, but always choose collector 1 for simplicity
   //  The result from the collectors verifies with both collectors either way
   const result = await axiosApi
-    .post<VerificationResult>(`/collector/1/elections/${electionId}/questions/${question.id}/verification`, requestData)
+    .post<VerificationResult>(`/mediator/elections/${electionId}/questions/${question.id}/verification`, requestData)
     .then(...resolveResult);
 
   updateBallot(questionIndex, ballotIndex, { verifying: result });

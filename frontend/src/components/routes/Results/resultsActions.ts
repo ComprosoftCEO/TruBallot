@@ -6,6 +6,7 @@ import {
   APIOption,
   APIResult,
   apiSome,
+  APISuccess,
   apiSuccess,
   axiosApi,
   getErrorInformation,
@@ -22,6 +23,7 @@ import {
 } from 'models/election';
 import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { ExtendedQuestionResult } from 'redux/state/results';
+import { PublicCollectorList } from 'models/mediator';
 
 const getState = getNestedState('results');
 const mergeState = mergeNestedState('results');
@@ -99,37 +101,55 @@ export async function tryReFetchData(electionId: string): Promise<void> {
   });
   mergeState({ questions, generator: BigInt(electionParams.data.generator), prime: BigInt(electionParams.data.prime) });
 
-  // Try to fetch encrypted location from collector 1 if it failed to fetch
-  let { c1Params } = getState();
-  if (c1Params.loading || !c1Params.success) {
-    c1Params = await axiosApi
-      .get<CollectorElectionParameters>(`/collector/1/elections/${electionId}/parameters`)
+  // Try to fetch the list of election collectors if they failed to fetch
+  let { electionCollectors } = getState();
+  if (electionCollectors.loading || !electionCollectors.success) {
+    electionCollectors = await axiosApi
+      .get<PublicCollectorList[]>(`/mediator/elections/${electionId}/collectors`)
       .then(...resolveResult);
 
-    mergeState({ c1Params });
-    if (!c1Params.success) {
+    mergeState({ electionCollectors });
+    if (!electionCollectors.success) {
       return;
     }
   }
 
-  // Try to fetch encrypted location from collector 2 if it failed to fetch
-  let { c2Params } = getState();
-  if (c2Params.loading || !c2Params.success) {
-    c2Params = await axiosApi
-      .get<CollectorElectionParameters>(`/collector/2/elections/${electionId}/parameters`)
-      .then(...resolveResult);
+  // Try to fetch the encrypted locations from ALL collectors in the elections
+  //   Run all of these requests in parallel
+  const { collectorRequests } = getState();
+  const results = await Promise.all(
+    electionCollectors.data
+      .filter(({ id }) => {
+        // Only re-request ones that failed
+        const request = collectorRequests[id];
+        return request === undefined || request.loading || !request.success;
+      })
+      .map(async ({ id }) => {
+        const collectorResponse = await axiosApi
+          .get<CollectorElectionParameters>(`/collector/${id}/elections/${electionId}/parameters`)
+          .then(...resolveResult);
 
-    mergeState({ c2Params });
-    if (!c2Params.success) {
-      return;
-    }
+        mergeState((state) => ({ collectorRequests: { ...state.collectorRequests, [id]: collectorResponse } }));
+        return collectorResponse;
+      }),
+  );
+
+  // Stop if any results had an error
+  if (results.some((result) => !result.success)) {
+    return;
   }
 
-  // Compute the encrypted location if the user is registered
-  if (c1Params.data.encryptedLocation !== undefined && c2Params.data.encryptedLocation !== undefined) {
-    const encryptedLocation =
-      (BigInt(c1Params.data.encryptedLocation) + BigInt(c2Params.data.encryptedLocation)) %
-      (BigInt(electionParams.data.prime) - BigInt(1));
+  // Compute the encrypted location
+  //   Since the user MUST be registered for an election, collectors should NEVER return "undefined"
+  //   But we still add a check to make TypeScript happy :)
+  const allRequests: (CollectorElectionParameters | undefined)[] = Object.values(getState().collectorRequests).map(
+    (request) => (request as APISuccess<CollectorElectionParameters>)?.data,
+  );
+
+  if (allRequests.map((request) => request !== undefined && request.encryptedLocation !== undefined)) {
+    const modulo = BigInt(electionParams.data.prime) - BigInt(1);
+    const encryptedLocation: bigint =
+      allRequests.reduce((acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc, BigInt(0)) % modulo;
 
     mergeState({ encryptedLocation });
   }
@@ -144,8 +164,8 @@ export const useFetchError = (): APIOption<[string, string] | undefined> => {
   const electionDetails = useSelector((state) => state.electionDetails);
   const electionParams = useSelector((state) => state.electionParams);
   const electionResults = useSelector((state) => state.electionResults);
-  const c1Params = useSelector((state) => state.c1Params);
-  const c2Params = useSelector((state) => state.c2Params);
+  const electionCollectors = useSelector((state) => state.electionCollectors);
+  const collectorRequests = useSelector((state) => state.collectorRequests);
 
   if (electionDetails.loading) {
     return apiLoading();
@@ -168,18 +188,28 @@ export const useFetchError = (): APIOption<[string, string] | undefined> => {
     return apiSome(['Failed to load election results', getErrorInformation(electionResults.error).description]);
   }
 
-  if (c1Params.loading) {
+  if (electionCollectors.loading) {
     return apiLoading();
   }
-  if (!c1Params.success) {
-    return apiSome(['Failed to load parameters from collector 1', getErrorInformation(c1Params.error).description]);
+  if (!electionCollectors.success) {
+    return apiSome(['Failed to load election collectors', getErrorInformation(electionCollectors.error).description]);
   }
 
-  if (c2Params.loading) {
+  // Check all of the collector parameters
+  if (Object.values(collectorRequests).some((request) => request.loading)) {
     return apiLoading();
   }
-  if (!c2Params.success) {
-    return apiSome(['Failed to load parameters from collector 2', getErrorInformation(c2Params.error).description]);
+  for (const [index, [collectorId, request]] of Object.entries(collectorRequests).entries()) {
+    if (request.loading) {
+      return apiLoading();
+    }
+    if (!request.success) {
+      const name = electionCollectors.data.find((c) => c.id === collectorId)?.name;
+      return apiSome([
+        `Failed to load parameters from ${name !== undefined ? `collector '${name}'` : `Collector ${index + 1}`}`,
+        getErrorInformation(request.error).description,
+      ]);
+    }
   }
 
   return apiSome(undefined);
