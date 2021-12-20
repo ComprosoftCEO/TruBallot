@@ -39,6 +39,16 @@ See the [Server README.md](../server/README.md) file for details on configuring 
 When running the database migrations, you will need to set `DATABASE_URL` (no prefix) environment variable individually to configure each database separately.
 Alternatively, this can be passed in as a command-line argument to the `diesel` command.
 
+The reposity provides a useful [`run-diesel.sh`](./run-diesel.sh) Bash script to automate this process by passing the `$C{i}_DATABASE_URL` variable to diesel.
+Using this script allows you to run a diesel command on all collector databases at once:
+
+```test
+Usage: run-diesel.sh <start> <end> <...diesel arguments>
+
+For example: run-diesel.sh 5 10 migration run
+  - Runs migrations for collectors 5 to 10
+```
+
 <br/>
 
 ## Environment Variables
