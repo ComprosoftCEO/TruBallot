@@ -19,6 +19,7 @@ use crate::protocol::location_anonymization as loc_anon;
 pub struct CreateElectionData {
   id: Uuid,
   is_public: bool,
+  creator_id: Uuid,
 
   #[serde(with = "kzen_paillier::serialize::bigint")]
   generator: BigInt,
@@ -105,6 +106,7 @@ pub async fn create_and_initialize_election(
   let mut create_elections_data = CollectorCreateElectionData {
     id: data.id,
     is_public: data.is_public,
+    creator_id: data.creator_id,
     generator: data.generator,
     prime: data.prime,
     questions: data.questions,
@@ -170,6 +172,7 @@ pub async fn create_and_initialize_election(
     let election = Election::new(
       create_elections_data.id,
       create_elections_data.is_public,
+      create_elections_data.creator_id,
       &create_elections_data.generator,
       &create_elections_data.prime,
     )
@@ -205,6 +208,7 @@ pub async fn create_and_initialize_election(
 struct CollectorCreateElectionData {
   id: Uuid,
   is_public: bool,
+  creator_id: Uuid,
 
   #[serde(with = "kzen_paillier::serialize::bigint")]
   generator: BigInt,

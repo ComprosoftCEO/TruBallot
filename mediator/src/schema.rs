@@ -18,6 +18,7 @@ table! {
     elections (id) {
         id -> Uuid,
         is_public -> Bool,
+        creator_id -> Uuid,
         generator -> Numeric,
         prime -> Numeric,
     }

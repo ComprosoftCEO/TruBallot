@@ -12,6 +12,7 @@ CREATE TABLE elections (
 
   -- List of election collectors is protected information
   is_public BOOLEAN NOT NULL DEFAULT false,
+  creator_id UUID NOT NULL,
 
   -- Cached copy of values from the API server:
   --

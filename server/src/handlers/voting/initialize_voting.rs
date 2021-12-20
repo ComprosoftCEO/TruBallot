@@ -96,6 +96,7 @@ pub async fn initialize_voting(
   let create_elections_data = CreateElectionData {
     id: election.id,
     is_public: election.is_public,
+    creator_id: election.created_by,
     generator: election.generator.to_bigint(),
     prime: election.prime.to_bigint(),
     questions: questions_candidates
@@ -132,6 +133,7 @@ pub async fn initialize_voting(
   election.status = ElectionStatus::Voting;
   election.update(&conn)?;
 
+  // TODO: Send list of collectors
   notify_voting_opened(&election, &jwt_key).await;
   log::info!(
     "Voting initialized for election \"{}\" <{}>",
@@ -150,6 +152,7 @@ pub async fn initialize_voting(
 struct CreateElectionData {
   id: Uuid,
   is_public: bool,
+  creator_id: Uuid,
 
   #[serde(with = "kzen_paillier::serialize::bigint")]
   generator: BigInt,

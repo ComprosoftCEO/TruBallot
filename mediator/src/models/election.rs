@@ -15,6 +15,7 @@ use crate::utils::ConvertBigInt;
 pub struct Election {
   pub id: Uuid,
   pub is_public: bool,
+  pub creator_id: Uuid,
   pub generator: BigDecimal,
   pub prime: BigDecimal,
 }
@@ -24,12 +25,13 @@ impl Election {
 
   has_many!(Question);
   has_many!(Registration);
-  has_many!(Collector through ElectionCollector, order by collectors::id.asc());
+  has_many!(Collector through ElectionCollector, order by collectors::name.asc());
 
-  pub fn new(id: Uuid, is_public: bool, generator: &BigInt, prime: &BigInt) -> Self {
+  pub fn new(id: Uuid, is_public: bool, creator_id: Uuid, generator: &BigInt, prime: &BigInt) -> Self {
     Self {
       id,
       is_public,
+      creator_id,
       generator: generator.to_bigdecimal(),
       prime: prime.to_bigdecimal(),
     }

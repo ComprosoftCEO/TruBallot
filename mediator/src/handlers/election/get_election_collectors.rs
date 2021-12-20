@@ -18,7 +18,8 @@ pub async fn get_election_collectors(
 
   // For a private election, make sure the user is registered in the election
   //   Otherwise, they don't have permission to view the list of collectors
-  if !election.is_public {
+  //   Exception: The creator is ALWAYS allowed to view the election
+  if !election.is_public && election.creator_id != token.get_user_id() {
     let registration = election.get_registration_optional(&token.get_user_id(), &conn)?;
     if registration.is_none() {
       return Err(NamedResourceType::election(election.id).into_error());
