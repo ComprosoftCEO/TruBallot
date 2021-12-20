@@ -37,7 +37,7 @@ CREATE TABLE registrations (
 
 -- List of collectors associated with each election
 CREATE TABLE election_collectors (
-  election_id UUID NOT NULL REFERENCES elections(id),
-  collector_id UUID NOT NULL REFERENCES collectors(id) ON DELETE CASCADE,
+  election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
+  collector_id UUID NOT NULL REFERENCES collectors(id),
   PRIMARY KEY (election_id, collector_id)
 );
