@@ -292,18 +292,20 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
     // Handle the different types of messages that can be received from the collector
     //  (Makes sure to verify the origin for each type of message)
     match json {
-      WebsocketMessage::PublicKey(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) {
-          self_addr.do_send(data);
-        }
-      }
+      // Special case: must set the from field explicitly
+      WebsocketMessage::PublicKey(data) => self_addr.do_send(UnsignedMediatorMessage {
+        from: collector_index,
+        data,
+      }),
+
+      // Verify origin and signature on remaining messages
       WebsocketMessage::SP1_Result_Response(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) {
+        if Self::verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
       }
       WebsocketMessage::SP2_Result_Response(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) {
+        if Self::verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
           self_addr.do_send(data)
         }
       }
@@ -394,10 +396,6 @@ impl Handler<SignedMediatorMessage<SP1_Result_Response>> for MediatorActor {
   type Result = ();
 
   fn handle(&mut self, msg: SignedMediatorMessage<SP1_Result_Response>, ctx: &mut Self::Context) -> Self::Result {
-    if !self.verify_signature(&msg, ctx) {
-      return;
-    }
-
     // Save the value into the map
     self.sp1_result.insert(msg.from, msg.data.sp1_ballot_valid);
     self.initialize_if_all_public_keys_received(ctx);
@@ -411,10 +409,6 @@ impl Handler<SignedMediatorMessage<SP2_Result_Response>> for MediatorActor {
   type Result = ();
 
   fn handle(&mut self, msg: SignedMediatorMessage<SP2_Result_Response>, ctx: &mut Self::Context) -> Self::Result {
-    if !self.verify_signature(&msg, ctx) {
-      return;
-    }
-
     // Save the value into the map
     self.sp2_result.insert(msg.from, msg.data.sp2_ballot_valid);
     self.test_if_calculations_finished(ctx);

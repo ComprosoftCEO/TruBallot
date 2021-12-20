@@ -180,11 +180,6 @@ impl VerificationWebsocketActor {
     true
   }
 
-  /// Send an unsigned message to the mediator
-  fn send_mediator_unsigned<T: Serialize>(&self, data: T, ctx: &mut <Self as Actor>::Context) {
-    Self::send_json(&UnsignedMediatorMessage::new(self.collector_index, data), ctx)
-  }
-
   /// Send a signed message to the mediator
   fn send_mediator<T: Serialize + Hash>(&self, data: T, ctx: &mut <Self as Actor>::Context) {
     Self::send_json(
@@ -232,7 +227,7 @@ impl Actor for VerificationWebsocketActor {
   fn started(&mut self, ctx: &mut Self::Context) {
     // Broadcast the public key back to the mediator
     let shared_secret = config::get_collector_secret();
-    self.send_mediator_unsigned(PublicKey::new_signed(&self.n, &self.rsa_b, &shared_secret), ctx);
+    Self::send_json(&PublicKey::new_signed(&self.n, &self.rsa_b, &shared_secret), ctx);
   }
 }
 

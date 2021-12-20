@@ -57,22 +57,6 @@ pub trait SignedMessage {
 }
 
 ///
-/// Send an unsigned message to the mediator
-///
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UnsignedMediatorMessage<T> {
-  pub from: usize,
-  pub data: T,
-}
-
-impl<T> UnsignedMediatorMessage<T> {
-  pub fn new(from: usize, data: T) -> Self {
-    Self { from, data }
-  }
-}
-
-///
 /// Send a signed message to the mediator
 ///
 #[derive(Debug, Clone, Serialize)]

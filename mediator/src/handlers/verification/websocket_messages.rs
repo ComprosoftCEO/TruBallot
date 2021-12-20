@@ -32,7 +32,7 @@ where
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum WebsocketMessage {
-  PublicKey(UnsignedMediatorMessage<PublicKey>),
+  PublicKey(PublicKey),
   SP1_Result_Response(SignedMediatorMessage<SP1_Result_Response>),
   SP2_Result_Response(SignedMediatorMessage<SP2_Result_Response>),
 
