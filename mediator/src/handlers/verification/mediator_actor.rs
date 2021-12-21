@@ -423,8 +423,8 @@ impl MediatorActor {
     }
 
     log::debug!("Computing final verification result:");
-    let sub_protocol_1 = self.sp1_result.values().all(|x| *x);
-    let sub_protocol_2 = self.sp2_result.values().all(|x| *x);
+    let sub_protocol_1 = self.sp1_result.len() > 0 && self.sp1_result.values().all(|x| *x);
+    let sub_protocol_2 = self.sp2_result.len() > 0 && self.sp2_result.values().all(|x| *x);
 
     log::debug!(
       "Sub-protocol 1: ballot {}",
