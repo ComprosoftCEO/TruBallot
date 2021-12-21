@@ -407,7 +407,7 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
     //   First STPM: rj + rk' = S_i,Cj * S_i,Ck'
     // ============================================
     log::debug!(
-      "Sub-protocol 1: First STPM: r{0} + r{1}' = S_i,C{0} * S_i,C{1}'",
+      "Sub-protocol 1: First STPM Request: r{0} + r{1}' = S_i,C{0} * S_i,C{1}'",
       self.collector_index + 1,
       msg.from + 1
     );
@@ -419,7 +419,7 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
     //   Second STPM: rj' + rk = S_i,Cj' * S_i,Ck
     // ============================================
     log::debug!(
-      "Sub-protocol 1: Second STPM: r{0}' + r{1} = S_i,C{0}' * S_i,C{1}",
+      "Sub-protocol 1: Second STPM Request: r{0}' + r{1} = S_i,C{0}' * S_i,C{1}",
       self.collector_index + 1,
       msg.from + 1
     );
@@ -439,6 +439,9 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
       },
       ctx,
     );
+
+    // Possibly compute the combined product
+    self.maybe_publish_combined_product(ctx);
   }
 }
 
@@ -453,7 +456,7 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Response>> for VerificationWebsocketA
     //   First STPM: rj + rk' = S_i,Cj * S_i,Ck'
     // ============================================
     log::debug!(
-      "Sub-protocol 1: First STPM: r{0} + r{1}' = S_i,C{0} * S_i,C{1}'",
+      "Sub-protocol 1: First STPM Response: r{0} + r{1}' = S_i,C{0} * S_i,C{1}'",
       self.collector_index + 1,
       msg.from + 1
     );
@@ -465,7 +468,7 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Response>> for VerificationWebsocketA
     //   Second STPM: rj' + rk = S_i,Cj' * S_i,Ck
     // ============================================
     log::debug!(
-      "Sub-protocol 1: Second STPM: r{0}' + r{1} = S_i,C{0}' * S_i,C{1}",
+      "Sub-protocol 1: Second STPM Response: r{0}' + r{1} = S_i,C{0}' * S_i,C{1}",
       self.collector_index + 1,
       msg.from + 1
     );
@@ -559,7 +562,7 @@ impl VerificationWebsocketActor {
     let products = self
       .products
       .values()
-      .fold(BigInt::from(0), |acc, x| BigInt::mod_mul(&acc, &x, &self.prime));
+      .fold(BigInt::from(1), |acc, x| BigInt::mod_mul(&acc, &x, &self.prime));
 
     log::debug!("P1 * ... * P{} = {}", self.num_collectors, products);
 
@@ -625,7 +628,7 @@ impl VerificationWebsocketActor {
       self
         .sp2_values
         .values()
-        .fold((BigInt::from(0), BigInt::from(0)), |(forward, reverse), value| {
+        .fold((BigInt::from(1), BigInt::from(1)), |(forward, reverse), value| {
           (
             BigInt::mod_mul(&forward, &value.g_stild, &self.prime),
             BigInt::mod_mul(&reverse, &value.g_stild_prime, &self.prime),

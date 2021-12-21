@@ -398,7 +398,7 @@ impl Handler<SignedMediatorMessage<SP1_Result_Response>> for MediatorActor {
   fn handle(&mut self, msg: SignedMediatorMessage<SP1_Result_Response>, ctx: &mut Self::Context) -> Self::Result {
     // Save the value into the map
     self.sp1_result.insert(msg.from, msg.data.sp1_ballot_valid);
-    self.initialize_if_all_public_keys_received(ctx);
+    self.test_if_calculations_finished(ctx);
   }
 }
 
@@ -418,7 +418,7 @@ impl Handler<SignedMediatorMessage<SP2_Result_Response>> for MediatorActor {
 impl MediatorActor {
   /// Send the final result if verification has finished
   fn test_if_calculations_finished(&mut self, ctx: &mut <Self as Actor>::Context) {
-    if self.sp1_result.len() != self.num_collectors && self.sp2_result.len() != self.num_collectors {
+    if self.sp1_result.len() != self.num_collectors || self.sp2_result.len() != self.num_collectors {
       return;
     }
 
