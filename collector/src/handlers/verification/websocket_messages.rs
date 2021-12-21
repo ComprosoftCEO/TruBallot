@@ -52,7 +52,7 @@ pub trait SignedMessage {
 
   /// Verify the message signature using RSA from the public key
   fn verify_signature(&self, public_key: &PublicKey) -> bool {
-    self.get_signature() == &BigInt::mod_pow(&self.compute_hash(), &public_key.b, &public_key.n)
+    &self.compute_hash() == &BigInt::mod_pow(self.get_signature(), &public_key.b, &public_key.n)
   }
 }
 
@@ -97,6 +97,7 @@ impl<T: Hash> SignedMessage for SignedMediatorMessage<T> {
 
   fn compute_hash(&self) -> BigInt {
     let mut hasher = SHAHasher::new();
+    self.from.hash(&mut hasher);
     self.data.hash(&mut hasher);
     hasher.get_sha_hash()
   }
