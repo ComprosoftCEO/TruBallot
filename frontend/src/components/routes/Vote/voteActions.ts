@@ -115,9 +115,10 @@ export async function tryReFetchElection(electionId: string): Promise<void> {
   );
 
   if (allRequests.map((request) => request !== undefined && request.encryptedLocation !== undefined)) {
-    const modulo = BigInt(electionParams.data.prime) - BigInt(1);
-    const encryptedLocation: bigint =
-      allRequests.reduce((acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc, BigInt(0)) % modulo;
+    const encryptedLocation: bigint = allRequests.reduce(
+      (acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc,
+      BigInt(0),
+    );
 
     mergeState({ encryptedLocation });
   }

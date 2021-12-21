@@ -40,7 +40,7 @@ export const computeBallot = ({
   );
 
   const reverseVerificationShares = collectorParams.reduce(
-    (acc, params) => acc + BigInt(params.forwardVerificationShares),
+    (acc, params) => acc + BigInt(params.reverseVerificationShares),
     BigInt(0),
   );
 

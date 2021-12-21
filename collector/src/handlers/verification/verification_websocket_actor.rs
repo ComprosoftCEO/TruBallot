@@ -403,29 +403,43 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
   type Result = ();
 
   fn handle(&mut self, msg: SignedUnicastMessage<SP1_STMP_Request>, ctx: &mut Self::Context) -> Self::Result {
+    // Get the public key for the Paillier cryptosystem
+    let public_key = match self.public_keys.get(msg.from) {
+      Some(public_key) => public_key,
+      None => {
+        return ctx.address().do_send(ErrorClose::from((
+          CloseCode::Abnormal,
+          format!(
+            "Cannot verify signature, public key for collector {} is not known",
+            msg.get_from() + 1,
+          ),
+        )))
+      }
+    };
+
     // ============================================
     //   First STPM: rj + rk' = S_i,Cj * S_i,Ck'
     // ============================================
     log::debug!(
       "Sub-protocol 1: First STPM Request: r{0} + r{1}' = S_i,C{0} * S_i,C{1}'",
+      msg.from + 1,
       self.collector_index + 1,
-      msg.from + 1
     );
 
-    let (r_prime, e_s_cj_e_rk_prime) = stpm::step_2(&msg.data.e_s_cj, &self.s_i_cj_prime, &self.n, true);
-    log::debug!("r{}' = {}", msg.from + 1, r_prime);
+    let (r_prime, e_s_cj_e_rk_prime) = stpm::step_2(&msg.data.e_s_cj, &self.s_i_cj_prime, &public_key.n, true);
+    log::debug!("r{}' = {}", self.collector_index + 1, r_prime);
 
     // ============================================
     //   Second STPM: rj' + rk = S_i,Cj' * S_i,Ck
     // ============================================
     log::debug!(
       "Sub-protocol 1: Second STPM Request: r{0}' + r{1} = S_i,C{0}' * S_i,C{1}",
+      msg.from + 1,
       self.collector_index + 1,
-      msg.from + 1
     );
 
-    let (r, e_s_cj_prime_e_rk) = stpm::step_2(&msg.data.e_s_cj_prime, &self.s_i_cj, &self.n, true);
-    log::debug!("r{} = {}", msg.from + 1, r);
+    let (r, e_s_cj_prime_e_rk) = stpm::step_2(&msg.data.e_s_cj_prime, &self.s_i_cj, &public_key.n, true);
+    log::debug!("r{} = {}", self.collector_index + 1, r);
 
     // Set these values inside the map
     self.sp1_values.insert(msg.from, SP1_STPM_Values { r, r_prime });
