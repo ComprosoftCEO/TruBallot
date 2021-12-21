@@ -107,14 +107,12 @@ export async function tryReFetchElection(electionId: string): Promise<void> {
     return;
   }
 
-  // Compute the encrypted location
-  //   Since the user MUST be registered for an election, collectors should NEVER return "undefined"
-  //   But we still add a check to make TypeScript happy :)
+  // We can ONLY get to this point if all collectors returned a success, so the cast is safe
   const allRequests: (CollectorElectionParameters | undefined)[] = Object.values(getState().collectorRequests).map(
     (request) => (request as APISuccess<CollectorElectionParameters>)?.data,
   );
 
-  if (allRequests.map((request) => request !== undefined && request.encryptedLocation !== undefined)) {
+  if (allRequests.every((request) => request !== undefined && request.encryptedLocation !== undefined)) {
     const encryptedLocation: bigint = allRequests.reduce(
       (acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc,
       BigInt(0),
