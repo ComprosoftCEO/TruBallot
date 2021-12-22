@@ -46,10 +46,10 @@ pub async fn close_voting(
     });
   }
 
-  // Each question in the election MUST have at least 2 votes
+  // Each question in the election MUST have at least 3 votes
   let questions: Vec<Question> = election.get_questions(&conn)?;
   for question in questions.iter() {
-    if question.count_commitments(&conn)? < 2 {
+    if question.count_commitments(&conn)? < 3 {
       return Err(ServiceError::NotEnoughVotes {
         election_id: election.id,
         question_id: question.id,

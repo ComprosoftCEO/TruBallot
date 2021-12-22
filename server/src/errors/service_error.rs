@@ -408,7 +408,7 @@ impl ServiceError {
         question_id,
       } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Each question in election must have at least 2 votes before voting can be closed".into(),
+        "Each question in election must have at least 3 votes before voting can be closed".into(),
         GlobalErrorCode::NotEnoughVotes,
         format!("Election ID: {}, Question ID: {}", election_id, question_id),
       ),

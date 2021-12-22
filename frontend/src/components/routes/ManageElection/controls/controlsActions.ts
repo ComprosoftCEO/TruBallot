@@ -21,8 +21,8 @@ const getGlobalsState = getNestedState('globals');
 /// Need at least 4 users registered before voting can begin
 export const MIN_REGISTERED_FOR_VOTING = 4;
 
-/// Need at least 2 votes before closing the election
-export const MIN_VOTES_FOR_CLOSING = 2;
+/// Need at least 3 votes before closing the election
+export const MIN_VOTES_FOR_CLOSING = 3;
 
 /**
  * Test if any of the election requests are loading
