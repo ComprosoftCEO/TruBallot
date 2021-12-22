@@ -38,11 +38,11 @@ async fn send_notification(data: &AllServerMessages, jwt_key: &JWTSecret) {
 //
 // Methods to send the notifications to the server
 //
-pub async fn notify_election_created(election: &Election, creator_id: Uuid, jwt_key: &JWTSecret) {
+pub async fn notify_election_created(election: &Election, jwt_key: &JWTSecret) {
   send_notification(
     &AllServerMessages::ElectionCreated(server_types::ElectionCreated {
       election_id: election.id,
-      creator_id,
+      creator_id: election.created_by,
     }),
     jwt_key,
   )

@@ -4,6 +4,7 @@ import { HasVotedStatus } from './election';
 export enum GlobalEvents {
   ElectionCreated = 'electionCreated',
   ElectionPublished = 'electionPublished',
+  CollectorPublishedOrUpdated = 'collectorPublishedOrUpdated',
   NameChanged = 'nameChanged',
 }
 
@@ -80,6 +81,7 @@ export interface WebsocketErrorResponse {
 export type WebsocketNotificationEvent =
   | ElectionCreatedEvent
   | ElectionPublishedEvent
+  | CollectorPublishedOrUpdatedEvent
   | NameChangedEvent
   | ElectionUpdatedEvent
   | ElectionDeletedEvent
@@ -100,6 +102,12 @@ export interface ElectionCreatedEvent {
 export interface ElectionPublishedEvent {
   type: GlobalEvents.ElectionPublished;
   electionId: string;
+}
+
+export interface CollectorPublishedOrUpdatedEvent {
+  type: GlobalEvents.CollectorPublishedOrUpdated;
+  id: string;
+  name: string;
 }
 
 export interface NameChangedEvent {

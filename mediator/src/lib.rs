@@ -13,6 +13,7 @@ pub mod db;
 pub mod errors;
 pub mod handlers;
 pub mod models;
+pub mod notifications;
 pub mod protocol;
 pub mod schema;
 pub mod utils;

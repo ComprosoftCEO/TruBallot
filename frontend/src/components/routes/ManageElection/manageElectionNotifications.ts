@@ -3,9 +3,11 @@ import { APISuccess, apiSuccess, axiosApi, getErrorInformation, resolveResult } 
 import { ElectionStatus, HasVotedStatus, PublicElectionDetails } from 'models/election';
 import {
   buildNotificationHandler,
+  GlobalEvents,
   ElectionEvents,
   useNotifications,
   WebsocketSubscriptionList,
+  CollectorPublishedOrUpdatedEvent,
   ElectionUpdatedEvent,
   ElectionDeletedEvent,
   RegistrationOpenedEvent,
@@ -31,6 +33,7 @@ const mergeState = mergeNestedState('manageElection');
 // List of all event handlers for the manage election page
 //
 const onMessageManageElection = buildNotificationHandler({
+  [GlobalEvents.CollectorPublishedOrUpdated]: handleCollectorPublishedOrUpdated,
   [ElectionEvents.ElectionUpdated]: handleElectionUpdated,
   [ElectionEvents.ElectionDeleted]: handleElectionDeleted,
   [ElectionEvents.RegistrationOpened]: handleRegistrationOpened,
@@ -49,10 +52,49 @@ const onMessageManageElection = buildNotificationHandler({
  * @param electionId ID of the election on this page
  */
 export const useManageElectionNotifications = (electionId: string) => {
-  const subscribeTo: WebsocketSubscriptionList = useMemo(() => ({ elections: [electionId] }), [electionId]);
+  const subscribeTo: WebsocketSubscriptionList = useMemo(
+    () => ({ globalEvents: [GlobalEvents.CollectorPublishedOrUpdated], elections: [electionId] }),
+    [electionId],
+  );
 
   useNotifications({ subscribeTo, onMessage: onMessageManageElection });
 };
+
+function handleCollectorPublishedOrUpdated(event: CollectorPublishedOrUpdatedEvent): void {
+  const { allCollectors, electionCollectors } = getState();
+
+  // Append or update the list of all collectors
+  if (!allCollectors.loading && allCollectors.success) {
+    // Figure out if this is an INSERT or an UPDATE
+    const newCollectors = [...allCollectors.data];
+    const collectorIndex = allCollectors.data.findIndex((collector) => collector.id === event.id);
+    if (collectorIndex < 0) {
+      // Append to the list of existing collectors
+      newCollectors.push({ id: event.id, name: event.name });
+    } else {
+      // Update the item in the list
+      newCollectors[collectorIndex].name = event.name;
+    }
+
+    // Either way, always re-sort the list
+    newCollectors.sort((a, b) => a.name.localeCompare(b.name));
+    mergeState({ allCollectors: apiSuccess(newCollectors) });
+  }
+
+  // Also attempt to update the name in election collectors
+  //  Only do this if the collector is actually in the list
+  if (!electionCollectors.loading && electionCollectors.success) {
+    const collectorIndex = electionCollectors.data.findIndex((collector) => collector.id === event.id);
+    if (collectorIndex >= 0) {
+      // Update the element and re-sort the list
+      const newElectionCollectors = [...electionCollectors.data];
+      newElectionCollectors[collectorIndex].name = event.name;
+      newElectionCollectors.sort((a, b) => a.name.localeCompare(b.name));
+
+      mergeState({ electionCollectors: apiSuccess(newElectionCollectors) });
+    }
+  }
+}
 
 function handleElectionUpdated(event: ElectionUpdatedEvent): void {
   fetchElection(event.electionId, mergeElection);

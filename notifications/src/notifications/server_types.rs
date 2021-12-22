@@ -16,6 +16,7 @@ use crate::notifications::{
 pub enum AllServerMessages {
   ElectionCreated(ElectionCreated),
   ElectionPublished(ElectionPublished),
+  CollectorPublishedOrUpdated(CollectorPublishedOrUpdated),
   NameChanged(NameChanged),
   ElectionUpdated(ElectionUpdated),
   ElectionDeleted(ElectionDeleted),
@@ -69,6 +70,29 @@ impl GlobalEvent for ElectionPublished {
   type Output = AllClientResponses;
   fn into_output(self) -> Self::Output {
     AllClientResponses::ElectionPublished(self.election_id.into())
+  }
+}
+
+///
+/// New collector published, or existing collector details updated
+///
+#[derive(Debug, Serialize, Deserialize, Message)]
+#[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
+pub struct CollectorPublishedOrUpdated {
+  pub id: Uuid,
+  pub name: String,
+}
+
+impl GlobalEvent for CollectorPublishedOrUpdated {
+  const EVENT_TYPE: GlobalEvents = GlobalEvents::CollectorPublishedOrUpdated;
+
+  type Output = AllClientResponses;
+  fn into_output(self) -> Self::Output {
+    AllClientResponses::CollectorPublishedOrUpdated(client_types::CollectorPublishedDetails {
+      id: self.id,
+      name: self.name,
+    })
   }
 }
 

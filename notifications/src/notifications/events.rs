@@ -11,6 +11,7 @@ use uuid_b64::UuidB64 as Uuid;
 pub enum GlobalEvents {
   ElectionCreated,
   ElectionPublished,
+  CollectorPublishedOrUpdated,
   NameChanged,
 }
 

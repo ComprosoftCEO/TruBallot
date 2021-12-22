@@ -19,6 +19,7 @@ pub async fn notify(
   match data.into_inner() {
     AllServerMessages::ElectionCreated(data) => addr.do_send(data.wrap()),
     AllServerMessages::ElectionPublished(data) => addr.do_send(data.wrap()),
+    AllServerMessages::CollectorPublishedOrUpdated(data) => addr.do_send(data.wrap()),
     AllServerMessages::NameChanged(data) => addr.do_send(data.wrap()),
     AllServerMessages::ElectionUpdated(data) => addr.do_send(data.wrap()),
     AllServerMessages::ElectionDeleted(data) => addr.do_send(data.wrap()),

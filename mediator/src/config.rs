@@ -40,6 +40,10 @@ pub struct Opt {
   /// JSON Web Token Secret
   #[structopt(short = "s", long, env, hide_env_values = true, default_value = DEFAULT_JWT_SECRET, hide_default_value(true))]
   jwt_secret: String,
+
+  /// Base URL to access the notifications server
+  #[structopt(long, env)]
+  notifications_url: String,
 }
 
 impl Opt {
@@ -60,6 +64,7 @@ impl Opt {
 
     env::set_var("DATABASE_URL", &self.database_url);
     env::set_var("JWT_SECRET", &self.jwt_secret);
+    env::set_var("NOTIFICATIONS_URL", &self.notifications_url);
   }
 }
 
@@ -117,4 +122,11 @@ pub fn get_database_url() -> Option<String> {
 //
 pub fn get_jwt_secret() -> String {
   env::var("JWT_SECRET").unwrap_or_else(|_| DEFAULT_JWT_SECRET.to_string())
+}
+
+//
+// Notifications
+//
+pub fn get_notifications_url() -> Option<String> {
+  return env::var("NOTIFICATIONS_URL").ok();
 }

@@ -92,6 +92,7 @@ pub enum WebsocketResponse {
 pub enum AllClientResponses {
   ElectionCreated(ElectionDetails),
   ElectionPublished(ElectionDetails),
+  CollectorPublishedOrUpdated(CollectorPublishedDetails),
   NameChanged(NameChangedDetails),
   ElectionUpdated(ElectionDetails),
   ElectionDeleted(ElectionDetails),
@@ -115,6 +116,13 @@ impl From<Uuid> for ElectionDetails {
   fn from(election_id: Uuid) -> Self {
     Self { election_id }
   }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectorPublishedDetails {
+  pub id: Uuid,
+  pub name: String,
 }
 
 #[derive(Serialize)]

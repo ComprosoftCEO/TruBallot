@@ -64,7 +64,7 @@ pub async fn create_election(
     Ok(election)
   })?;
 
-  notify_election_created(&new_election, new_election.created_by, &jwt_key).await;
+  notify_election_created(&new_election, &jwt_key).await;
   log::info!("New election created: \"{}\" <{}>", new_election.name, new_election.id);
 
   Ok(HttpResponse::Ok().json(NewElectionResult { id: new_election.id }))
