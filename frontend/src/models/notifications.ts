@@ -147,6 +147,11 @@ export interface RegistrationClosedEvent {
 export interface VotingOpenedEvent {
   type: ElectionEvents.VotingOpened;
   electionId: string;
+  collectors: string[];
+
+  prime: string;
+  generator: string;
+  locationModulus: string;
 }
 
 export interface VoteReceivedEvent {

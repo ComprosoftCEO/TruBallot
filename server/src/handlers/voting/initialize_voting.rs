@@ -134,8 +134,7 @@ pub async fn initialize_voting(
   election.status = ElectionStatus::Voting;
   election.update(&conn)?;
 
-  // TODO: Send list of collectors
-  notify_voting_opened(&election, &jwt_key).await;
+  notify_voting_opened(&election, create_elections_data.collectors, &jwt_key).await;
   log::info!(
     "Voting initialized for election \"{}\" <{}>",
     election.name,

@@ -99,7 +99,7 @@ pub enum AllClientResponses {
   UserRegistered(UserRegisteredDetails),
   UserUnregistered(UserUnregisteredDetails),
   RegistrationClosed(RegistrationClosedDetails),
-  VotingOpened(ElectionDetails),
+  VotingOpened(VotingOpenedDetails),
   VoteReceived(VoteReceivedDetails),
   VotingClosed(ElectionDetails),
   ResultsPublished(ElectionDetails),
@@ -151,6 +151,17 @@ pub struct UserUnregisteredDetails {
 pub struct RegistrationClosedDetails {
   pub election_id: Uuid,
   pub is_public: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VotingOpenedDetails {
+  pub election_id: Uuid,
+  pub collectors: Vec<Uuid>,
+
+  pub prime: String,
+  pub generator: String,
+  pub location_modulus: String,
 }
 
 #[derive(Serialize)]

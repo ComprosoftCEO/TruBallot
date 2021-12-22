@@ -245,12 +245,19 @@ export const openVoting = async (electionId: string): Promise<void> => {
 
   if (result.success) {
     // Build the list of selected election collectors
-    const electionCollectors: PublicCollectorList[] = (allCollectors as APISuccess<PublicCollectorList[]>).data.filter(
-      ({ id }) => collectorsSelected.has(id),
-    );
+    const collectorList: PublicCollectorList[] = [...collectorsSelected]
+      .map((id, index) => ({
+        id,
+
+        // Find the collector name in the list, or replace with a dummy name if not found
+        name:
+          (allCollectors as APISuccess<PublicCollectorList[]>)?.data.find((c) => c.id === id)?.name ??
+          `Collector ${index + 1}`,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     mergeState({
-      electionCollectors: apiSuccess(electionCollectors),
+      electionCollectors: apiSuccess(collectorList),
       openingVoting: apiSuccess(true),
       ...updateNestedElectionProps({
         status: ElectionStatus.Voting,

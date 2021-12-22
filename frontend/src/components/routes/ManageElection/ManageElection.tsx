@@ -209,7 +209,7 @@ export const ManageElection = () => {
 
                         render: () => (
                           <Tab.Pane className={styles['scroll-list']}>
-                            <List unordered as="ul">
+                            <List as="ul">
                               {collectors.map((collector) => (
                                 <List.Item key={collector.id} className={styles['question-item']} as="li">
                                   {collector.name}

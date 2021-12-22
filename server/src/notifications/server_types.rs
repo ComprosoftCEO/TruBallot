@@ -20,7 +20,7 @@ pub enum AllServerMessages {
   UserRegistered(UserRegistered),
   UserUnregistered(UserUnregistered),
   RegistrationClosed(RegistrationClosed),
-  VotingOpened(ElectionDetails),
+  VotingOpened(VotingOpened),
   VoteReceived(VoteReceived),
   VotingClosed(ElectionDetails),
   ResultsPublished(ElectionDetails),
@@ -74,6 +74,20 @@ pub struct UserUnregistered {
 pub struct RegistrationClosed {
   pub election_id: Uuid,
   pub is_public: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VotingOpened {
+  pub election_id: Uuid,
+  pub collectors: Vec<Uuid>,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub prime: BigInt,
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub generator: BigInt,
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub location_modulus: BigInt,
 }
 
 #[derive(Debug, Serialize)]

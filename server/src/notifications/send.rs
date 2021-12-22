@@ -127,8 +127,18 @@ pub async fn notify_registration_closed(election: &Election, jwt_key: &JWTSecret
   .await
 }
 
-pub async fn notify_voting_opened(election: &Election, jwt_key: &JWTSecret) {
-  send_notification(&AllServerMessages::VotingOpened(election.id.into()), jwt_key).await
+pub async fn notify_voting_opened(election: &Election, collectors: Vec<Uuid>, jwt_key: &JWTSecret) {
+  send_notification(
+    &AllServerMessages::VotingOpened(server_types::VotingOpened {
+      election_id: election.id,
+      collectors,
+      prime: election.prime.to_bigint(),
+      generator: election.generator.to_bigint(),
+      location_modulus: election.location_modulus.to_bigint(),
+    }),
+    jwt_key,
+  )
+  .await
 }
 
 pub async fn notify_vote_received(

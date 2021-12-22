@@ -260,6 +260,11 @@ impl ElectionEvent for RegistrationClosed {
 #[rtype(result = "()")]
 pub struct VotingOpened {
   pub election_id: Uuid,
+  pub collectors: Vec<Uuid>,
+
+  pub prime: String,
+  pub generator: String,
+  pub location_modulus: String,
 }
 
 impl ElectionEvent for VotingOpened {
@@ -271,7 +276,14 @@ impl ElectionEvent for VotingOpened {
 
   type Output = AllClientResponses;
   fn into_output(self) -> Self::Output {
-    AllClientResponses::VotingOpened(self.election_id.into())
+    AllClientResponses::VotingOpened(client_types::VotingOpenedDetails {
+      election_id: self.election_id,
+      collectors: self.collectors,
+
+      prime: self.prime,
+      generator: self.generator,
+      location_modulus: self.location_modulus,
+    })
   }
 }
 

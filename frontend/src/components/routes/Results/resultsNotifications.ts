@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { apiSuccess, axiosApi, getErrorInformation, resolveResult } from 'api';
-import { ElectionResult, ElectionStatus, PublicElectionDetails } from 'models/election';
+import { ElectionParameters, ElectionResult, ElectionStatus, PublicElectionDetails } from 'models/election';
 import {
   buildNotificationHandler,
   ElectionEvents,
@@ -14,6 +14,7 @@ import {
 import { mergeNestedState } from 'redux/helpers';
 import { isDev } from 'env';
 import { ExtendedQuestionResult } from 'redux/state/results';
+import { PublicCollectorList } from 'models/mediator';
 
 const mergeState = mergeNestedState('results');
 
@@ -49,6 +50,14 @@ export const useResultsNotifications = (electionId: string) => {
 };
 
 function handleVotingOpened(event: VotingOpenedEvent): void {
+  const collectorList: PublicCollectorList[] = event.collectors.map((id, index) => ({
+    id,
+    // Note: Name is NOT used on this page, so we can fill it with a dummy value
+    name: `Collector ${index + 1}`,
+  }));
+
+  mergeElectionParams({ prime: event.prime, generator: event.generator, locationModulus: event.locationModulus });
+  mergeState({ electionCollectors: apiSuccess(collectorList) });
   mergeElection({ status: ElectionStatus.Voting });
 }
 
@@ -163,5 +172,25 @@ function mergeElection(
         : { ...electionDetails.data, ...newDetails };
 
     return { electionDetails: apiSuccess(newElection) };
+  });
+}
+
+/**
+ * Helpful utility function to update specific election parameters
+ *
+ * @param newDetails New data for the election
+ */
+function mergeElectionParams(
+  newDetails: Partial<ElectionParameters> | ((input: ElectionParameters) => Partial<ElectionParameters>),
+): void {
+  mergeState(({ electionParams }) => {
+    if (electionParams.loading || !electionParams.success) return {};
+
+    const newParams: ElectionParameters =
+      typeof newDetails === 'function'
+        ? { ...electionParams.data, ...newDetails(electionParams.data) }
+        : { ...electionParams.data, ...newDetails };
+
+    return { electionParams: apiSuccess(newParams) };
   });
 }

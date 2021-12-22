@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { apiSuccess, axiosApi, getErrorInformation, resolveResult } from 'api';
+import { APISuccess, apiSuccess, axiosApi, getErrorInformation, resolveResult } from 'api';
 import { ElectionStatus, HasVotedStatus, PublicElectionDetails } from 'models/election';
 import {
   buildNotificationHandler,
@@ -17,12 +17,14 @@ import {
   VotingClosedEvent,
   ResultsPublishedEvent,
 } from 'notifications';
-import { mergeNestedState } from 'redux/helpers';
+import { getNestedState, mergeNestedState } from 'redux/helpers';
 import { isDev } from 'env';
 import { getUserId } from 'redux/auth';
 import { showConfirm } from 'showConfirm';
 import { history } from 'index';
+import { PublicCollectorList } from 'models/mediator';
 
+const getState = getNestedState('manageElection');
 const mergeState = mergeNestedState('manageElection');
 
 //
@@ -103,6 +105,20 @@ function handleRegistrationClosed(event: RegistrationClosedEvent): void {
 }
 
 function handleVotingOpened(event: VotingOpenedEvent): void {
+  // Build the list of selected election collectors
+  const { allCollectors } = getState();
+  const collectorList: PublicCollectorList[] = event.collectors
+    .map((id, index) => ({
+      id,
+
+      // Find the collector name in the list, or replace with a dummy name if not found
+      name:
+        (allCollectors as APISuccess<PublicCollectorList[]>)?.data.find((c) => c.id === id)?.name ??
+        `Collector ${index + 1}`,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  mergeState({ electionCollectors: apiSuccess(collectorList) });
   mergeElection({ status: ElectionStatus.Voting });
 }
 
