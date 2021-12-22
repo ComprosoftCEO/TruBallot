@@ -140,6 +140,7 @@ fn handle_encrypted_location(
 
     // Shuffle the order of locations for the first collector being initialized
     if should_shuffle {
+      log::debug!("Shuffling the list of encrypted locations");
       encrypted_locations.shuffle(&mut thread_rng());
     }
 

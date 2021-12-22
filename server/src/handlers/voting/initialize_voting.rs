@@ -123,13 +123,14 @@ pub async fn initialize_voting(
     .post(&url)
     .send_json(&create_elections_data);
 
-  ClientRequestError::handle_empty(mediator_request)
+  let result: InitializeElectionResult = ClientRequestError::handle(mediator_request)
     .await
     .map_err(|e| ServiceError::RegisterElectionError(e))?;
 
   // Election is now FULLY INITIALIZED!!!
   log::debug!("Got success response from mediator");
   log::debug!("Marking election as fully initialized...");
+  election.location_modulus = result.n.to_bigdecimal();
   election.status = ElectionStatus::Voting;
   election.update(&conn)?;
 
@@ -170,4 +171,11 @@ struct CreateElectionData {
 struct CreateElectionQuestion {
   id: Uuid,
   num_candidates: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InitializeElectionResult {
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  n: BigInt,
 }

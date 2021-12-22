@@ -13,6 +13,7 @@ use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ServiceError};
 use crate::models::{Collector, Election, ElectionCollector, Question, Registration};
 use crate::protocol::location_anonymization as loc_anon;
+use crate::views::election::InitializeElectionResult;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -197,7 +198,8 @@ pub async fn create_and_initialize_election(
   })?;
 
   // Woohoo! Election is now fully initialized!
-  Ok(HttpResponse::Ok().finish())
+  //  Return the modulus n back to the server
+  Ok(HttpResponse::Ok().json(InitializeElectionResult { n: encryption_key.n }))
 }
 
 ///
@@ -234,7 +236,7 @@ struct CollectorCreateElectionData {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreateElectionResponse {
-  // Vector might be empty when returning from the second collector
+  // Vector might be empty when returning from the last collector
   #[serde(with = "kzen_paillier::serialize::vecbigint")]
   encryption_result: Vec<BigInt>,
 }

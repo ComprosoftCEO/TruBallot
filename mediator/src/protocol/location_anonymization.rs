@@ -24,8 +24,8 @@ pub fn step_1(location: &BigInt, n: &BigInt) -> BigInt {
 ///
 /// Returns (ri, e_xi)
 pub fn step_ith(e_xi_1: &BigInt, n: &BigInt) -> (BigInt, BigInt) {
-  // Pick random r2 with 0 <= r2 < n
-  let mut ri = BigInt::sample_below(n);
+  // Pick random ri with 0 <= ri < n
+  let ri = BigInt::sample_below(n);
 
   // Compute E(r2)
   let ek = EncryptionKey::from(n);
@@ -38,12 +38,6 @@ pub fn step_ith(e_xi_1: &BigInt, n: &BigInt) -> (BigInt, BigInt) {
     &BigInt::mod_inv(&e_ri.0, &ek.nn).expect("Error: No Inverse"),
     &ek.nn,
   );
-
-  // If 2*ri > n, then ri = ri - n
-  //  -This will be a negative number
-  if &(2 * &ri) >= &n {
-    ri = &ri - n;
-  }
 
   (ri, e_xi)
 }
@@ -67,13 +61,5 @@ pub fn step_last(e_xn_1: &BigInt, p: &BigInt, q: &BigInt) -> BigInt {
   };
   let r1: RawPlaintext = Paillier::decrypt(&dk, e_xn_1);
 
-  // If 2*r1 > n, then r1 = r1 - n
-  //  -This will be a negative number
-  let n = p * q;
-  let mut r1 = r1.0.into_owned();
-  if &(2 * &r1) >= &n {
-    r1 = &r1 - &n;
-  }
-
-  r1
+  r1.0.into_owned()
 }

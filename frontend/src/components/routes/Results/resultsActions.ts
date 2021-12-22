@@ -145,9 +145,9 @@ export async function tryReFetchData(electionId: string): Promise<void> {
   );
 
   if (allRequests.every((request) => request !== undefined && request.encryptedLocation !== undefined)) {
-    const modulo = BigInt(electionParams.data.prime) - BigInt(1);
     const encryptedLocation: bigint =
-      allRequests.reduce((acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc, BigInt(0)) % modulo;
+      allRequests.reduce((acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc, BigInt(0)) %
+      BigInt(electionParams.data.locationModulus);
 
     mergeState({ encryptedLocation });
   }

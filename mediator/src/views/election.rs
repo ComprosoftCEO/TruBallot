@@ -1,6 +1,13 @@
 use curv_kzen::BigInt;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InitializeElectionResult {
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub n: BigInt,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CancelationShares {
