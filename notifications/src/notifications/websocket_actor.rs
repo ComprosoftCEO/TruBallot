@@ -72,6 +72,15 @@ where
 ///
 impl Actor for WebsocketActor {
   type Context = ws::WebsocketContext<Self>;
+
+  fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
+    // Remove all references to this actor
+    self.subscription_manager.do_send(UnsubscribeAll {
+      me: ctx.address().recipient(),
+    });
+
+    Running::Stop
+  }
 }
 
 ///
