@@ -150,29 +150,33 @@ impl VerificationWebsocketActor {
   ///
   /// Sends a error close message if the signature validation fails
   fn verify_signature<T: SignedMessage>(&self, msg: &T, ctx: &mut <Self as Actor>::Context) -> bool {
-    let self_addr = ctx.address();
-
     // Make sure we actually have the public key for this collector
     //  (This case SHOULD NOT happen in practice)
     let public_key = self.public_keys.get(msg.get_from());
     if public_key.is_none() {
-      self_addr.do_send(ErrorClose::from((
-        CloseCode::Abnormal,
-        format!(
-          "Cannot verify signature, public key for collector {} is not known",
-          msg.get_from() + 1,
+      Self::error_close(
+        (
+          CloseCode::Abnormal,
+          format!(
+            "Cannot verify signature, public key for collector {} is not known",
+            msg.get_from() + 1,
+          ),
         ),
-      )));
+        ctx,
+      );
 
       return false;
     }
 
     // Test the message signature
     if !msg.verify_signature(public_key.unwrap()) {
-      self_addr.do_send(ErrorClose::from((
-        CloseCode::Invalid,
-        format!("Invalid signature from collector {}", msg.get_from() + 1),
-      )));
+      Self::error_close(
+        (
+          CloseCode::Invalid,
+          format!("Invalid signature from collector {}", msg.get_from() + 1),
+        ),
+        ctx,
+      );
 
       return false;
     }
@@ -181,7 +185,9 @@ impl VerificationWebsocketActor {
   }
 
   /// Send a signed message to the mediator
-  fn send_mediator<T: Serialize + Hash>(&self, data: T, ctx: &mut <Self as Actor>::Context) {
+  ///
+  /// Returns "false" if this failed due to an error, meaning the actor should stop any processing immediately
+  fn send_mediator<T: Serialize + Hash>(&self, data: T, ctx: &mut <Self as Actor>::Context) -> bool {
     Self::send_json(
       &SignedMediatorMessage::new_signed(self.collector_index, data, &self.rsa_a, &self.n),
       ctx,
@@ -189,7 +195,9 @@ impl VerificationWebsocketActor {
   }
 
   /// Signed a signed message to another collector
-  fn send_unicast<T: Serialize + Hash>(&self, to: usize, data: T, ctx: &mut <Self as Actor>::Context) {
+  ///
+  /// Returns "false" if this failed due to an error, meaning the actor should stop any processing immediately
+  fn send_unicast<T: Serialize + Hash>(&self, to: usize, data: T, ctx: &mut <Self as Actor>::Context) -> bool {
     Self::send_json(
       &SignedUnicastMessage::new_signed(self.collector_index, to, data, &self.rsa_a, &self.n),
       ctx,
@@ -197,7 +205,9 @@ impl VerificationWebsocketActor {
   }
 
   /// Signed a signed message to all collectors
-  fn send_broadcast<T: Serialize + Hash>(&self, data: T, ctx: &mut <Self as Actor>::Context) {
+  ///
+  /// Returns "false" if this failed due to an error, meaning the actor should stop any processing immediately
+  fn send_broadcast<T: Serialize + Hash>(&self, data: T, ctx: &mut <Self as Actor>::Context) -> bool {
     Self::send_json(
       &SignedBroadcastMessage::new_signed(self.collector_index, data, &self.rsa_a, &self.n),
       ctx,
@@ -205,16 +215,33 @@ impl VerificationWebsocketActor {
   }
 
   /// Send a JSON response back to the client, handling any serialization errors
-  fn send_json<T>(data: &T, ctx: &mut <Self as Actor>::Context)
+  ///
+  /// Returns "false" if this failed due to an error, meaning the actor should stop any processing immediately
+  fn send_json<T>(data: &T, ctx: &mut <Self as Actor>::Context) -> bool
   where
     T: ?Sized + Serialize,
   {
-    match serde_json::to_string(data) {
-      Ok(json) => ctx.text(&json),
-      Err(e) => ctx
-        .address()
-        .do_send(ErrorClose::from((CloseCode::Error, format!("{}", e)))),
+    let serialized = serde_json::to_string(data);
+    match serialized {
+      Ok(ref json) => ctx.text(json),
+      Err(ref e) => Self::error_close((CloseCode::Error, format!("{}", e)), ctx),
     }
+
+    serialized.is_ok()
+  }
+
+  /// Close the verification actor due to a fatal error
+  fn error_close(error: impl Into<ErrorClose>, ctx: &mut <Self as Actor>::Context) {
+    let ErrorClose(code, description) = error.into();
+
+    if let Some(ref description) = description {
+      log::error!("Closing websocket: {} (Code {:#?})", description, code);
+    } else {
+      log::error!("Closing websocket: code {:#?}", code);
+    }
+
+    ctx.close(Some(CloseReason { code, description }));
+    ctx.stop();
   }
 }
 
@@ -240,7 +267,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebso
 
     log::debug!("Received message: {:#?}", msg);
     let msg: ws::Message = match msg {
-      Err(e) => return self_addr.do_send(ErrorClose::from((CloseCode::Error, format!("{}", e)))),
+      Err(e) => return Self::error_close((CloseCode::Error, format!("{}", e)), ctx),
       Ok(msg) => msg,
     };
 
@@ -258,15 +285,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebso
 
       // Parse JSON message
       ws::Message::Text(text) => match serde_json::from_str::<WebsocketMessage>(&text) {
-        Err(e) => return self_addr.do_send(ErrorClose::from((CloseCode::Invalid, format!("Invalid JSON: {}", e)))),
+        Err(e) => return Self::error_close((CloseCode::Invalid, format!("Invalid JSON: {}", e)), ctx),
         Ok(json) => json,
       },
 
       // Unsupported messages
-      ws::Message::Binary(_) => return self_addr.do_send(ErrorClose::from((CloseCode::Unsupported, "Binary Data"))),
-      ws::Message::Continuation(_) => {
-        return self_addr.do_send(ErrorClose::from((CloseCode::Unsupported, "Continuation Frame")))
-      }
+      ws::Message::Binary(_) => return Self::error_close((CloseCode::Unsupported, "Binary Data"), ctx),
+      ws::Message::Continuation(_) => return Self::error_close((CloseCode::Unsupported, "Continuation Frame"), ctx),
     };
 
     // Handle all of the messages, verifying signature first if necessary
@@ -302,24 +327,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebso
 }
 
 ///
-/// Close the websocket due to an error
-///
-impl Handler<ErrorClose> for VerificationWebsocketActor {
-  type Result = ();
-
-  fn handle(&mut self, ErrorClose(code, description): ErrorClose, ctx: &mut Self::Context) -> Self::Result {
-    if let Some(ref description) = description {
-      log::error!("Closing websocket: {} (Code {:#?})", description, code);
-    } else {
-      log::error!("Closing websocket: code {:#?}", code);
-    }
-
-    ctx.close(Some(CloseReason { code, description }));
-    ctx.stop();
-  }
-}
-
-///
 /// Handle the "Initialize" message from the mediator
 ///
 impl Handler<Initialize> for VerificationWebsocketActor {
@@ -333,10 +340,13 @@ impl Handler<Initialize> for VerificationWebsocketActor {
     let shared_secret = config::get_collector_secret();
     for (index, public_key) in init.public_keys.iter().enumerate() {
       if !public_key.verify_signature(&shared_secret) {
-        return ctx.address().do_send(ErrorClose::from((
-          CloseCode::Invalid,
-          format!("Invalid signature for collector {} public key", index + 1),
-        )));
+        return Self::error_close(
+          (
+            CloseCode::Invalid,
+            format!("Invalid signature for collector {} public key", index + 1),
+          ),
+          ctx,
+        );
       }
     }
 
@@ -372,7 +382,9 @@ impl Handler<Initialize> for VerificationWebsocketActor {
         e_s_cj_prime: stpm::step_1(&self.s_i_cj_prime, &self.n),
       };
 
-      self.send_unicast(index, data, ctx);
+      if !self.send_unicast(index, data, ctx) {
+        return; // Error occured when sending JSON
+      }
       log::debug!("Sent parameters to collector {}", index + 1);
     }
 
@@ -389,7 +401,9 @@ impl Handler<Initialize> for VerificationWebsocketActor {
 
     // Broadcast the sub-protocol 2 values to all websockets
     let sp2_value = SP2_Shares_Response { g_stild, g_stild_prime };
-    self.send_broadcast(&sp2_value, ctx);
+    if !self.send_broadcast(&sp2_value, ctx) {
+      return; // Error occured when sending JSON
+    }
 
     // Then save the broadcasted values into current user database
     self.sp2_values.insert(self.collector_index, sp2_value);
@@ -407,13 +421,16 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
     let public_key = match self.public_keys.get(msg.from) {
       Some(public_key) => public_key,
       None => {
-        return ctx.address().do_send(ErrorClose::from((
-          CloseCode::Abnormal,
-          format!(
-            "Cannot verify signature, public key for collector {} is not known",
-            msg.get_from() + 1,
+        return Self::error_close(
+          (
+            CloseCode::Abnormal,
+            format!(
+              "Cannot verify signature, public key for collector {} is not known",
+              msg.get_from() + 1,
+            ),
           ),
-        )))
+          ctx,
+        )
       }
     };
 
@@ -445,14 +462,16 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
     self.sp1_values.insert(msg.from, SP1_STPM_Values { r, r_prime });
 
     // Return the response back to the user
-    self.send_unicast(
+    if !self.send_unicast(
       msg.from,
       SP1_STMP_Response {
         e_s_cj_e_rk_prime,
         e_s_cj_prime_e_rk,
       },
       ctx,
-    );
+    ) {
+      return; // Error occured when sending JSON
+    }
 
     // Possibly compute the combined product
     self.maybe_publish_combined_product(ctx);
@@ -535,7 +554,9 @@ impl VerificationWebsocketActor {
 
     // Broadcaast the sub-protocol 1 product to all collectors
     let product_response = SP1_Product_Response { product_j };
-    self.send_broadcast(&product_response, ctx);
+    if !self.send_broadcast(&product_response, ctx) {
+      return; // Error occured when sending JSON
+    }
 
     // Also set the product inside the map
     self.products.insert(self.collector_index, product_response.product_j);

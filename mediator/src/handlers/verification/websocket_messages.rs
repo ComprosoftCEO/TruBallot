@@ -9,8 +9,6 @@ use std::hash::Hash;
 use super::sha_hasher::SHAHasher;
 
 /// Close the mediator actor due to an error
-#[derive(Message)]
-#[rtype(result = "()")]
 pub struct ErrorClose(pub CloseCode, pub Option<String>);
 
 impl From<CloseCode> for ErrorClose {

@@ -95,30 +95,35 @@ impl MediatorActor {
   /// Verify the signature on a message using the internal public key
   ///
   /// Sends a error close message to the mediator if the signature validation fails
-  fn verify_signature<T: SignedMessage>(&self, msg: &T, ctx: &mut <Self as Actor>::Context) -> bool {
-    let self_addr = ctx.address();
-
+  ///  If this happens, the actor should stop any processing immediately
+  fn verify_signature<T: SignedMessage>(&mut self, msg: &T, ctx: &mut <Self as Actor>::Context) -> bool {
     // Make sure we actually have the public key for this collector
     //  (This case SHOULD NOT happen in practice)
     let public_key = self.public_keys.get(&msg.get_from());
     if public_key.is_none() {
-      self_addr.do_send(ErrorClose::from((
-        CloseCode::Abnormal,
-        format!(
-          "Cannot verify signature, public key for collector {} is not known",
-          msg.get_from() + 1,
+      self.error_close(
+        (
+          CloseCode::Abnormal,
+          format!(
+            "Cannot verify signature, public key for collector {} is not known",
+            msg.get_from() + 1,
+          ),
         ),
-      )));
+        ctx,
+      );
 
       return false;
     }
 
     // Test the message signature
     if !msg.verify_signature(public_key.unwrap()) {
-      self_addr.do_send(ErrorClose::from((
-        CloseCode::Invalid,
-        format!("Invalid signature from collector {}", msg.get_from() + 1),
-      )));
+      self.error_close(
+        (
+          CloseCode::Invalid,
+          format!("Invalid signature from collector {}", msg.get_from() + 1),
+        ),
+        ctx,
+      );
 
       return false;
     }
@@ -127,12 +132,23 @@ impl MediatorActor {
   }
 
   /// Verifies the "from" field when receiving a message from the collector
-  fn verify_origin<T: OriginMessage>(data: &T, collector_index: usize, ctx: &mut <Self as Actor>::Context) -> bool {
+  ///
+  /// Sends a error close message to the mediator if the origin validation fails
+  ///  If this happens, the actor should stop any processing immediately
+  fn verify_origin<T: OriginMessage>(
+    &mut self,
+    data: &T,
+    collector_index: usize,
+    ctx: &mut <Self as Actor>::Context,
+  ) -> bool {
     if data.get_from() != collector_index {
-      ctx.address().do_send(ErrorClose::from((
-        CloseCode::Invalid,
-        "Invalid message: \"from\" field does not match the collector",
-      )));
+      self.error_close(
+        (
+          CloseCode::Invalid,
+          "Invalid message: \"from\" field does not match the collector",
+        ),
+        ctx,
+      );
 
       false
     } else {
@@ -141,16 +157,34 @@ impl MediatorActor {
   }
 
   /// Send a JSON response back to a given websocket, handling any serialization errors
-  fn send_json<T>(&mut self, data: &T, collector_index: usize, ctx: &mut <Self as Actor>::Context)
+  ///
+  /// Returns "false" if this failed due to an error, meaning the actor should stop any processing immediately
+  fn send_json<T>(&mut self, data: &T, collector_index: usize, ctx: &mut <Self as Actor>::Context) -> bool
   where
     T: ?Sized + Serialize,
   {
-    match serde_json::to_string(data) {
-      Ok(json) => self.text(collector_index, &json),
-      Err(e) => ctx
-        .address()
-        .do_send(ErrorClose::from((CloseCode::Error, format!("{}", e)))),
+    let serialized = serde_json::to_string(data);
+    match serialized {
+      Ok(ref json) => self.text(collector_index, json),
+      Err(ref e) => self.error_close((CloseCode::Error, format!("{}", e)), ctx),
     }
+
+    serialized.is_ok()
+  }
+
+  /// Close the mediator actor due to a fatal error
+  fn error_close(&mut self, error: impl Into<ErrorClose>, ctx: &mut <Self as Actor>::Context) {
+    let ErrorClose(code, description) = error.into();
+
+    if let Some(ref description) = description {
+      log::error!("Closing mediator: {} (Code {:#?})", description, code);
+    } else {
+      log::error!("Closing mediator: code {:#?}", code);
+    }
+
+    // Send the close data to all websockets and stop the actor
+    self.close_all_websockets(&Some(CloseReason { code, description }));
+    ctx.stop();
   }
 
   /// Close all websockets by sending a close message
@@ -183,8 +217,8 @@ impl MediatorActor {
 
     // Send the message to the websocket, silently failing on an error
     let sink = sink.unwrap();
-    if let Some(error) = sink.write(message) {
-      return log::error!("Error writing message: {:?}", error);
+    if let Some(_) = sink.write(message) {
+      return log::error!("Error writing message: Sink is closed or closing");
     }
   }
 
@@ -240,12 +274,12 @@ impl Actor for MediatorActor {
 impl WriteHandler<WsProtocolError> for MediatorActor {
   fn error(&mut self, error: WsProtocolError, ctx: &mut Self::Context) -> Running {
     // Send a message to close the actor due to a websocket error
-    ctx.address().do_send(ErrorClose::from((
-      CloseCode::Error,
-      format!("Error writing websocket message: {}", error),
-    )));
+    self.error_close(
+      (CloseCode::Error, format!("Error writing websocket message: {}", error)),
+      ctx,
+    );
 
-    Running::Continue
+    Running::Stop
   }
 }
 
@@ -261,7 +295,7 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
     // Handle any errors received from the websocket
     log::debug!("Received message from collector {}: {:#?}", collector_index + 1, msg);
     let msg: ws::Frame = match msg {
-      Err(e) => return self_addr.do_send(ErrorClose::from((CloseCode::Error, format!("{}", e)))),
+      Err(e) => return self.error_close((CloseCode::Error, format!("{}", e)), ctx),
       Ok(msg) => msg,
     };
 
@@ -278,15 +312,13 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
 
       // Parse JSON message
       ws::Frame::Text(text) => match serde_json::from_slice::<WebsocketMessage>(text.as_ref()) {
-        Err(e) => return self_addr.do_send(ErrorClose::from((CloseCode::Invalid, format!("Invalid JSON: {}", e)))),
+        Err(e) => return self.error_close((CloseCode::Invalid, format!("Invalid JSON: {}", e)), ctx),
         Ok(json) => json,
       },
 
       // Unsupported messages
-      ws::Frame::Binary(_) => return self_addr.do_send(ErrorClose::from((CloseCode::Unsupported, "Binary Data"))),
-      ws::Frame::Continuation(_) => {
-        return self_addr.do_send(ErrorClose::from((CloseCode::Unsupported, "Continuation Frame")))
-      }
+      ws::Frame::Binary(_) => return self.error_close((CloseCode::Unsupported, "Binary Data"), ctx),
+      ws::Frame::Continuation(_) => return self.error_close((CloseCode::Unsupported, "Continuation Frame"), ctx),
     };
 
     // Handle the different types of messages that can be received from the collector
@@ -300,22 +332,22 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
 
       // Verify origin and signature on remaining messages
       WebsocketMessage::SP1_Result_Response(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
+        if self.verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
       }
       WebsocketMessage::SP2_Result_Response(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
+        if self.verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
           self_addr.do_send(data)
         }
       }
       WebsocketMessage::UnicastMessage(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) {
+        if self.verify_origin(&data, collector_index, ctx) {
           self_addr.do_send(data)
         }
       }
       WebsocketMessage::BroadcastMessage(data) => {
-        if Self::verify_origin(&data, collector_index, ctx) {
+        if self.verify_origin(&data, collector_index, ctx) {
           self_addr.do_send(data)
         }
       }
@@ -325,25 +357,6 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
   fn finished(&mut self, ctx: &mut Self::Context) {
     log::debug!("Websocket stream closed, stopping actor");
     ctx.stop()
-  }
-}
-
-///
-/// Close the mediator due to an error
-///
-impl Handler<ErrorClose> for MediatorActor {
-  type Result = ();
-
-  fn handle(&mut self, ErrorClose(code, description): ErrorClose, ctx: &mut Self::Context) -> Self::Result {
-    if let Some(ref description) = description {
-      log::error!("Closing mediator: {} (Code {:#?})", description, code);
-    } else {
-      log::error!("Closing mediator: code {:#?}", code);
-    }
-
-    // Send the close data to all websockets and stop the actor
-    self.close_all_websockets(&Some(CloseReason { code, description }));
-    ctx.stop();
   }
 }
 
@@ -384,7 +397,9 @@ impl MediatorActor {
     // Initialize all of the websockets
     for collector_index in 0..self.num_collectors {
       data.collector_index = collector_index;
-      self.send_json(&data, collector_index, ctx);
+      if !self.send_json(&data, collector_index, ctx) {
+        return; // Error occured when sending JSON
+      }
     }
   }
 }
@@ -437,24 +452,29 @@ impl MediatorActor {
     );
 
     // Send the verification result back through the channel to the API handler
-    let self_addr = ctx.address();
     if let Some(sender) = self.sender.take() {
       if let Err(_) = sender.send(VerificationResult {
         sub_protocol_1,
         sub_protocol_2,
       }) {
         // Handle any errors
-        return self_addr.do_send(ErrorClose::from((
-          CloseCode::Abnormal,
-          "Failed to send verification result, receiver is closed",
-        )));
+        return self.error_close(
+          (
+            CloseCode::Abnormal,
+            "Failed to send verification result, receiver is closed",
+          ),
+          ctx,
+        );
       }
     } else {
       log::error!("Already sent the verification result");
-      return self_addr.do_send(ErrorClose::from((
-        CloseCode::Abnormal,
-        "Failed to send verification result, sender was previously consumed",
-      )));
+      return self.error_close(
+        (
+          CloseCode::Abnormal,
+          "Failed to send verification result, sender was previously consumed",
+        ),
+        ctx,
+      );
     }
 
     // Gracefully close all of the websockets, then stop the actor
@@ -491,9 +511,9 @@ impl Handler<SignedBroadcastMessage> for MediatorActor {
     log::debug!("Broadcast message from collector {}: {:#?}", msg.from + 1, msg);
 
     // Broadcast the message to all other websockets (except itself)
-    for collector_index in 0..self.num_collectors {
-      if collector_index != msg.from {
-        self.send_json(&msg, collector_index, ctx);
+    for collector_index in (0..self.num_collectors).filter(|index| *index != msg.from) {
+      if !self.send_json(&msg, collector_index, ctx) {
+        return; // Error occured when sending JSON
       }
     }
   }
