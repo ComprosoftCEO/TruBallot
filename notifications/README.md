@@ -27,14 +27,14 @@ Use the `--help` flag to list all command-line options
 
 ## Environment Variables
 
-For running the collector, you will need to specify certain environment variables.
+For running the notifications server, you will need to specify certain environment variables.
 This can be done using the following files:
 
 - `.env` - Environment variables shared by both development and production systems
 - `.env.development` - Environment variables only on development system
 - `.env.production` - Environment variables only on production system
 
-Alternatively, these values can be passed in using command-line parameters when running the API server.
+Alternatively, these values can be passed in using command-line parameters when running the notifications server.
 The command-line parameters override any values set in the `.env` files.
 
 |  Variable  |  Command-line Flag   |      Required       | Default Value | Description                                                                                                                                                                                                          |
