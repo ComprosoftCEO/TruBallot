@@ -108,7 +108,15 @@ Main folders in the `/src` directory:
 Using this structure enables other [binary utilities](https://doc.rust-lang.org/cargo/guide/project-layout.html) (`/src/bin` directory) to access the data types and API handlers.
 Although this project doesn't have any utilities currently, this may be useful in the future.
 
+Upon initialization, the collector communicates with the mediator to register all networking information (like IP address and port).
+Each collector should be pre-assigned a unique UUID and can also be given a website-friendly name.
+If a collector is ever restarted, calling this handler again will update the database to contain the most recent network and name information.
+(_Just be sure to use the same UUID when calling the handler again, or it will register a new collector instead._)
+
+In the current implementation, a collector can never be unregistered from the system once registered, or otherwise some elections could not be verified anymore.
+At some point, there might be a way to "move" data from one collector to another, but this feature is not currently supported.
+
 The collectors communicate using WebSockets for the verification protocol.
-Websocket communication is handled using the `VerificationWebsocket` [Actix Actor](https://actix.rs/book/actix/).
+Websocket communication is handled using the `VerificationWebsocketActor` [Actix Actor](https://actix.rs/book/actix/).
 
 See the [Server README.md](../server/README.md) file for more details on authentication, database structures, and error handling.
