@@ -11,7 +11,10 @@ CREATE TABLE elections (
   -- g^x (mod p) is a cyclic group of order p-1
   --   These values are not generated until the election is closed
   generator NUMERIC NOT NULL,
-  prime NUMERIC NOT NULL
+  prime NUMERIC NOT NULL,
+
+  -- Modulus to use for the encrypted location from the collectors
+  location_modulus NUMERIC NOT NULL
 );
 
 

@@ -1,4 +1,4 @@
-import { APIError, apiLoading, apiSuccess, axiosApi, resolveResult } from 'api';
+import { APIError, apiLoading, APISuccess, apiSuccess, axiosApi, resolveResult } from 'api';
 import { getNestedState, mergeNestedState, nestedSelectorHook } from 'redux/helpers';
 import { showConfirm } from 'showConfirm';
 import { history } from 'index';
@@ -10,6 +10,7 @@ import {
   PublishElectionResult,
 } from 'models/election';
 import { ManageElectionState } from 'redux/state';
+import { PublicCollectorList } from 'models/mediator';
 
 const getState = getNestedState('manageElection');
 const useSelector = nestedSelectorHook('manageElection');
@@ -20,8 +21,8 @@ const getGlobalsState = getNestedState('globals');
 /// Need at least 4 users registered before voting can begin
 export const MIN_REGISTERED_FOR_VOTING = 4;
 
-/// Need at least 2 votes before closing the election
-export const MIN_VOTES_FOR_CLOSING = 2;
+/// Need at least 3 votes before closing the election
+export const MIN_VOTES_FOR_CLOSING = 3;
 
 /**
  * Test if any of the election requests are loading
@@ -213,37 +214,65 @@ export const unregister = async (electionId: string): Promise<void> => {
   }
 };
 
+export const openCollectorModal = (): void =>
+  mergeState({ pickCollectorsModalOpen: true, collectorsSelected: new Set() });
+
+export const closeCollectorModal = (): void => mergeState({ pickCollectorsModalOpen: false });
+
+export const toggleCollectorSelected = (collectorId: string): void => {
+  mergeState((state) => {
+    const collectorsSelected = new Set(state.collectorsSelected);
+    if (collectorsSelected.has(collectorId)) {
+      collectorsSelected.delete(collectorId);
+    } else {
+      collectorsSelected.add(collectorId);
+    }
+
+    return { collectorsSelected };
+  });
+};
+
 /**
  * Open election voting
  */
-export const openVoting = (electionId: string, override?: true): void => {
-  showConfirm({
-    header: 'Are you sure you want to open voting?',
-    message: 'This will close registration',
-    override,
-    onConfirm: async () => {
-      mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading() });
+export const openVoting = async (electionId: string): Promise<void> => {
+  const { collectorsSelected, allCollectors } = getState();
+  mergeState({ ...CLEAR_REQUESTS, openingVoting: apiLoading(), pickCollectorsModalOpen: false });
 
-      const result = await axiosApi.post(`/elections/${electionId}/voting`).then(...resolveResult);
-      if (result.success) {
-        mergeState({
-          openingVoting: apiSuccess(true),
-          ...updateNestedElectionProps({
-            status: ElectionStatus.Voting,
-            accessCode: undefined,
-          }),
-        });
-      } else {
-        mergeState({
-          openingVoting: result,
-          ...updateNestedElectionProps({
-            status: ElectionStatus.InitFailed,
-            accessCode: undefined,
-          }),
-        });
-      }
-    },
-  });
+  const result = await axiosApi
+    .post(`/elections/${electionId}/voting`, { collectors: [...collectorsSelected] })
+    .then(...resolveResult);
+
+  if (result.success) {
+    // Build the list of selected election collectors
+    const collectorList: PublicCollectorList[] = [...collectorsSelected]
+      .map((id, index) => ({
+        id,
+
+        // Find the collector name in the list, or replace with a dummy name if not found
+        name:
+          (allCollectors as APISuccess<PublicCollectorList[]>)?.data.find((c) => c.id === id)?.name ??
+          `Collector ${index + 1}`,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    mergeState({
+      electionCollectors: apiSuccess(collectorList),
+      openingVoting: apiSuccess(true),
+      ...updateNestedElectionProps({
+        status: ElectionStatus.Voting,
+        accessCode: undefined,
+      }),
+    });
+  } else {
+    mergeState({
+      openingVoting: result,
+      ...updateNestedElectionProps({
+        status: ElectionStatus.InitFailed,
+        accessCode: undefined,
+      }),
+    });
+  }
 };
 
 /**

@@ -45,13 +45,9 @@ pub struct Opt {
   #[structopt(short = "r", long, env, hide_env_values = true)]
   recaptcha_secret_key: String,
 
-  /// Base URL that can be used to access collector 1
+  /// Base URL that can be used to access the collector mediators
   #[structopt(long, env)]
-  c1_url: String,
-
-  /// Base URL that can be used to access collector 2
-  #[structopt(long, env)]
-  c2_url: String,
+  mediator_url: String,
 
   /// Base URL to access the notifications server
   #[structopt(long, env)]
@@ -77,8 +73,7 @@ impl Opt {
     env::set_var("DATABASE_URL", &self.database_url);
     env::set_var("JWT_SECRET", &self.jwt_secret);
     env::set_var("RECAPTCHA_SECRET_KEY", &self.recaptcha_secret_key);
-    env::set_var("C1_URL", &self.c1_url);
-    env::set_var("C2_URL", &self.c2_url);
+    env::set_var("MEDIATOR_URL", &self.mediator_url);
     env::set_var("NOTIFICATIONS_URL", &self.notifications_url);
   }
 }
@@ -146,12 +141,8 @@ pub fn get_recaptcha_secret_key() -> Option<String> {
 //
 // Collectors
 //
-pub fn get_c1_url() -> Option<String> {
-  return env::var("C1_URL").ok();
-}
-
-pub fn get_c2_url() -> Option<String> {
-  return env::var("C2_URL").ok();
+pub fn get_mediator_url() -> Option<String> {
+  return env::var("MEDIATOR_URL").ok();
 }
 
 //

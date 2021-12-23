@@ -3,12 +3,13 @@
  */
 import { APIResult, apiLoading } from 'api';
 import { CollectorElectionParameters, ElectionParameters, PublicElectionDetails } from 'models/election';
+import { PublicCollectorList } from 'models/mediator';
 
 export interface VoteState {
   electionDetails: APIResult<PublicElectionDetails>;
   electionParams: APIResult<ElectionParameters>;
-  c1Params: APIResult<CollectorElectionParameters>;
-  c2Params: APIResult<CollectorElectionParameters>;
+  electionCollectors: APIResult<PublicCollectorList[]>;
+  collectorRequests: Record<string, APIResult<CollectorElectionParameters>>;
 
   questions: QuestionDetails[];
   cheatMode: boolean;
@@ -38,8 +39,8 @@ export enum VotingStatus {
 export const initialVoteState: VoteState = {
   electionDetails: apiLoading(),
   electionParams: apiLoading(),
-  c1Params: apiLoading(),
-  c2Params: apiLoading(),
+  electionCollectors: apiLoading(),
+  collectorRequests: {},
 
   questions: [],
   cheatMode: false,

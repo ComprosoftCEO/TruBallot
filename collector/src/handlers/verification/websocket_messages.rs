@@ -1,18 +1,267 @@
-// Define all data structures for the verification protocol (Sub-Protocol 1 and Sub-Protocol 2)
-//
-// Note: For convention, we denote the client as collector 1 and the websocket actor as collector 2.
-//   In reality, these values are always opposite, so they may be flipped.
-//   Either way, we still compute the correct verification values.
 #![allow(non_camel_case_types)]
-use actix::Message;
+use actix::prelude::*;
+use actix_http::ws::CloseCode;
+use curv_kzen::arithmetic::{Converter, Modulo};
 use curv_kzen::BigInt;
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 
-/// Initialization parameters to send to the websocket
+use super::sha_hasher::SHAHasher;
+
+/// Close the connection due to an error
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct ErrorClose(pub CloseCode, pub Option<String>);
+
+impl From<CloseCode> for ErrorClose {
+  fn from(code: CloseCode) -> Self {
+    Self(code, None)
+  }
+}
+
+impl<T> From<(CloseCode, T)> for ErrorClose
+where
+  T: Into<String>,
+{
+  fn from((code, description): (CloseCode, T)) -> Self {
+    Self(code, Some(description.into()))
+  }
+}
+
+/// Top level structure for any type of JSON value that can be received
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum WebsocketMessage {
+  Initialize(Initialize),
+  SP1_STMP_Request(SignedUnicastMessage<SP1_STMP_Request>),
+  SP1_STMP_Response(SignedUnicastMessage<SP1_STMP_Response>),
+  SP1_Product_Response(SignedBroadcastMessage<SP1_Product_Response>),
+  SP2_Shares_Response(SignedBroadcastMessage<SP2_Shares_Response>),
+}
+
+/// Represents a received message that is signed
+pub trait SignedMessage {
+  /// Extract the signature stored in the struct
+  fn get_signature(&self) -> &BigInt;
+
+  /// Extract the source of the signature
+  fn get_from(&self) -> usize;
+
+  /// Hash the message to get the signature
+  fn compute_hash(&self) -> BigInt;
+
+  /// Verify the message signature using RSA from the public key
+  fn verify_signature(&self, public_key: &PublicKey) -> bool {
+    &self.compute_hash() == &BigInt::mod_pow(self.get_signature(), &public_key.b, &public_key.n)
+  }
+}
+
+///
+/// Send a signed message to the mediator
+///
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignedMediatorMessage<T> {
+  pub from: usize,
+  pub data: T,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub collector_signature: BigInt,
+}
+
+impl<T: Hash> SignedMediatorMessage<T> {
+  pub fn new_signed(from: usize, data: T, private_key: &BigInt, n: &BigInt) -> Self {
+    // Start by building the message
+    let mut message = Self {
+      from,
+      data,
+      collector_signature: BigInt::from(0),
+    };
+
+    // Then compute the signature from the hash
+    message.collector_signature = BigInt::mod_pow(&message.compute_hash(), private_key, n);
+    message
+  }
+}
+
+impl<T: Hash> SignedMessage for SignedMediatorMessage<T> {
+  #[inline]
+  fn get_signature(&self) -> &BigInt {
+    &self.collector_signature
+  }
+
+  #[inline]
+  fn get_from(&self) -> usize {
+    self.from
+  }
+
+  fn compute_hash(&self) -> BigInt {
+    let mut hasher = SHAHasher::new();
+    self.from.hash(&mut hasher);
+    self.data.hash(&mut hasher);
+    hasher.get_sha_hash()
+  }
+}
+
+///
+/// Message to send to or receive from a specific websocket
+///
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
+pub struct SignedUnicastMessage<T> {
+  pub from: usize,
+  pub to: usize,
+  pub data: T,
+
+  /// RSA Signature
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub signature: BigInt,
+}
+
+impl<T: Hash> SignedUnicastMessage<T> {
+  pub fn new_signed(from: usize, to: usize, data: T, private_key: &BigInt, n: &BigInt) -> Self {
+    // Start by building the message
+    let mut message = Self {
+      from,
+      to,
+      data,
+      signature: BigInt::from(0),
+    };
+
+    // Then compute the signature from the hash
+    message.signature = BigInt::mod_pow(&message.compute_hash(), private_key, n);
+    message
+  }
+}
+
+impl<T: Hash> SignedMessage for SignedUnicastMessage<T> {
+  #[inline]
+  fn get_signature(&self) -> &BigInt {
+    &self.signature
+  }
+
+  #[inline]
+  fn get_from(&self) -> usize {
+    self.from
+  }
+
+  fn compute_hash(&self) -> BigInt {
+    let mut hasher = SHAHasher::new();
+    self.from.hash(&mut hasher);
+    self.to.hash(&mut hasher);
+    self.data.hash(&mut hasher);
+    hasher.get_sha_hash()
+  }
+}
+
+///
+/// Message to send to or receive from ALL websockets
+///
+#[derive(Debug, Clone, Serialize, Deserialize, Message)]
+#[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
+pub struct SignedBroadcastMessage<T> {
+  pub from: usize,
+  pub data: T,
+
+  /// RSA Signature
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub signature: BigInt,
+}
+
+impl<T: Hash> SignedBroadcastMessage<T> {
+  pub fn new_signed(from: usize, data: T, private_key: &BigInt, n: &BigInt) -> Self {
+    // Start by building the message
+    let mut message = Self {
+      from,
+      data,
+      signature: BigInt::from(0),
+    };
+
+    // Then compute the signature from the hash
+    message.signature = BigInt::mod_pow(&message.compute_hash(), private_key, n);
+    message
+  }
+}
+
+impl<T: Hash> SignedMessage for SignedBroadcastMessage<T> {
+  #[inline]
+  fn get_signature(&self) -> &BigInt {
+    &self.signature
+  }
+
+  #[inline]
+  fn get_from(&self) -> usize {
+    self.from
+  }
+
+  fn compute_hash(&self) -> BigInt {
+    let mut hasher = SHAHasher::new();
+    self.from.hash(&mut hasher);
+    self.data.hash(&mut hasher);
+    hasher.get_sha_hash()
+  }
+}
+
+// =============================================
+// Define all data structures from the mediator
+// =============================================
+
+/// Publish the public key for a collector
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicKey {
+  /// Modulus for both RSA and Paillier cryptosystem
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub n: BigInt,
+
+  /// Public exponent b for RSA
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub b: BigInt,
+
+  /// Signature to ensure public key has been faithfully published
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub signature: BigInt,
+}
+
+impl PublicKey {
+  pub fn new_signed(n: &BigInt, b: &BigInt, shared_secret: &str) -> Self {
+    // Start by building the public key
+    let mut public_key = PublicKey {
+      n: n.clone(),
+      b: b.clone(),
+      signature: BigInt::from(0),
+    };
+
+    // Then compute the signature from the hash
+    public_key.signature = public_key.compute_hash(shared_secret);
+    public_key
+  }
+
+  /// Verify the signature using the shared collector secret
+  pub fn verify_signature(&self, shared_secret: &str) -> bool {
+    self.signature == self.compute_hash(shared_secret)
+  }
+
+  fn compute_hash(&self, shared_secret: &str) -> BigInt {
+    let mut hasher = SHAHasher::new();
+    self.n.to_bytes().hash(&mut hasher);
+    self.b.to_bytes().hash(&mut hasher);
+    shared_secret.hash(&mut hasher);
+    hasher.get_sha_hash()
+  }
+}
+
+/// Initialization parameters to send to the websocket
+#[derive(Debug, Clone, Deserialize, Message)]
+#[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
 pub struct Initialize {
+  // Collector details
+  pub collector_index: usize,
+  pub num_collectors: usize,
+
   // Ballots
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub forward_ballot: BigInt, // p_i
@@ -27,110 +276,113 @@ pub struct Initialize {
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub g_s_s_prime: BigInt, // g^(s_i * s_i')
 
-  // STPM Encryption Key
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub n: BigInt,
+  // STPM Encryption Key and RSA signatures
+  pub public_keys: Vec<PublicKey>,
 }
 
-/// Sub-Protocol 1 - First Secure Two-Party Multiplication Request
-///
-/// Computes r1 + r2' = S_i,C1 * S_i,C2'
-#[derive(Debug, Clone, Serialize, Deserialize, Message)]
-#[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct SP1_STMP1_Request {
-  // E(S_i,C1, e)
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub e_s_c1: BigInt,
-}
+// =============================================
+// Define all data structures for Sub-Protocol 1
+// =============================================
 
-/// Sub-Protocol 1 - First Secure Two-Party Multiplication Response
+/// Sub-Protocol 1 - Secure Two-Party Multiplication Request
 ///
-/// Computes r1 + r2' = S_i,C1 * S_i,C2'
+/// This facilitates STPM with collector j and collector k
+///
+/// Computes:
+///   rj + rk' = S_i,Cj * S_i,Ck'
+///   rj' + rk = S_i,Cj' * S_i,Ck
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SP1_STMP1_Response {
-  // (E(S_i,C1, e)^(S_i,C2')) * (E(r2', e)^(-1)) (mod n^2)
+pub struct SP1_STMP_Request {
+  // E(S_i,Cj, e)
   #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub e_s_c1_e_r2_prime: BigInt,
+  pub e_s_cj: BigInt,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub e_s_cj_prime: BigInt, // E(S_i,Cj', e)
 }
 
-/// Sub-Protocol 1 - Second Secure Two-Party Multiplication Request
-///
-/// Computes r1' + r2 = S_i,C1' * S_i,C2
-#[derive(Debug, Clone, Serialize, Deserialize, Message)]
-#[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct SP1_STMP2_Request {
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub e_s_c1_prime: BigInt, // E(S_i,C1', e)
+impl Hash for SP1_STMP_Request {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.e_s_cj.to_bytes().hash(state);
+    self.e_s_cj_prime.to_bytes().hash(state);
+  }
 }
 
-/// Sub-Protocol 1 - Second Secure Two-Party Multiplication Response
+/// Sub-Protocol 1 - Secure Two-Party Multiplication Response
 ///
-/// Computes r1' + r2 = S_i,C1' * S_i,C2
+/// This facilitates STPM with collector j and collector k
+///
+/// Computes:
+///   rj + rk' = S_i,Cj * S_i,Ck'
+///   rj' + rk = S_i,Cj' * S_i,Ck
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SP1_STMP2_Response {
-  // (E(S_i,C1', e)^(S_i,C2)) * (E(r2, e)^(-1)) (mod n^2)
+pub struct SP1_STMP_Response {
+  // (E(S_i,Cj, e)^(S_i,Ck')) * (E(rk', e)^(-1)) (mod n^2)
   #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub e_s_c1_prime_e_r2: BigInt,
+  pub e_s_cj_e_rk_prime: BigInt,
+
+  // (E(S_i,Cj', e)^(S_i,Ck)) * (E(rk, e)^(-1)) (mod n^2)
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub e_s_cj_prime_e_rk: BigInt,
 }
 
-/// Sub-Protocol 1 - Computed product P1 request
-#[derive(Debug, Clone, Serialize, Deserialize, Message)]
-#[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct SP1_Product1_Request {
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub p1: BigInt,
+impl Hash for SP1_STMP_Response {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.e_s_cj_e_rk_prime.to_bytes().hash(state);
+    self.e_s_cj_prime_e_rk.to_bytes().hash(state);
+  }
 }
 
-// Sub-Protocol 1 - Computed product P2 response
+/// Sub-Protocol 1 - Computed product response for collector j
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SP1_Product2_Response {
+pub struct SP1_Product_Response {
   #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub p2: BigInt,
+  pub product_j: BigInt,
+}
+
+impl Hash for SP1_Product_Response {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.product_j.to_bytes().hash(state);
+  }
 }
 
 /// Sub-Protocol 1 - Final result from the websocket
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SP1_Result_Response {
-  pub ballot_valid: bool,
+  pub sp1_ballot_valid: bool,
 }
 
-/// Sub-Protocol 2 - Computed values g^(S~i,C1) and g^(S~i,C1')
-#[derive(Debug, Clone, Serialize, Deserialize, Message)]
-#[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct SP2_C1_Request {
-  // g^(S~i,C1)
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub g_stild_1: BigInt,
+// =============================================
+// Define all data structures for Sub-Protocol 2
+// =============================================
 
-  // g^(S~i,C1')
-  #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub g_stild_1_prime: BigInt,
-}
-
-/// Sub-Protocol 2 - Computed values g^(S~i,C2) and g^(S~i,C2')
+/// Sub-Protocol 2 - Computed values g^(S~i,Cj) and g^(S~i,Cj') for collector j
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SP2_C2_Response {
-  // g^(S~i,C2)
+pub struct SP2_Shares_Response {
+  // g^(S~i,Cj)
   #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub g_stild_2: BigInt,
+  pub g_stild: BigInt,
 
-  // g^(S~i,C2')
+  // g^(S~i,Cj')
   #[serde(with = "kzen_paillier::serialize::bigint")]
-  pub g_stild_2_prime: BigInt,
+  pub g_stild_prime: BigInt,
+}
+
+impl Hash for SP2_Shares_Response {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.g_stild.to_bytes().hash(state);
+    self.g_stild_prime.to_bytes().hash(state);
+  }
 }
 
 /// Sub-Protocol 2 - Final result from the websocket
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SP2_Result_Response {
-  pub ballot_valid: bool,
+  pub sp2_ballot_valid: bool,
 }

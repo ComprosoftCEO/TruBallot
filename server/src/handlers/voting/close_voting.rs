@@ -1,18 +1,19 @@
 use actix_web::client::Client;
 use actix_web::{web, HttpResponse};
-use curv_kzen::{arithmetic::Modulo, BigInt};
+use curv_kzen::BigInt;
 use diesel::prelude::*;
+use futures::future::try_join_all;
 use jsonwebtoken::EncodingKey;
 use serde::{Deserialize, Serialize};
 use uuid_b64::UuidB64 as Uuid;
 
 use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
+use crate::config;
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
 use crate::models::{Election, ElectionStatus, Question};
 use crate::notifications::{notify_results_published, notify_voting_closed};
 use crate::utils::ConvertBigInt;
-use crate::Collector;
 
 pub async fn close_voting(
   token: ClientToken,
@@ -45,10 +46,10 @@ pub async fn close_voting(
     });
   }
 
-  // Each question in the election MUST have at least 2 votes
-  let mut questions: Vec<Question> = election.get_questions(&conn)?;
+  // Each question in the election MUST have at least 3 votes
+  let questions: Vec<Question> = election.get_questions(&conn)?;
   for question in questions.iter() {
-    if question.count_commitments(&conn)? < 2 {
+    if question.count_commitments(&conn)? < 3 {
       return Err(ServiceError::NotEnoughVotes {
         election_id: election.id,
         question_id: question.id,
@@ -61,21 +62,27 @@ pub async fn close_voting(
   election = election.update(&conn)?;
   notify_voting_closed(&election, &jwt_key).await;
 
+  // Data needed for the requests
+  let mediator_url = config::get_mediator_url().ok_or_else(|| ServiceError::MediatorURLNotSet)?;
   let jwt_encoding_key = jwt_key.get_encoding_key();
-  let modulus = election.prime.to_bigint() - 1;
 
-  // Cache all of the updates
-  for question in questions.iter_mut() {
-    // Get cancelation shares for users who didn't vote
-    let no_vote = question.get_user_ids_without_vote(&conn)?;
-    let (forward_cancelation_shares, reverse_cancelation_shares) =
-      get_cancelation_shares(&question, no_vote, &modulus, &jwt_encoding_key).await?;
+  // Run all requests in parallel and cache all of the updates
+  let questions = try_join_all(questions.into_iter().map(|mut question| {
+    async {
+      // Get cancelation shares for users who didn't vote
+      let no_vote = question.get_user_ids_without_vote(&conn)?;
+      let (forward_cancelation_shares, reverse_cancelation_shares) =
+        get_cancelation_shares(&question, no_vote, &mediator_url, &jwt_encoding_key).await?;
 
-    // Update the values in the database model
-    //  Don't save yet, we will perform a massive transaction at the end
-    question.forward_cancelation_shares = forward_cancelation_shares.to_bigdecimal();
-    question.reverse_cancelation_shares = reverse_cancelation_shares.to_bigdecimal();
-  }
+      // Update the values in the database model
+      //  Don't save yet, we will perform a massive transaction at the end
+      question.forward_cancelation_shares = forward_cancelation_shares.to_bigdecimal();
+      question.reverse_cancelation_shares = reverse_cancelation_shares.to_bigdecimal();
+
+      Result::<_, ServiceError>::Ok(question)
+    }
+  }))
+  .await?;
 
   // Perform a massive database transaction to update all questions at once
   election = conn.get().transaction::<_, ServiceError, _>(|| {
@@ -94,12 +101,12 @@ pub async fn close_voting(
 }
 
 ///
-/// Send requests to the two collectors to get the cancelation shares
+/// Send requests to the collectors to get the cancelation shares
 ///
 async fn get_cancelation_shares(
   question: &Question,
   user_ids: Vec<Uuid>,
-  modulus: &BigInt,
+  mediator_url: &str,
   jwt_encoding_key: &EncodingKey,
 ) -> Result<(BigInt, BigInt), ServiceError> {
   // Make sure we actually need to get cancelation shares
@@ -109,52 +116,30 @@ async fn get_cancelation_shares(
     return Ok((BigInt::from(0), BigInt::from(0)));
   }
 
-  let cancelation_shares_data = CancelationSharesData { user_ids };
+  // Build the URL to communicate with the mediator API
   let url = format!(
-    "/elections/{}/questions/{}/cancelation",
-    question.election_id, question.id
+    "{}/api/v1/mediator/elections/{}/questions/{}/cancelation",
+    mediator_url, question.election_id, question.id
   );
 
-  // Collector 1
-  log::debug!("Request cancelation shares from collector 1...");
-  let c1_shares_request = Client::builder()
+  // Send the request and handle the response
+  log::debug!("Request cancelation shares from collector mediator...");
+  let shares_request = Client::builder()
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
     .finish()
-    .get(Collector::One.api_url(&url)?)
-    .send_json(&cancelation_shares_data);
+    .get(&url)
+    .send_json(&CancelationSharesData { user_ids });
 
-  let c1_shares: CancelationShares = ClientRequestError::handle(c1_shares_request)
+  let shares_result: CancelationShares = ClientRequestError::handle(shares_request)
     .await
-    .map_err(|e| ServiceError::CancelationSharesError(Collector::One, e))?;
-  log::debug!("Success! Got cancelation shares from collector 1");
+    .map_err(|e| ServiceError::CancelationSharesError(e))?;
+  log::debug!("Success! Got cancelation shares from collector mediator");
 
-  // Collector 2
-  log::debug!("Request cancelation shares from collector 2...");
-  let c2_shares_request = Client::builder()
-    .disable_timeout()
-    .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_encoding_key)?)
-    .finish()
-    .get(Collector::Two.api_url(&url)?)
-    .send_json(&cancelation_shares_data);
-
-  let c2_shares: CancelationShares = ClientRequestError::handle(c2_shares_request)
-    .await
-    .map_err(|e| ServiceError::CancelationSharesError(Collector::One, e))?;
-  log::debug!("Success! Got cancelation shares from collector 2");
-
-  // Compute the result
+  // Return the final result
   Ok((
-    BigInt::mod_add(
-      &c1_shares.forward_cancelation_shares,
-      &c2_shares.forward_cancelation_shares,
-      modulus,
-    ),
-    BigInt::mod_add(
-      &c1_shares.reverse_cancelation_shares,
-      &c2_shares.reverse_cancelation_shares,
-      modulus,
-    ),
+    shares_result.forward_cancelation_shares,
+    shares_result.reverse_cancelation_shares,
   ))
 }
 

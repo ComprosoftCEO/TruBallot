@@ -29,7 +29,7 @@ pub enum GlobalErrorCode {
   RegistrationClosed,
   NotEnoughRegistered,
   ElectionNotInitialized,
-  CollectorURLNotSet,
+  MediatorURLNotSet,
   RegisterElectionError,
   VerificationError,
   AlreadyVoted,
@@ -42,4 +42,5 @@ pub enum GlobalErrorCode {
   NoNotifyPermission,
   NoSubscribePermission,
   NotificationError,
+  InvalidCollectorURI,
 }

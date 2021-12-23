@@ -1,5 +1,5 @@
 import { useLastLocation } from 'react-router-last-location';
-import { getErrorInformation } from 'api';
+import { APISuccess } from 'api';
 import { ErrorOccured } from 'components/errorDialogs';
 import { DashboardMenu, ElectionStatusLabel, ErrorPortal, Flex, TransitionList } from 'components/shared';
 import { goBack } from 'helpers/goBack';
@@ -18,7 +18,8 @@ import {
   Tab,
   Transition,
 } from 'semantic-ui-react';
-import { ElectionStatus, HasVotedStatus } from 'models/election';
+import { ElectionStatus, HasVotedStatus, PublicElectionDetails } from 'models/election';
+import { PublicCollectorList } from 'models/mediator';
 import { PublicElectionLabel } from './labels/PublicElectionLabel';
 import { RegisteredLabel } from './labels/RegisteredLabel';
 import { VotedLabel } from './labels/VotedLabel';
@@ -34,6 +35,7 @@ import {
   useClearState,
   useElectionId,
   useFetchElection,
+  useFetchError,
   useSetElectionTitle,
 } from './manageElectionActions';
 import { useManageElectionNotifications } from './manageElectionNotifications';
@@ -50,8 +52,11 @@ export const ManageElection = () => {
   useFetchElection(electionId);
   useManageElectionNotifications(electionId);
 
+  const fetchError = useFetchError();
+
   // Set the title based on the election
   const electionDetails = useSelector((store) => store.electionDetails);
+  const electionCollectors = useSelector((store) => store.electionCollectors);
   useSetElectionTitle(electionDetails);
 
   const userId = useUserId();
@@ -71,7 +76,7 @@ export const ManageElection = () => {
   }
 
   // Show the blank loading form
-  if (electionDetails.loading || !electionDetails.success) {
+  if (fetchError.loading || fetchError.data !== undefined) {
     return (
       <>
         <DashboardMenu />
@@ -90,11 +95,11 @@ export const ManageElection = () => {
           </Container>
         </Transition>
 
-        {!electionDetails.loading && !electionDetails.success && (
+        {!fetchError.loading && fetchError.data !== undefined && (
           <ErrorPortal
             negative
-            header="Failed to load election"
-            content={getErrorInformation(electionDetails.error).description}
+            header={fetchError.data[0]}
+            content={fetchError.data[1]}
             onReload={() => tryReFetchElection(electionId)}
           />
         )}
@@ -103,19 +108,20 @@ export const ManageElection = () => {
   }
 
   // Render the form as normal
-  const election = electionDetails.data;
+  const election = (electionDetails as APISuccess<PublicElectionDetails>).data;
+  const collectors = (electionCollectors as APISuccess<PublicCollectorList[]>).data;
   return (
     <>
       <DashboardMenu />
 
-      <Container text style={{ marginTop: '8em' }} textAlign="center">
+      <Container text style={{ marginTop: '8em', minWidth: 750 }} textAlign="center">
         <TransitionList animation="fade down" duration={500} totalDuration={300}>
           <Header size="large">{election.name}</Header>
 
           <Segment raised padded>
             <Grid columns={2} stackable textAlign="center" divided>
               <Grid.Row>
-                <Grid.Column width="8">
+                <Grid.Column width="6">
                   <Flex justify="space-between">
                     <b>Status:</b>
                     <ElectionStatusLabel status={election.status} />
@@ -132,7 +138,7 @@ export const ManageElection = () => {
                   <VotedLabel election={election} />
                 </Grid.Column>
 
-                <Grid.Column width="8" textAlign="left" stretched>
+                <Grid.Column width="10" textAlign="left" stretched>
                   <Tab
                     className={styles['outer-scroll-list']}
                     panes={[
@@ -186,6 +192,27 @@ export const ManageElection = () => {
                                       />
                                     )}
                                   </Flex>
+                                </List.Item>
+                              ))}
+                            </List>
+                          </Tab.Pane>
+                        ),
+                      },
+
+                      {
+                        menuItem: collectors.length > 0 && (
+                          <Menu.Item key="collectors">
+                            Collectors
+                            <Label content={collectors.length.toString()} />
+                          </Menu.Item>
+                        ),
+
+                        render: () => (
+                          <Tab.Pane className={styles['scroll-list']}>
+                            <List as="ul">
+                              {collectors.map((collector) => (
+                                <List.Item key={collector.id} className={styles['question-item']} as="li">
+                                  {collector.name}
                                 </List.Item>
                               ))}
                             </List>

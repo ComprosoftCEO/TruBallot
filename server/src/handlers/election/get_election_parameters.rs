@@ -53,6 +53,7 @@ pub async fn get_election_parameters(
 
     generator: election.generator.to_bigint(),
     prime: election.prime.to_bigint(),
+    location_modulus: election.location_modulus.to_bigint(),
   };
 
   Ok(HttpResponse::Ok().json(result))

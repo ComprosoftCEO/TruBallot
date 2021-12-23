@@ -4,7 +4,7 @@ use serde::Deserialize;
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
-use crate::auth::ServerToken;
+use crate::auth::MediatorToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
 use crate::models::Election;
@@ -19,7 +19,7 @@ pub struct CancelationSharesData {
 }
 
 pub async fn get_cancelation_shares(
-  token: ServerToken,
+  token: MediatorToken,
   path: web::Path<(Uuid, Uuid)>,
   data: web::Json<CancelationSharesData>,
   conn: DbConnection,

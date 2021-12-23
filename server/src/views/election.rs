@@ -97,6 +97,9 @@ pub struct ElectionParameters {
   pub generator: BigInt,
   #[serde(with = "kzen_paillier::serialize::bigint")]
   pub prime: BigInt,
+
+  #[serde(with = "kzen_paillier::serialize::bigint")]
+  pub location_modulus: BigInt,
 }
 
 #[derive(Debug, Serialize)]

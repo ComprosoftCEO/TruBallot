@@ -52,6 +52,7 @@ export enum GlobalErrorCode {
   NoNotifyPermission,
   NoSubscribePermission,
   NotificationError,
+  InvalidCollectorURI,
 }
 
 /**

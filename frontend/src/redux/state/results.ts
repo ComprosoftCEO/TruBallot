@@ -10,14 +10,15 @@ import {
   QuestionResult,
   UserBallotResult,
 } from 'models/election';
+import { PublicCollectorList } from 'models/mediator';
 import { VerificationResult } from 'models/verification';
 
 export interface ResultsState {
   electionDetails: APIResult<PublicElectionDetails>;
   electionParams: APIResult<ElectionParameters>;
   electionResults: APIResult<ElectionResult>;
-  c1Params: APIResult<CollectorElectionParameters>;
-  c2Params: APIResult<CollectorElectionParameters>;
+  electionCollectors: APIResult<PublicCollectorList[]>;
+  collectorRequests: Record<string, APIResult<CollectorElectionParameters>>;
 
   questions: ExtendedQuestionResult[];
   currentQuestionIndex: number;
@@ -57,8 +58,8 @@ export const initialResultsState: ResultsState = {
   electionParams: apiLoading(),
   electionResults: apiLoading(),
 
-  c1Params: apiLoading(),
-  c2Params: apiLoading(),
+  electionCollectors: apiLoading(),
+  collectorRequests: {},
 
   questions: [],
   currentQuestionIndex: 0,

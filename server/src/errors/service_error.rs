@@ -13,7 +13,6 @@ use crate::errors::{
   ClientRequestError, ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType,
 };
 use crate::models::ElectionStatus;
-use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -72,17 +71,13 @@ pub enum ServiceError {
   NotEnoughRegistered {
     election_id: Uuid,
     num_registered: usize,
+    num_collectors: usize,
   },
   ElectionNotInitialized {
     election_id: Uuid,
   },
-  CollectorURLNotSet(Collector),
-  RegisterElectionError(Collector, ClientRequestError),
-  WrongNumberOfEncryptedLocations {
-    collector: Collector,
-    given: usize,
-    expected: usize,
-  },
+  MediatorURLNotSet,
+  RegisterElectionError(ClientRequestError),
   AlreadyVoted {
     user_id: Uuid,
     election_id: Uuid,
@@ -100,7 +95,7 @@ pub enum ServiceError {
     election_id: Uuid,
     question_id: Uuid,
   },
-  CancelationSharesError(Collector, ClientRequestError),
+  CancelationSharesError(ClientRequestError),
   ElectionNotStarted {
     election_id: Uuid,
   },
@@ -326,11 +321,20 @@ impl ServiceError {
       ServiceError::NotEnoughRegistered {
         election_id,
         num_registered,
+        num_collectors,
       } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Need at least four registered users before voting can begin".into(),
+        format!(
+          "Need at least {} registered users to begin voting with {} collectors",
+          num_registered, num_collectors
+        ),
         GlobalErrorCode::NotEnoughRegistered,
-        format!("Electon ID: {}, Num Registered: {}", election_id, num_registered),
+        format!(
+          "Electon ID: {}, Num Registered: {}, Needed: {}",
+          election_id,
+          num_registered,
+          2 * num_collectors
+        ),
       ),
 
       ServiceError::ElectionNotInitialized { election_id } => ErrorResponse::new(
@@ -340,32 +344,18 @@ impl ServiceError {
         format!("Election ID: {}", election_id),
       ),
 
-      ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
+      ServiceError::MediatorURLNotSet => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
         "Server Misconfiguration".into(),
-        GlobalErrorCode::CollectorURLNotSet,
-        format!("{} environment variable not set", collector.env_prefix("URL")),
+        GlobalErrorCode::MediatorURLNotSet,
+        "MEDIATOR_URL environment variable not set".into(),
       ),
 
-      ServiceError::RegisterElectionError(collector, error) => ErrorResponse::new(
+      ServiceError::RegisterElectionError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        format!("Failed to register election with collector {}", collector.to_number()),
+        "Failed to register election with the collectors".into(),
         GlobalErrorCode::RegisterElectionError,
         format!("{:?}", error),
-      ),
-
-      ServiceError::WrongNumberOfEncryptedLocations {
-        collector,
-        given,
-        expected,
-      } => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        format!("Failed to register election with collector {}", collector.to_number()),
-        GlobalErrorCode::RegisterElectionError,
-        format!(
-          "Wrong number of encrypted positions: Given {}, Expected: {}",
-          given, expected
-        ),
       ),
 
       ServiceError::AlreadyVoted {
@@ -418,17 +408,14 @@ impl ServiceError {
         question_id,
       } => ErrorResponse::new(
         StatusCode::CONFLICT,
-        "Each question in election must have at least 2 votes before voting can be closed".into(),
+        "Each question in election must have at least 3 votes before voting can be closed".into(),
         GlobalErrorCode::NotEnoughVotes,
         format!("Election ID: {}, Question ID: {}", election_id, question_id),
       ),
 
-      ServiceError::CancelationSharesError(collector, error) => ErrorResponse::new(
+      ServiceError::CancelationSharesError(error) => ErrorResponse::new(
         StatusCode::INTERNAL_SERVER_ERROR,
-        format!(
-          "Failed to get ballot cancelation shares from collector {}",
-          collector.to_number()
-        ),
+        "Failed to get ballot cancelation shares".into(),
         GlobalErrorCode::CancelationSharesError,
         format!("{:?}", error),
       ),

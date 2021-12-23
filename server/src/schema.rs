@@ -32,6 +32,7 @@ table! {
         access_code -> Nullable<Varchar>,
         generator -> Numeric,
         prime -> Numeric,
+        location_modulus -> Numeric,
     }
 }
 

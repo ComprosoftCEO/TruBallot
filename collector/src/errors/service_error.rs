@@ -9,7 +9,6 @@ use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
 use crate::errors::*;
-use crate::Collector;
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]
@@ -27,7 +26,6 @@ pub enum ServiceError {
   JWTExtractorError(AuthenticationError<Bearer>),
   ForbiddenResourceAction(ResourceType, ResourceAction),
   NoSuchResource(NamedResourceType),
-  CollectorURLNotSet(Collector),
   UserNotRegistered {
     user_id: Uuid,
     election_id: Uuid,
@@ -128,13 +126,6 @@ impl ServiceError {
         format!("No Such {}", resource.get_resource_type()),
         GlobalErrorCode::NoSuchResource,
         format!("{}", resource),
-      ),
-
-      ServiceError::CollectorURLNotSet(collector) => ErrorResponse::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Server Misconfiguration".into(),
-        GlobalErrorCode::CollectorURLNotSet,
-        format!("{} environment variable not set", collector.env_prefix("URL")),
       ),
 
       ServiceError::UserNotRegistered {

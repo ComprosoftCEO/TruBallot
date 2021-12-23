@@ -1,13 +1,9 @@
 //
-// API handlers related to the verification protocol
+// API handlers and types related to the verification protocol
 //
-mod types;
-mod verification_websocket;
-mod verify_ballot;
+pub(self) mod sha_hasher;
+pub(self) mod verification_websocket_actor;
 mod verify_ballot_websocket;
 pub(self) mod websocket_messages;
 
-pub(self) use types::*;
-pub(self) use verification_websocket::VerificationWebsocket;
-pub use verify_ballot::verify_ballot;
 pub use verify_ballot_websocket::verify_ballot_websocket;

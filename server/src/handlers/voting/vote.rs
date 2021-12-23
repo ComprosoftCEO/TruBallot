@@ -6,12 +6,12 @@ use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
 use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
+use crate::config;
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ServiceError};
 use crate::models::{Commitment, Election, ElectionStatus};
 use crate::notifications::notify_vote_received;
 use crate::utils::ConvertBigInt;
-use crate::Collector;
 
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -72,13 +72,12 @@ pub async fn vote(
     });
   }
 
-  // ================================================
-  // Verify the vote with the collectors
+  // =======================================================
+  // Verify the vote with the collectors using the mediator
   //
-  // We can technically call this endpoint on either collector, as both are symmetric.
-  // However, for simplicity, always call this on collector 1.
-  // Either way, both collectors verify the result, but collector one is the "master".
-  // ================================================
+  // The mediator simplifies communication with any number
+  // of collectors in the system
+  // =======================================================
   log::debug!("Verifying ballot with the collectors");
 
   let verify_ballot_data = VerifyBallotData {
@@ -92,14 +91,18 @@ pub async fn vote(
     g_s_s_prime: data.g_s_s_prime.clone(),
   };
 
+  // Build the URL to the mediator API
+  let mediator_url = config::get_mediator_url().ok_or_else(|| ServiceError::MediatorURLNotSet)?;
+  let url = format!(
+    "{}/api/v1/mediator/elections/{}/questions/{}/verification",
+    mediator_url, election_id, question_id
+  );
+
   let verify_request = Client::builder()
     .disable_timeout()
     .bearer_auth(ServerToken::new(DEFAULT_PERMISSIONS).encode(&jwt_key.get_encoding_key())?)
     .finish()
-    .post(Collector::One.api_url(&format!(
-      "/elections/{}/questions/{}/verification",
-      election_id, question_id
-    ))?)
+    .post(&url)
     .send_json(&verify_ballot_data);
 
   let VerificationResult {
@@ -107,7 +110,7 @@ pub async fn vote(
     sub_protocol_2,
   } = ClientRequestError::handle(verify_request)
     .await
-    .map_err(|e| ServiceError::RegisterElectionError(Collector::One, e))?;
+    .map_err(|e| ServiceError::VerifyVoteError(e))?;
 
   // Make sure both sub-protocols are valid
   log::debug!(

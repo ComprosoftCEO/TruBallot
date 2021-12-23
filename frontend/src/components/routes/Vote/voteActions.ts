@@ -26,6 +26,7 @@ import { clearNestedState, getNestedState, mergeNestedState, nestedSelectorHook 
 import { QuestionDetails, VoteState, VotingStatus } from 'redux/state';
 import { showConfirm } from 'showConfirm';
 import { getVotingVector, computeBallot } from 'protocol';
+import { PublicCollectorList } from 'models/mediator';
 
 const getState = getNestedState('vote');
 const mergeState = mergeNestedState('vote');
@@ -68,38 +69,53 @@ export async function tryReFetchElection(electionId: string): Promise<void> {
     }
   }
 
-  // Try to fetch encrypted location from collector 1 if it failed to fetch
-  let { c1Params } = getState();
-  if (c1Params.loading || !c1Params.success) {
-    c1Params = await axiosApi
-      .get<CollectorElectionParameters>(`/collector/1/elections/${electionId}/parameters`)
+  // Try to fetch the list of election collectors if they failed to fetch
+  let { electionCollectors } = getState();
+  if (electionCollectors.loading || !electionCollectors.success) {
+    electionCollectors = await axiosApi
+      .get<PublicCollectorList[]>(`/mediator/elections/${electionId}/collectors`)
       .then(...resolveResult);
 
-    mergeState({ c1Params });
-    if (!c1Params.success) {
+    mergeState({ electionCollectors });
+    if (!electionCollectors.success) {
       return;
     }
   }
 
-  let { c2Params } = getState();
-  if (c2Params.loading || !c2Params.success) {
-    c2Params = await axiosApi
-      .get<CollectorElectionParameters>(`/collector/2/elections/${electionId}/parameters`)
-      .then(...resolveResult);
+  // Try to fetch the encrypted locations from ALL collectors in the elections
+  //   Run all of these requests in parallel
+  const { collectorRequests } = getState();
+  const results = await Promise.all(
+    electionCollectors.data
+      .filter(({ id }) => {
+        // Only re-request ones that failed
+        const request = collectorRequests[id];
+        return request === undefined || request.loading || !request.success;
+      })
+      .map(async ({ id }) => {
+        const collectorResponse = await axiosApi
+          .get<CollectorElectionParameters>(`/collector/${id}/elections/${electionId}/parameters`)
+          .then(...resolveResult);
 
-    mergeState({ c2Params });
-    if (!c2Params.success) {
-      return;
-    }
+        mergeState((state) => ({ collectorRequests: { ...state.collectorRequests, [id]: collectorResponse } }));
+        return collectorResponse;
+      }),
+  );
+
+  // Stop if any results had an error
+  if (results.some((result) => !result.success)) {
+    return;
   }
 
-  // Compute the encrypted location
-  //   Since the user MUST be registered for an election, collectors should NEVER return "undefined"
-  //   But we still add a check to make TypeScript happy :)
-  if (c1Params.data.encryptedLocation !== undefined && c2Params.data.encryptedLocation !== undefined) {
-    const encryptedLocation =
-      (BigInt(c1Params.data.encryptedLocation) + BigInt(c2Params.data.encryptedLocation)) %
-      (BigInt(electionParams.data.prime) - BigInt(1));
+  // We can ONLY get to this point if all collectors returned a success, so the cast is safe
+  const allRequests: (CollectorElectionParameters | undefined)[] = Object.values(getState().collectorRequests).map(
+    (request) => (request as APISuccess<CollectorElectionParameters>)?.data,
+  );
+
+  if (allRequests.every((request) => request !== undefined && request.encryptedLocation !== undefined)) {
+    const encryptedLocation: bigint =
+      allRequests.reduce((acc, request) => BigInt(request?.encryptedLocation ?? 0) + acc, BigInt(0)) %
+      BigInt(electionParams.data.locationModulus);
 
     mergeState({ encryptedLocation });
   }
@@ -140,8 +156,8 @@ function setElection(electionDetails: APISuccess<PublicElectionDetails> | APIErr
 export const useFetchError = (): APIOption<[string, string] | undefined> => {
   const electionDetails = useSelector((state) => state.electionDetails);
   const electionParams = useSelector((state) => state.electionParams);
-  const c1Params = useSelector((state) => state.c1Params);
-  const c2Params = useSelector((state) => state.c2Params);
+  const electionCollectors = useSelector((state) => state.electionCollectors);
+  const collectorRequests = useSelector((state) => state.collectorRequests);
 
   if (electionDetails.loading) {
     return apiLoading();
@@ -157,18 +173,28 @@ export const useFetchError = (): APIOption<[string, string] | undefined> => {
     return apiSome(['Failed to load election parameters', getErrorInformation(electionParams.error).description]);
   }
 
-  if (c1Params.loading) {
+  if (electionCollectors.loading) {
     return apiLoading();
   }
-  if (!c1Params.success) {
-    return apiSome(['Failed to load parameters from collector 1', getErrorInformation(c1Params.error).description]);
+  if (!electionCollectors.success) {
+    return apiSome(['Failed to load election collectors', getErrorInformation(electionCollectors.error).description]);
   }
 
-  if (c2Params.loading) {
+  // Check all of the collector parameters
+  if (Object.values(collectorRequests).some((request) => request.loading)) {
     return apiLoading();
   }
-  if (!c2Params.success) {
-    return apiSome(['Failed to load parameters from collector 2', getErrorInformation(c2Params.error).description]);
+  for (const [index, [collectorId, request]] of Object.entries(collectorRequests).entries()) {
+    if (request.loading) {
+      return apiLoading();
+    }
+    if (!request.success) {
+      const name = electionCollectors.data.find((c) => c.id === collectorId)?.name;
+      return apiSome([
+        `Failed to load parameters from ${name !== undefined ? `collector '${name}'` : `Collector ${index + 1}`}`,
+        getErrorInformation(request.error).description,
+      ]);
+    }
   }
 
   return apiSome(undefined);
@@ -315,8 +341,15 @@ export const vote = (electionId: string, override?: true): void => {
     message: 'You will not be able to change your reponses later',
     override,
     onConfirm: async () => {
-      const { questions, encryptedLocation, electionParams } = getState();
-      if (electionParams.loading || !electionParams.success) return; // Should NOT happen
+      const { questions, encryptedLocation, electionParams, electionCollectors } = getState();
+      if (
+        electionParams.loading ||
+        !electionParams.success ||
+        electionCollectors.loading ||
+        !electionCollectors.success
+      ) {
+        return; // Should NOT happen
+      }
 
       // Mark all questions as loading
       const newQuestions = questions.map((question) => ({
@@ -331,7 +364,14 @@ export const vote = (electionId: string, override?: true): void => {
         [...questions.entries()]
           .filter((question) => !question[1].hasVoted)
           .map(([questionIndex, question]) =>
-            voteForQuestion(electionId, question, questionIndex, encryptedLocation, electionParams.data),
+            voteForQuestion(
+              electionId,
+              question,
+              questionIndex,
+              encryptedLocation,
+              electionParams.data,
+              electionCollectors.data,
+            ),
           ),
       );
 
@@ -361,26 +401,28 @@ async function voteForQuestion(
   questionIndex: number,
   encryptedLocation: bigint,
   electionParams: ElectionParameters,
+  electionCollectors: PublicCollectorList[],
 ): Promise<APISuccess<{}> | APIError> {
-  // Get shares from collector 1
-  const c1Result = await axiosApi
-    .get<CollectorQuestionParameters>(`/collector/1/elections/${electionId}/questions/${question.id}/parameters`)
-    .then(...resolveResult);
+  // Get shares from all collectors concurrently
+  const allResults = await Promise.all(
+    electionCollectors.map(({ id }) =>
+      axiosApi
+        .get<CollectorQuestionParameters>(
+          `/collector/${id}/elections/${electionId}/questions/${question.id}/parameters`,
+        )
+        .then(...resolveResult),
+    ),
+  );
 
-  if (!c1Result.success) {
-    mergeQuestion(questionIndex, { voting: c1Result });
-    return c1Result;
+  // Make sure we didn't get any errors
+  const collectorError = allResults.find((result) => !result.success);
+  if (collectorError !== undefined) {
+    mergeQuestion(questionIndex, { voting: collectorError as APIError });
+    return collectorError;
   }
 
-  // Get shares from collector 2
-  const c2Result = await axiosApi
-    .get<CollectorQuestionParameters>(`/collector/2/elections/${electionId}/questions/${question.id}/parameters`)
-    .then(...resolveResult);
-
-  if (!c2Result.success) {
-    mergeQuestion(questionIndex, { voting: c2Result });
-    return c2Result;
-  }
+  // This cast is safe, now that we have verified all results
+  const collectorParams = allResults.map((result) => (result as APISuccess<CollectorQuestionParameters>).data);
 
   // Get the binary voting vector
   const { forwardVector, reverseVector } = getVotingVector({
@@ -395,8 +437,7 @@ async function voteForQuestion(
     forwardVector,
     reverseVector,
     electionParams,
-    c1QuestionParams: c1Result.data,
-    c2QuestionParams: c2Result.data,
+    collectorParams,
   });
 
   // Submit the vote!!!

@@ -82,6 +82,7 @@ export interface ElectionParameters {
 
   generator: string; // BigInt
   prime: string; // BigInt
+  locationModulus: string; // BigInt
 }
 
 export interface QuestionParameters {

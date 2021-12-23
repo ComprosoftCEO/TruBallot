@@ -92,6 +92,7 @@ pub enum WebsocketResponse {
 pub enum AllClientResponses {
   ElectionCreated(ElectionDetails),
   ElectionPublished(ElectionDetails),
+  CollectorPublishedOrUpdated(CollectorPublishedDetails),
   NameChanged(NameChangedDetails),
   ElectionUpdated(ElectionDetails),
   ElectionDeleted(ElectionDetails),
@@ -99,7 +100,7 @@ pub enum AllClientResponses {
   UserRegistered(UserRegisteredDetails),
   UserUnregistered(UserUnregisteredDetails),
   RegistrationClosed(RegistrationClosedDetails),
-  VotingOpened(ElectionDetails),
+  VotingOpened(VotingOpenedDetails),
   VoteReceived(VoteReceivedDetails),
   VotingClosed(ElectionDetails),
   ResultsPublished(ElectionDetails),
@@ -115,6 +116,13 @@ impl From<Uuid> for ElectionDetails {
   fn from(election_id: Uuid) -> Self {
     Self { election_id }
   }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectorPublishedDetails {
+  pub id: Uuid,
+  pub name: String,
 }
 
 #[derive(Serialize)]
@@ -151,6 +159,17 @@ pub struct UserUnregisteredDetails {
 pub struct RegistrationClosedDetails {
   pub election_id: Uuid,
   pub is_public: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VotingOpenedDetails {
+  pub election_id: Uuid,
+  pub collectors: Vec<Uuid>,
+
+  pub prime: String,
+  pub generator: String,
+  pub location_modulus: String,
 }
 
 #[derive(Serialize)]

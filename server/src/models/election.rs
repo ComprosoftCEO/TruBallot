@@ -30,6 +30,8 @@ pub struct Election {
 
   pub generator: BigDecimal,
   pub prime: BigDecimal,
+
+  pub location_modulus: BigDecimal,
 }
 
 /// Status for the current "voted" status for a user
@@ -60,6 +62,7 @@ impl Election {
       access_code: None,
       generator: BigDecimal::default(),
       prime: BigDecimal::default(),
+      location_modulus: BigDecimal::default(),
     }
   }
 

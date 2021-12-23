@@ -1,29 +1,48 @@
 //
 // Environment configuration functions
 //
-use crate::Collector;
 use dotenv::dotenv;
 use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
+use uuid_b64::UuidB64 as Uuid;
 
 const DEFAULT_HOST: &str = "127.0.0.1";
-const DEFAULT_C1_PORT: u16 = 3001;
-const DEFAULT_C2_PORT: u16 = 3002;
+const DEFAULT_C0_PORT: u16 = 4000;
 const DEFAULT_JWT_SECRET: &str = "JWT_SECRET_VALUE_LOL";
+const DEFAULT_COLLECTOR_SECRET: &str = "COLLECTOR_SECRET_VALUE_LOL";
+
+/// Get the prefix to use when loading collector-specific environment variables
+pub trait EnvPrefix {
+  fn env_prefix(&self, env: &str) -> String;
+}
+
+impl EnvPrefix for u64 {
+  fn env_prefix(&self, env: &str) -> String {
+    format!("C{}_{}", self, env)
+  }
+}
 
 /// Electronic voting collector daemon
 #[derive(StructOpt)]
 pub struct Opt {
-  /// Index of the collector ("1" or "2")
-  collector: Collector,
+  /// Index of the collector (1, 2, ...)
+  collector: u64,
+
+  /// Unique UUID for the collector
+  #[structopt(long)]
+  id: Option<Uuid>,
+
+  /// Name of the collector as a human-readable string
+  #[structopt(short, long)]
+  name: Option<String>,
 
   /// Host to run the collector [Default: "127.0.0.1"]
   #[structopt(short, long)]
   host: Option<String>,
 
-  /// Port to use for the collector [Default: C1 = 3001, C2 = 3002]
+  /// Port to use for the collector [Default: C1 = 4001, C2 = 4002, ...]
   #[structopt(short, long)]
   port: Option<u16>,
 
@@ -35,7 +54,7 @@ pub struct Opt {
   #[structopt(long, parse(from_os_str))]
   key_file: Option<PathBuf>,
 
-  /// Path for the SSL certificate chail file
+  /// Path for the SSL certificate chain file
   #[structopt(long, parse(from_os_str))]
   cert_file: Option<PathBuf>,
 
@@ -47,25 +66,28 @@ pub struct Opt {
   #[structopt(short = "s", long, env, hide_env_values = true, default_value = DEFAULT_JWT_SECRET, hide_default_value(true))]
   jwt_secret: String,
 
-  /// Base URL that can be used to access collector 1
+  /// Base URL that can be used to access the collector mediators
   #[structopt(long, env)]
-  c1_url: String,
+  mediator_url: String,
 
-  /// Base URL that can be used to access collector 2
+  /// Shared collector secret used to verify public keys
   #[structopt(long, env)]
-  c2_url: String,
+  collector_secret: String,
 }
 
 impl Opt {
-  pub fn get_collector(&self) -> Collector {
-    self.collector
-  }
-
   /// Update the environment variables with the command-line options
   pub fn update_environment(&self) {
-    env::set_var("COLLECTOR", self.collector.to_number().to_string());
-
     let c = self.collector;
+    env::set_var("COLLECTOR", c.to_string());
+
+    if let Some(ref id) = self.id {
+      env::set_var(c.env_prefix("ID"), id.to_string());
+    }
+    if let Some(ref name) = self.name {
+      env::set_var(c.env_prefix("NAME"), name);
+    }
+
     if let Some(ref host) = self.host {
       env::set_var(c.env_prefix("HOST"), host);
     }
@@ -88,8 +110,8 @@ impl Opt {
     }
 
     env::set_var("JWT_SECRET", &self.jwt_secret);
-    env::set_var("C1_URL", &self.c1_url);
-    env::set_var("C2_URL", &self.c2_url);
+    env::set_var("MEDIATOR_URL", &self.mediator_url);
+    env::set_var("COLLECTOR_SECRET", &self.collector_secret);
   }
 }
 
@@ -106,27 +128,40 @@ pub fn load_environment_from_env_files() {
 }
 
 //
-// Basic Server Variables
+// Collector Variables
 //
-pub fn get_collector() -> Collector {
-  Collector::from_str(&env::var("COLLECTOR").unwrap_or_else(|_| "1".into())).unwrap_or_else(|_| Collector::One)
+pub fn get_collector() -> u64 {
+  // Note: collector CANNOT be smaller than 1 (0 is NOT allowed)
+  let c = u64::from_str(&env::var("COLLECTOR").unwrap_or_else(|_| "1".into())).unwrap_or_else(|_| 1);
+  std::cmp::max(c, 1)
 }
 
+pub fn get_id() -> Option<Uuid> {
+  env::var(get_collector().env_prefix("ID"))
+    .ok()
+    .and_then(|uuid| uuid.parse().ok())
+}
+
+pub fn get_name() -> String {
+  let c = get_collector();
+  env::var(c.env_prefix("NAME")).unwrap_or_else(|_| format!("Collector {}", c))
+}
+
+//
+// Basic Server Variables
+//
 pub fn get_host() -> String {
   let c = get_collector();
-  env::var(c.env_prefix("PORT")).unwrap_or_else(|_| DEFAULT_HOST.to_string())
+  env::var(c.env_prefix("HOST")).unwrap_or_else(|_| DEFAULT_HOST.to_string())
 }
 
 pub fn get_port() -> u16 {
-  match get_collector() {
-    Collector::One => env::var("C1_PORT")
-      .map(|port| port.parse().unwrap_or(DEFAULT_C1_PORT))
-      .unwrap_or(DEFAULT_C1_PORT),
+  let c = get_collector();
+  let default_port: u16 = DEFAULT_C0_PORT + (c as u16);
 
-    Collector::Two => env::var("C2_PORT")
-      .map(|port| port.parse().unwrap_or(DEFAULT_C2_PORT))
-      .unwrap_or(DEFAULT_C2_PORT),
-  }
+  env::var(c.env_prefix("PORT"))
+    .map(|port| port.parse().unwrap_or(default_port))
+    .unwrap_or(default_port)
 }
 
 //
@@ -165,12 +200,12 @@ pub fn get_jwt_secret() -> String {
 }
 
 //
-// Collectors
+// Mediator
 //
-pub fn get_c1_url() -> Option<String> {
-  return env::var("C1_URL").ok();
+pub fn get_mediator_url() -> Option<String> {
+  return env::var("MEDIATOR_URL").ok();
 }
 
-pub fn get_c2_url() -> Option<String> {
-  return env::var("C2_URL").ok();
+pub fn get_collector_secret() -> String {
+  env::var("COLLECTOR_SECRET").unwrap_or_else(|_| DEFAULT_COLLECTOR_SECRET.to_string())
 }

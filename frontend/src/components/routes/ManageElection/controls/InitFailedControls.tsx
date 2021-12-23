@@ -5,8 +5,9 @@ import { PublicElectionDetails } from 'models/election';
 import { nestedSelectorHook } from 'redux/helpers';
 import { usePermissions, useUserId } from 'redux/auth';
 import { Permission } from 'models/auth';
-import { clearRequests, openVoting, useElectionError, useIsLoading } from './controlsActions';
+import { clearRequests, openCollectorModal, useElectionError, useIsLoading } from './controlsActions';
 import { GeneratingModal } from './GeneratingModal';
+import { PickCollectorsModal } from './PickCollectorsModal';
 
 export interface InitFailedControlsProps {
   election: PublicElectionDetails;
@@ -46,11 +47,12 @@ export const InitFailedControls = ({ election }: InitFailedControlsProps) => {
             size="large"
             icon="list ordered"
             content="Finish Initialization"
-            onClick={() => openVoting(election.id, true)}
+            onClick={openCollectorModal}
             disabled={loading}
           />
         </Flex>
 
+        <PickCollectorsModal />
         <GeneratingModal open={openingVoting.loading} />
       </Segment>
     </Transition>
