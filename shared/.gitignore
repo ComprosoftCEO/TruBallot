@@ -1,0 +1,11 @@
+/target
+**/*.rs.bk
+
+# Database login credentials
+.env*
+
+# Files upload directory
+/files
+
+# Schema file patch
+src/schema.rs.orig
