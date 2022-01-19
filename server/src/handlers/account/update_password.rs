@@ -2,9 +2,10 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::auth::{validate_password_complexity, ClientToken};
+use crate::auth::validate_password_complexity;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission};
 
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]

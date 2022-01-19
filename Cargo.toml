@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "shared",
+    "server",
+    "mediator",
+    "collector",
+    "notifications",
+]

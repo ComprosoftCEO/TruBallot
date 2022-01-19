@@ -14,6 +14,7 @@ The code is laid out as a [monorepo](https://en.wikipedia.org/wiki/Monorepo) wit
 - [`/mediator`](/mediator) - Code for the collector mediator
 - [`/collector`](/collector) - Code for collector
 - [`/notifications`](/notifications) - Code for websocket notification server
+- [`/shared`](/shared) - Shared code between the server, mediator, collector, and notifications
 - [`/frontend`](/frontend) - TypeScript code for single-page application
 
 See the `README.md` file in each subdirectory for directions on compiling and running the code.

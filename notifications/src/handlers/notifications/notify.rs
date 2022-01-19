@@ -1,8 +1,8 @@
 use actix::Addr;
 use actix_web::{web, HttpResponse};
 
-use crate::auth::ServerToken;
 use crate::errors::ServiceError;
+use crate::jwt::{HasPermission, ServerToken};
 use crate::notifications::{AllServerMessages, ElectionEvent, GlobalEvent, SubscriptionActor};
 
 pub async fn notify(

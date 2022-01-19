@@ -4,11 +4,15 @@ use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use simple_logger::SimpleLogger;
 use structopt::StructOpt;
 
-use evoting_mediator::auth;
 use evoting_mediator::config;
 use evoting_mediator::db;
 use evoting_mediator::errors::ServiceError;
 use evoting_mediator::handlers;
+use evoting_mediator::jwt;
+
+#[macro_use]
+extern crate diesel_migrations;
+embed_migrations!();
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,14 +30,19 @@ async fn main() -> anyhow::Result<()> {
     log::set_max_level(LevelFilter::Info);
   }
 
-  // Database connection pool and web server
-  let connection_pool = db::establish_new_connection_pool()?;
+  // Database connection pool and migrations
+  let database_url =
+    config::get_database_url().ok_or_else(|| anyhow::anyhow!("DATABASE_URL environment variable not set"))?;
+  let connection_pool = db::open_new_connection_pool(&database_url)?;
+  embedded_migrations::run_with_output(&connection_pool.get()?, &mut db::MigrationLogger::default())?;
+
+  // Build the web server
   let mut server = HttpServer::new(move || {
     App::new()
       // Connect to database
       .data(connection_pool.clone())
       // Encryption secret for JSON Web Token
-      .data(auth::JWTSecret::new(config::get_jwt_secret()))
+      .data(jwt::JWTSecret::new(config::get_jwt_secret()))
       // Enable logger
       .wrap(middleware::Logger::default())
       // Configure error handlers

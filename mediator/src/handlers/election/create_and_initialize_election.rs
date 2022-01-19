@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
-use crate::auth::{JWTSecret, MediatorToken, ServerToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ServiceError};
+use crate::jwt::{HasPermission, JWTSecret, MediatorToken, ServerToken, DEFAULT_PERMISSIONS};
 use crate::models::{Collector, Election, ElectionCollector, Question, Registration};
 use crate::protocol::location_anonymization as loc_anon;
 use crate::views::election::InitializeElectionResult;

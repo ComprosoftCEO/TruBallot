@@ -106,7 +106,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebsocketActor {
         log::info!("Received close message, closing... ({:#?})", reason);
         ctx.close(reason);
         return ctx.stop();
-      }
+      },
 
       // Parse JSON message
       ws::Message::Text(text) => match serde_json::from_str::<SubscriptionActions>(&text) {
@@ -115,7 +115,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebsocketActor {
             message: "Invalid JSON data".into(),
             developer_notes: Some(format!("{}", e)),
           })
-        }
+        },
         Ok(json) => json,
       },
 
@@ -125,13 +125,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebsocketActor {
           message: "Unsupported Frame: Binary Data".into(),
           developer_notes: None,
         })
-      }
+      },
       ws::Message::Continuation(_) => {
         return self_addr.do_send(NonFatalError {
           message: "Unsupported Frame: Continuation".into(),
           developer_notes: None,
         })
-      }
+      },
     };
 
     // Send actor message to handle the data
@@ -276,7 +276,7 @@ impl Handler<Notify> for WebsocketActor {
       None => ctx.text(notify.get_json()),
 
       Some(user_id) if user_id == self.user_id => ctx.text(notify.get_json()),
-      Some(_) => { /* User Id's don't match */ }
+      Some(_) => { /* User Id's don't match */ },
     }
   }
 }

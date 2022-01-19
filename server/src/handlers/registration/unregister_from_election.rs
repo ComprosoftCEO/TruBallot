@@ -1,9 +1,9 @@
 use actix_web::{web, HttpResponse};
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission, JWTSecret};
 use crate::models::{Election, ElectionStatus};
 use crate::notifications::notify_user_unregistered;
 
@@ -35,7 +35,7 @@ pub async fn unregister_from_election(
         user_id,
         election_id: election.id,
       });
-    }
+    },
   };
 
   // Delete the registration from the database

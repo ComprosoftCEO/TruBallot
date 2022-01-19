@@ -2,8 +2,8 @@ use actix::Addr;
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 
-use crate::auth::WebsocketToken;
 use crate::errors::{ServiceError, WebsocketError};
+use crate::jwt::{HasPermission, WebsocketToken};
 use crate::notifications::{SubscriptionActor, WebsocketActor, WS_PROTOCOL};
 
 pub async fn subscribe(

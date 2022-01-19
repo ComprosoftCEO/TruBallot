@@ -1,8 +1,8 @@
 use serde::Serialize;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::{ClientToken, JWTSecret, RefreshToken, DEFAULT_PERMISSIONS};
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, JWTSecret, RefreshToken, DEFAULT_PERMISSIONS};
 use crate::models::User;
 
 #[derive(Serialize)]
@@ -38,7 +38,7 @@ impl LoginResult {
     let refresh_encoding_key = user.get_refresh_encoding_key();
 
     // Generate the JWT tokens
-    let client_token = ClientToken::new(user.clone(), DEFAULT_PERMISSIONS);
+    let client_token = ClientToken::new(user.id, &user.name, &user.email, DEFAULT_PERMISSIONS);
     let refresh_token = RefreshToken::new(user, DEFAULT_PERMISSIONS);
 
     // Encode the tokens

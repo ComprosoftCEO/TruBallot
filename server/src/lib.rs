@@ -3,17 +3,27 @@
 extern crate diesel;
 #[macro_use]
 extern crate num_derive;
+#[macro_use]
+extern crate evoting_shared;
 
 // All internal code modules
 pub mod auth;
 pub mod config;
-#[macro_use]
-pub mod db;
 pub mod errors;
 pub mod handlers;
+pub mod jwt;
 pub mod models;
 pub mod notifications;
-pub mod protocol;
 pub mod schema;
-pub mod utils;
 pub mod views;
+
+// Re-export modules from the shared library
+pub mod db {
+  pub use evoting_shared::db::*;
+}
+pub mod protocol {
+  pub use evoting_shared::protocol::*;
+}
+pub mod utils {
+  pub use evoting_shared::utils::*;
+}

@@ -1,10 +1,10 @@
 use actix_web::client::Client;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::{JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::config;
 use crate::db::DbConnection;
 use crate::errors::ClientRequestError;
+use crate::jwt::{JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::models::{Commitment, Election, Question, User};
 use crate::notifications::{server_types, AllServerMessages};
 use crate::utils::ConvertBigInt;

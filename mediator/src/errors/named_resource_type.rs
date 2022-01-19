@@ -61,7 +61,7 @@ impl fmt::Display for NamedResourceType {
       NamedResourceType::Election { id } => write!(f, "{} (ID: {})", self.get_name(), id),
       NamedResourceType::Question { id, election_id } => {
         write!(f, "{} (ID: {}, Election ID: {})", self.get_name(), id, election_id)
-      }
+      },
       NamedResourceType::Registration { user_id, election_id } => {
         write!(
           f,
@@ -70,7 +70,7 @@ impl fmt::Display for NamedResourceType {
           user_id,
           election_id
         )
-      }
+      },
     }
   }
 }

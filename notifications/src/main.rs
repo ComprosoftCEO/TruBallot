@@ -5,10 +5,10 @@ use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use simple_logger::SimpleLogger;
 use structopt::StructOpt;
 
-use evoting_notifications::auth;
 use evoting_notifications::config;
 use evoting_notifications::errors::ServiceError;
 use evoting_notifications::handlers;
+use evoting_notifications::jwt;
 use evoting_notifications::notifications::SubscriptionActor;
 
 #[actix_web::main]
@@ -36,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
       // Actor to manage subscriptions
       .data(subscription_addr.clone())
       // Encryption secret for JSON Web Token
-      .data(auth::JWTSecret::new(config::get_jwt_secret()))
+      .data(jwt::JWTSecret::new(config::get_jwt_secret()))
       // Enable logger
       .wrap(middleware::Logger::default())
       // Configure error handlers

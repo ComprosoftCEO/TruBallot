@@ -1,9 +1,9 @@
 use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 
-use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission};
 use crate::models::{Election, ElectionStatus, ACCESS_CODE_LENGTH};
 use crate::views::election::GetElectionByAccessCode;
 

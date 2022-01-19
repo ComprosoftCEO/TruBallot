@@ -2,9 +2,9 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission, JWTSecret};
 use crate::notifications::notify_name_changed;
 use crate::views::auth::LoginResult;
 

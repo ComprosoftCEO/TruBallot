@@ -73,11 +73,4 @@ joinable!(questions -> elections (election_id));
 joinable!(registrations -> elections (election_id));
 joinable!(registrations -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
-    candidates,
-    commitments,
-    elections,
-    questions,
-    registrations,
-    users,
-);
+allow_tables_to_appear_in_same_query!(candidates, commitments, elections, questions, registrations, users,);

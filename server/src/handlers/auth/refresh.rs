@@ -1,8 +1,9 @@
 use actix_web::{web, HttpResponse};
 
-use crate::auth::{JWTSecret, RefreshToken};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::JWTSecret;
+use crate::jwt::RefreshToken;
 use crate::models::User;
 use crate::views::auth::LoginResult;
 

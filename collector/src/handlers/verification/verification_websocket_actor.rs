@@ -281,7 +281,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebso
         log::info!("Received close message, closing... ({:#?})", reason);
         ctx.close(reason);
         return ctx.stop();
-      }
+      },
 
       // Parse JSON message
       ws::Message::Text(text) => match serde_json::from_str::<WebsocketMessage>(&text) {
@@ -301,22 +301,22 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for VerificationWebso
         if self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
-      }
+      },
       WebsocketMessage::SP1_STMP_Response(data) => {
         if self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
-      }
+      },
       WebsocketMessage::SP1_Product_Response(data) => {
         if self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
-      }
+      },
       WebsocketMessage::SP2_Shares_Response(data) => {
         if self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
-      }
+      },
     }
   }
 
@@ -431,7 +431,7 @@ impl Handler<SignedUnicastMessage<SP1_STMP_Request>> for VerificationWebsocketAc
           ),
           ctx,
         )
-      }
+      },
     };
 
     // ============================================
