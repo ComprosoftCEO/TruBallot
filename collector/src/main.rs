@@ -15,6 +15,10 @@ use evoting_collector::errors::{ClientRequestError, ServiceError};
 use evoting_collector::handlers;
 use evoting_collector::jwt::{CollectorToken, JWTSecret, Permission};
 
+#[macro_use]
+extern crate diesel_migrations;
+embed_migrations!();
+
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
   // Parse ".env" configuration files and command-line arguments
@@ -32,10 +36,11 @@ async fn main() -> anyhow::Result<()> {
   // Let the mediator know about this collector
   register_collector_with_mediator().await?;
 
-  // Database connection pool
+  // Database connection pool and migrations
   let database_url =
     config::get_database_url().ok_or_else(|| anyhow::anyhow!("DATABASE_URL environment variable not set"))?;
   let connection_pool = db::open_new_connection_pool(&database_url)?;
+  embedded_migrations::run_with_output(&connection_pool.get()?, &mut db::MigrationLogger::default())?;
 
   // Build the web server
   let mut server = HttpServer::new(move || {

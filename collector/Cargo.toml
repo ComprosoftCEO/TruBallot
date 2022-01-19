@@ -19,6 +19,7 @@ bigdecimal = { version = "0.1.2", features = ["serde"] }
 chrono = "0.4.19"
 curv-kzen = { package = "curv-kzen", version = "0.9.0" }
 diesel = { version = "1.4.8", features = ["postgres", "extras"] }
+diesel_migrations = "1.4.0"
 dotenv = "0.15.0"
 evoting-shared = { path = "../shared" }
 futures = "0.3.17"
