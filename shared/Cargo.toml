@@ -30,4 +30,6 @@ serde_json = "1.0.68"
 serde_repr = "0.1.7"
 uuid = "0.6"
 uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }
-zxcvbn = "2.1.1"
+
+[package.metadata.cargo-udeps.ignore]
+normal = ["paste"]

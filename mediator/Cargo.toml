@@ -10,7 +10,6 @@ actix = "0.10.0"
 actix-codec = "0.3.0"
 actix-http = "2.2.1"
 actix-web = { version = "3", features = ["openssl"] }
-actix-web-actors = "3.0.0"
 actix-web-httpauth = "0.5.1"
 anyhow = "1.0.44"
 awc = "2.0.3"
@@ -24,7 +23,6 @@ evoting-shared = { path = "../shared" }
 futures = "0.3.17"
 http = "0.2.5"
 http-serde = "1.0.3"
-itertools = "0.10.1"
 jsonwebtoken = "7.2.0"
 kzen-paillier = "0.4.2"
 lazy_static = "1.4.0"
@@ -44,3 +42,6 @@ structopt = "0.3.23"
 uuid = "0.6"
 uuid-b64 = { version = "0.1.1", features = ["serde", "diesel-uuid"] }
 validator = { version = "0.14.0", features = ["derive"] }
+
+[package.metadata.cargo-udeps.ignore]
+normal = ["paste"]
