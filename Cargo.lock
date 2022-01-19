@@ -1329,6 +1329,30 @@ dependencies = [
 [[package]]
 name = "evoting-shared"
 version = "0.1.0"
+dependencies = [
+ "actix-http",
+ "actix-web",
+ "actix-web-httpauth",
+ "anyhow",
+ "awc",
+ "bigdecimal",
+ "censor",
+ "chrono",
+ "curv-kzen",
+ "diesel",
+ "futures",
+ "jsonwebtoken",
+ "kzen-paillier",
+ "lazy_static 1.4.0",
+ "log",
+ "num",
+ "paste",
+ "serde",
+ "serde_repr",
+ "uuid",
+ "uuid-b64",
+ "zxcvbn",
+]
 
 [[package]]
 name = "failure"
