@@ -4,9 +4,9 @@ use serde::Deserialize;
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
-use crate::auth::{CollectorToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{CollectorToken, HasPermission, JWTSecret};
 use crate::models::Collector;
 use crate::notifications::notify_collector_created_or_updated;
 

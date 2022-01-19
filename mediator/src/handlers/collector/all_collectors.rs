@@ -1,8 +1,8 @@
 use actix_web::HttpResponse;
 
-use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission};
 use crate::models::Collector;
 use crate::views::collector::PublicCollectorList;
 

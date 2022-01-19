@@ -50,11 +50,15 @@ impl NamedResourceType {
 impl fmt::Display for NamedResourceType {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match self {
-      NamedResourceType::User { id } => write!(f, "{} (ID: {})", self.get_name(), id),
-      NamedResourceType::Election { id } => write!(f, "{} (ID: {})", self.get_name(), id),
+      NamedResourceType::User { id } => {
+        write!(f, "{} (ID: {})", self.get_name(), id)
+      },
+      NamedResourceType::Election { id } => {
+        write!(f, "{} (ID: {})", self.get_name(), id)
+      },
       NamedResourceType::Question { id, election_id } => {
         write!(f, "{} (ID: {}, Election ID: {})", self.get_name(), id, election_id)
-      }
+      },
       NamedResourceType::EncryptedLocation { user_id, election_id } => {
         write!(
           f,
@@ -63,7 +67,7 @@ impl fmt::Display for NamedResourceType {
           user_id,
           election_id
         )
-      }
+      },
     }
   }
 }

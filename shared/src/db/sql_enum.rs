@@ -14,6 +14,7 @@ macro_rules! sql_enum {
 }
 
 #[allow(unused)]
+#[macro_export]
 macro_rules! enum_internals {
   ($($t:ty)*) => ($(
 

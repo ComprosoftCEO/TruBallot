@@ -9,11 +9,11 @@ use std::str::FromStr;
 use structopt::StructOpt;
 use uuid_b64::UuidB64 as Uuid;
 
-use evoting_collector::auth::{CollectorToken, JWTSecret, Permission};
 use evoting_collector::config::{self, EnvPrefix};
 use evoting_collector::db;
 use evoting_collector::errors::{ClientRequestError, ServiceError};
 use evoting_collector::handlers;
+use evoting_collector::jwt::{CollectorToken, JWTSecret, Permission};
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
@@ -32,8 +32,12 @@ async fn main() -> anyhow::Result<()> {
   // Let the mediator know about this collector
   register_collector_with_mediator().await?;
 
-  // Database connection pool and web server
-  let connection_pool = db::establish_new_connection_pool()?;
+  // Database connection pool
+  let database_url =
+    config::get_database_url().ok_or_else(|| anyhow::anyhow!("DATABASE_URL environment variable not set"))?;
+  let connection_pool = db::open_new_connection_pool(&database_url)?;
+
+  // Build the web server
   let mut server = HttpServer::new(move || {
     App::new()
       // Connect to database

@@ -2,9 +2,10 @@ use actix_web::{web, HttpResponse};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::auth::{validate_password_complexity, verify_recaptcha, JWTSecret};
+use crate::auth::{validate_password_complexity, verify_recaptcha};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::JWTSecret;
 use crate::models::User;
 use crate::views::auth::LoginResult;
 

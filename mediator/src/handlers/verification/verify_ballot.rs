@@ -7,9 +7,9 @@ use validator::Validate;
 
 use super::mediator_actor::MediatorActor;
 use super::types::VerifyBallotData;
-use crate::auth::{AnyToken, JWTSecret, MediatorToken, DEFAULT_PERMISSIONS};
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError, WebsocketError};
+use crate::jwt::{AnyToken, HasPermission, JWTSecret, MediatorToken, DEFAULT_PERMISSIONS};
 use crate::models::{Election, Question};
 use crate::views::verification::VerificationResult;
 

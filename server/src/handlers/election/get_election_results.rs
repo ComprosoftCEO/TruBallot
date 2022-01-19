@@ -2,9 +2,9 @@ use actix_web::{web, HttpResponse};
 use std::collections::HashMap;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::{NamedResourceType, ServiceError};
+use crate::jwt::{ClientToken, HasPermission};
 use crate::models::{Election, ElectionStatus};
 use crate::protocol::count_ballot_votes;
 use crate::utils::ConvertBigInt;

@@ -5,9 +5,9 @@ use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
 use super::helpers::validate_candidates;
-use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::{ResourceAction, ServiceError};
+use crate::jwt::{ClientToken, HasPermission, JWTSecret};
 use crate::models::{Candidate, Election, ElectionStatus, Question};
 use crate::notifications::notify_election_updated;
 

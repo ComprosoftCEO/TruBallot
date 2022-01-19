@@ -41,9 +41,4 @@ joinable!(questions -> elections (election_id));
 joinable!(registrations -> elections (election_id));
 joinable!(registrations -> questions (question_id));
 
-allow_tables_to_appear_in_same_query!(
-    elections,
-    encrypted_locations,
-    questions,
-    registrations,
-);
+allow_tables_to_appear_in_same_query!(elections, encrypted_locations, questions, registrations,);

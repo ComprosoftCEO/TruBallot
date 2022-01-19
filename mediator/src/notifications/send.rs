@@ -1,8 +1,8 @@
 use actix_web::client::Client;
 
-use crate::auth::{JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::config;
 use crate::errors::ClientRequestError;
+use crate::jwt::{JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::models::Collector;
 use crate::notifications::{mediator_types, AllMediatorMessages};
 

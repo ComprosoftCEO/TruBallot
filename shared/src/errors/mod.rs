@@ -3,10 +3,12 @@
 //
 mod client_request_error;
 mod error_response;
-mod generic_error;
 mod global_error_codes;
+mod shared_error;
+mod websocket_error;
 
 pub use client_request_error::ClientRequestError;
 pub use error_response::ErrorResponse;
-pub(crate) use generic_error::SharedError;
 pub use global_error_codes::GlobalErrorCode;
+pub(crate) use shared_error::SharedError;
+pub use websocket_error::WebsocketError;

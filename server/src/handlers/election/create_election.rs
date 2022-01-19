@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 use super::helpers::validate_candidates;
-use crate::auth::{ClientToken, JWTSecret};
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission, JWTSecret};
 use crate::models::{Candidate, Election, Question};
 use crate::notifications::notify_election_created;
 use crate::views::election::NewElectionResult;

@@ -7,10 +7,10 @@ use std::cmp::max;
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
-use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::config;
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
+use crate::jwt::{ClientToken, HasPermission, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::models::{Election, ElectionStatus, Registration};
 use crate::notifications::{notify_registration_closed, notify_voting_opened};
 use crate::protocol::generator_prime_pair;

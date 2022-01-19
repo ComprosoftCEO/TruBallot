@@ -9,10 +9,9 @@ use std::{error, fmt};
 use uuid_b64::UuidB64 as Uuid;
 use validator::ValidationErrors;
 
-use crate::errors::{
-  ClientRequestError, ErrorResponse, GlobalErrorCode, NamedResourceType, ResourceAction, ResourceType,
-};
+use crate::errors::{NamedResourceType, ResourceAction, ResourceType};
 use crate::models::ElectionStatus;
+use evoting_shared::errors::{ClientRequestError, ErrorResponse, GlobalErrorCode};
 
 /// Enumeration of all possible errors that can occur
 #[derive(Debug)]

@@ -1,6 +1,6 @@
 use actix_web::HttpResponse;
 
-use crate::auth::AnyToken;
+use crate::jwt::AnyToken;
 use crate::views::auth::UserDetails;
 
 pub async fn get_me(token: AnyToken) -> HttpResponse {

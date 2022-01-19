@@ -3,9 +3,9 @@ use actix_web_actors::ws;
 use uuid_b64::UuidB64 as Uuid;
 
 use super::verification_websocket_actor::VerificationWebsocketActor;
-use crate::auth::MediatorToken;
 use crate::db::DbConnection;
 use crate::errors::{ServiceError, WebsocketError};
+use crate::jwt::{HasPermission, MediatorToken};
 use crate::models::{Election, Question};
 
 pub async fn verify_ballot_websocket(

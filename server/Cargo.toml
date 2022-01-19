@@ -19,6 +19,7 @@ chrono = "0.4.19"
 curv-kzen = { package = "curv-kzen", version = "0.9.0" }
 diesel = { version = "1.4.8", features = ["postgres", "extras"] }
 dotenv = "0.15.0"
+evoting-shared = { path = "../shared" }
 futures = "0.3.17"
 jsonwebtoken = "7.2.0"
 kzen-paillier = "0.4.2"

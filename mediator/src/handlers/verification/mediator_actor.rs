@@ -308,7 +308,7 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
         log::info!("Received close message, closing all websockets ... ({:#?})", reason);
         (0..self.num_collectors).for_each(|index| self.close(index, reason.clone()));
         return ctx.stop();
-      }
+      },
 
       // Parse JSON message
       ws::Frame::Text(text) => match serde_json::from_slice::<WebsocketMessage>(text.as_ref()) {
@@ -335,22 +335,22 @@ impl StreamHandler<(usize, Result<ws::Frame, WsProtocolError>)> for MediatorActo
         if self.verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
           self_addr.do_send(data);
         }
-      }
+      },
       WebsocketMessage::SP2_Result_Response(data) => {
         if self.verify_origin(&data, collector_index, ctx) && self.verify_signature(&data, ctx) {
           self_addr.do_send(data)
         }
-      }
+      },
       WebsocketMessage::UnicastMessage(data) => {
         if self.verify_origin(&data, collector_index, ctx) {
           self_addr.do_send(data)
         }
-      }
+      },
       WebsocketMessage::BroadcastMessage(data) => {
         if self.verify_origin(&data, collector_index, ctx) {
           self_addr.do_send(data)
         }
-      }
+      },
     }
   }
 

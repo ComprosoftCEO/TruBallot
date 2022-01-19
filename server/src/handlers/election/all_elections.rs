@@ -2,9 +2,9 @@ use actix_web::HttpResponse;
 use diesel::prelude::*;
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission};
 use crate::models::{Election, ElectionStatus};
 use crate::views::election::{AllElectionsResult, PublicElectionList, UserDetails};
 

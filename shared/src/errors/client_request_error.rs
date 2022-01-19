@@ -40,7 +40,7 @@ impl ClientRequestError {
           .map_err(|_| Self::UnknownError(status))?;
 
         Err(Self::ResponseError(error_response))
-      }
+      },
     }
   }
 
@@ -67,7 +67,7 @@ impl ClientRequestError {
           .map_err(|_| Self::UnknownError(status))?;
 
         Err(Self::ResponseError(error_response))
-      }
+      },
     }
   }
 }

@@ -1,9 +1,9 @@
 use actix_web::{web, HttpResponse};
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::ClientToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{ClientToken, HasPermission};
 use crate::models::Collector;
 use crate::views::collector::PublicCollector;
 

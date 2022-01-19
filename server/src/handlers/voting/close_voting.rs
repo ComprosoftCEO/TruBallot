@@ -7,10 +7,10 @@ use jsonwebtoken::EncodingKey;
 use serde::{Deserialize, Serialize};
 use uuid_b64::UuidB64 as Uuid;
 
-use crate::auth::{ClientToken, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::config;
 use crate::db::DbConnection;
 use crate::errors::{ClientRequestError, ResourceAction, ServiceError};
+use crate::jwt::{ClientToken, HasPermission, JWTSecret, ServerToken, DEFAULT_PERMISSIONS};
 use crate::models::{Election, ElectionStatus, Question};
 use crate::notifications::{notify_results_published, notify_voting_closed};
 use crate::utils::ConvertBigInt;

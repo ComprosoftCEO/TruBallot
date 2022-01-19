@@ -43,10 +43,4 @@ joinable!(election_collectors -> elections (election_id));
 joinable!(questions -> elections (election_id));
 joinable!(registrations -> elections (election_id));
 
-allow_tables_to_appear_in_same_query!(
-    collectors,
-    election_collectors,
-    elections,
-    questions,
-    registrations,
-);
+allow_tables_to_appear_in_same_query!(collectors, election_collectors, elections, questions, registrations,);

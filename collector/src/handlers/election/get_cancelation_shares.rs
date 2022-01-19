@@ -4,9 +4,9 @@ use serde::Deserialize;
 use uuid_b64::UuidB64 as Uuid;
 use validator::Validate;
 
-use crate::auth::MediatorToken;
 use crate::db::DbConnection;
 use crate::errors::ServiceError;
+use crate::jwt::{HasPermission, MediatorToken};
 use crate::models::Election;
 use crate::utils::ConvertBigInt;
 use crate::views::election::CancelationShares;
